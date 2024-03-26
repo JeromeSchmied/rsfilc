@@ -31,7 +31,7 @@ async fn main() -> AnyErr<()> {
 
     let messages = user.get_messages(MessageKind::Beerkezett).await?;
     println!("\ngot messages...");
-    println!("{:?}", messages);
+    // println!("{:?}", messages);
 
     let evals = user.get_evals().await?;
     println!("\ngot evals...");

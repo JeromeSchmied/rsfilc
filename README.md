@@ -11,7 +11,7 @@
     -   [x] általános információk
     -   [x] jegyek
     -   [x] órarend
-    -   [ ] üzenetek
+    -   [x] üzenetek
     -   [ ] előre bejelentett számonkérések
     -   [ ] hiányzások
 
