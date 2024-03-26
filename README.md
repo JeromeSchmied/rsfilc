@@ -1,4 +1,4 @@
-# Kréta kliens Rustban
+# Kréta kliens [Rust](https://rust-lang.org)ban
 
 ## API
 
