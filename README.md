@@ -15,7 +15,7 @@
     -   [x] előre bejelentett számonkérések
     -   [x] hiányzások
 
--   [ ] felhasználó adatainak használhatóvá tétele (struktúrákban)
+-   [ ] felhasználó adatainak használhatóvá tétele (struktúrák)
 
     -   [ ] token
     -   [ ] általános információk
