@@ -3,12 +3,13 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
 use serde::Deserialize;
-use serde_json::Value;
 use sha2::Sha512;
 use std::{cmp::Ordering, collections::HashMap, fmt};
 
-pub mod admin_endpoints;
-pub mod endpoints;
+use crate::kreta_api;
+
+mod admin_endpoints;
+mod endpoints;
 
 pub fn base(school_id: &str) -> String {
     format!("https://{school_id}.e-kreta.hu")
@@ -19,15 +20,6 @@ const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
 const FILES: &str = "https://files.e-kreta.hu";
 const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
 const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
-
-#[derive(Deserialize)]
-pub struct Token {
-    pub access_token: String,
-    pub refresh_token: String,
-
-    #[serde(flatten)]
-    extra: HashMap<String, Value>,
-}
 
 pub struct User {
     user_name: String,
@@ -43,6 +35,7 @@ impl User {
         }
     }
 
+    /// get headers which are necessary for making certain requests
     pub async fn get_headers(&self) -> HeaderMap {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -51,7 +44,7 @@ impl User {
                 .parse()
                 .unwrap(),
         );
-        headers.insert("User-Agent", USER_AGENT.parse().unwrap());
+        headers.insert("User-Agent", kreta_api::USER_AGENT.parse().unwrap());
         headers
     }
 
@@ -68,7 +61,7 @@ impl User {
     pub async fn get_token(&self) -> AnyErr<Token> {
         // Define the key as bytes
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
-        let nonce = reqwest::get([IDP, endpoints::NONCE].concat())
+        let nonce = reqwest::get([kreta_api::IDP, endpoints::NONCE].concat())
             .await?
             .text()
             .await?;
@@ -94,14 +87,13 @@ impl User {
         let generated = STANDARD.encode(result.into_bytes());
 
         let mut headers = HeaderMap::new();
-
         headers.insert(
             "Content-Type",
             "application/x-www-form-urlencoded; charset=utf-8"
                 .parse()
                 .unwrap(),
         );
-        headers.insert("User-Agent", USER_AGENT.parse().unwrap());
+        headers.insert("User-Agent", kreta_api::USER_AGENT.parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Key", generated.parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Version", "v2".parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
@@ -111,13 +103,11 @@ impl User {
         data.insert("password", &self.password);
         data.insert("institute_code", &self.school_id);
         data.insert("grant_type", "password");
-        data.insert("client_id", CLIENT_ID);
-
-        // eprintln!("sending data: {:?}", data);
+        data.insert("client_id", kreta_api::CLIENT_ID);
 
         let client = reqwest::Client::new();
         let res = client
-            .post([IDP, endpoints::TOKEN].concat())
+            .post([kreta_api::IDP, endpoints::TOKEN].concat())
             .headers(headers)
             .form(&data)
             .send()
@@ -128,7 +118,7 @@ impl User {
     }
 
     /// get user info
-    pub async fn get_info(&self) -> AnyErr<Value> {
+    pub async fn get_info(&self) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::STUDENT)
@@ -136,15 +126,16 @@ impl User {
             .send()
             .await?;
 
-        let val = serde_json::from_str(&res.text().await?)?;
-        Ok(val)
+        // let val = serde_json::from_str(&res.text().await?)?;
+        // Ok(val)
+        Ok(res.text().await?)
     }
 
     /// get messages
     pub async fn get_messages(&self, message_kind: MessageKind) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
-            .get(ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
+            .get(kreta_api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
             .headers(self.get_headers().await)
             .send()
             .await?;
@@ -155,7 +146,7 @@ impl User {
     }
 
     /// get evaluations
-    pub async fn get_evals(&self) -> AnyErr<Value> {
+    pub async fn get_evals(&self) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::EVALUATIONS)
@@ -163,12 +154,13 @@ impl User {
             .send()
             .await?;
 
-        let val = serde_json::from_str(&res.text().await?)?;
-        Ok(val)
+        // let val = serde_json::from_str(&res.text().await?)?;
+        // Ok(val)
+        Ok(res.text().await?)
     }
 
     /// get timetable
-    pub async fn get_timetable(&self, from: Time, to: Time) -> AnyErr<Value> {
+    pub async fn get_timetable(&self, from: Time, to: Time) -> AnyErr<String> {
         eprintln!("from: {}\nto: {}", from, to);
 
         let client = reqwest::Client::new();
@@ -179,12 +171,13 @@ impl User {
             .send()
             .await?;
 
-        let val = serde_json::from_str(&res.text().await?)?;
-        Ok(val)
+        // let val = serde_json::from_str(&res.text().await?)?;
+        // Ok(val)
+        Ok(res.text().await?)
     }
 
     /// get announced test
-    pub async fn get_announced(&self, from: Option<Time>) -> AnyErr<Value> {
+    pub async fn get_announced(&self, from: Option<Time>) -> AnyErr<String> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_string())]
         } else {
@@ -198,13 +191,14 @@ impl User {
             .send()
             .await?;
 
-        let val = serde_json::from_str(&res.text().await?)?;
-        Ok(val)
+        // let val = serde_json::from_str(&res.text().await?)?;
+        // Ok(val)
+        Ok(res.text().await?)
     }
 
     /// get information about being absent
 
-    pub async fn get_absencies(&self) -> AnyErr<Value> {
+    pub async fn get_absencies(&self) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::ABSENCES)
@@ -212,9 +206,18 @@ impl User {
             .send()
             .await?;
 
-        let val = serde_json::from_str(&res.text().await?)?;
-        Ok(val)
+        // let val = serde_json::from_str(&res.text().await?)?;
+        // Ok(val)
+        Ok(res.text().await?)
     }
+}
+#[derive(Deserialize)]
+pub struct Token {
+    pub access_token: String,
+    pub refresh_token: String,
+
+    #[serde(flatten)]
+    extra: HashMap<String, serde_json::Value>,
 }
 
 /// kinds of message

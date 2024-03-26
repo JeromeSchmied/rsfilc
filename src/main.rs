@@ -14,42 +14,42 @@ async fn main() -> AnyErr<()> {
     let user = User::new(username, password, school_id);
 
     let apiurls = ApiUrls::get().await?;
-    println!("\ngot api urls...");
+    eprintln!("\ngot api urls...");
     // println!("{:#?}", apiurls);
 
     let schools = School::get_from_refilc().await?;
-    println!("\ngot schools...");
+    eprintln!("\ngot schools...");
     // println!("{:#?}", schools);
 
     let access_token = user.get_token().await?;
-    println!("\ngot access_token...");
-    // println!("{:?}", access_token);
+    eprintln!("\ngot access_token...");
+    // println!("{}", access_token);
 
     let info = user.get_info().await?;
-    println!("\ngot user info...");
-    // println!("{:?}", info);
+    eprintln!("\ngot user info...");
+    // println!("{}", info);
 
     let messages = user.get_messages(MessageKind::Beerkezett).await?;
-    println!("\ngot messages...");
-    // println!("{:?}", messages);
+    eprintln!("\ngot messages...");
+    // println!("{}", messages);
 
     let evals = user.get_evals().await?;
-    println!("\ngot evals...");
-    // println!("{:?}", evals);
+    eprintln!("\ngot evals...");
+    // println!("{}", evals);
 
     let timetable = user
         .get_timetable(Time::new(2024, 3, 18), Time::new(2024, 3, 24))
         .await?;
-    println!("\ngot timetable...");
-    // println!("{:?}", timetable);
+    eprintln!("\ngot timetable...");
+    // println!("{}", timetable);
 
     let announced = user.get_announced(None).await?;
-    println!("\ngot announced...");
-    // println!("{:?}", announced);
+    eprintln!("\ngot announced...");
+    // println!("{}", announced);
 
     let absences = user.get_absencies().await?;
-    println!("\ngot absences...");
-    // println!("{:?}", absences);
+    eprintln!("\ngot absences...");
+    // println!("{}", absences);
 
     Ok(())
 }
