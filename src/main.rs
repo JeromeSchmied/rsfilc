@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+use std::time::Duration;
+
 use kreta::*;
 
 /// Result from T and Box<dyn Error>
@@ -238,10 +240,17 @@ mod kreta {
         }
 
         /// get timetable
-        pub async fn get_timetable(&self) -> AnyErr<Value> {
+        pub async fn get_timetable(&self, from: Time, to: Time) -> AnyErr<Value> {
+            eprintln!("from: {}\nto: {}", from, to);
+
             let client = reqwest::Client::new();
             let res = client
                 .get(base(&self.school_id) + endpoints::TIMETABLE)
+                // .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
+                .query(&[
+                    ("datumTol", "2020-01-01T00-00-00".to_owned()),
+                    ("datumIg", "2020-12-01T00-00-00".to_owned()),
+                ])
                 .headers(self.get_headers().await)
                 .send()
                 .await?;
@@ -265,13 +274,78 @@ mod kreta {
         }
     }
 
+    /// 2020-09-08T00-00-00
+    #[derive(Debug)]
+    pub struct Time {
+        year: u16,
+        month: u8,
+        day: u8,
+
+        hour: u8,
+        min: u8,
+        sec: u8,
+    }
+    impl Time {
+        pub fn new_all(year: u16, month: u8, day: u8, hour: u8, min: u8, sec: u8) -> Self {
+            assert!(year > 1800);
+            assert!((1..=12).contains(&month));
+            assert!((1..=31).contains(&day));
+            assert!(hour <= 24);
+            assert!(min <= 60);
+            assert!(sec <= 60);
+            Self {
+                year,
+                month,
+                day,
+                hour,
+                min,
+                sec,
+            }
+        }
+        pub fn new(year: u16, month: u8, day: u8) -> Self {
+            assert!(year > 1800);
+            assert!((1..=12).contains(&month));
+            assert!((1..=31).contains(&day));
+            Self {
+                year,
+                month,
+                day,
+                hour: 0,
+                min: 0,
+                sec: 0,
+            }
+        }
+        /// fill with 0 if needed
+        fn fill(t: u16) -> String {
+            match t.cmp(&10) {
+                Ordering::Greater | Ordering::Equal => t.to_string(),
+                Ordering::Less => format!("0{}", t),
+            }
+        }
+    }
+    impl fmt::Display for Time {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(
+                f,
+                "{}-{}-{}T{}-{}-{}",
+                Self::fill(self.year),
+                Self::fill(self.month.into()),
+                Self::fill(self.day.into()),
+                Self::fill(self.hour.into()),
+                Self::fill(self.min.into()),
+                Self::fill(self.sec.into())
+            )?;
+            Ok(())
+        }
+    }
+
     use crate::AnyErr;
     use hmac::{Hmac, Mac};
     use reqwest::header::HeaderMap;
     use serde::{Deserialize, Serialize};
     use serde_json::Value;
     use sha2::Sha512;
-    use std::collections::HashMap;
+    use std::{cmp::Ordering, collections::HashMap, fmt, time::Duration};
 
     #[derive(Deserialize, Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
@@ -384,7 +458,9 @@ async fn main() -> AnyErr<()> {
     println!("\ngot evals...");
     // println!("{:?}", evals);
 
-    let timetable = user.get_timetable().await?;
+    let timetable = user
+        .get_timetable(Time::new(2023, 1, 1), Time::new(2024, 8, 1))
+        .await?;
     println!("\ngot timetable...");
     println!("{:?}", timetable);
 
