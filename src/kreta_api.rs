@@ -144,7 +144,7 @@ impl User {
     pub async fn get_messages(&self, message_kind: MessageKind) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + &admin_endpoints::get_message(&message_kind.val()))
+            .get(ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
             .headers(self.get_headers().await)
             .send()
             .await?;
@@ -174,11 +174,7 @@ impl User {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::TIMETABLE)
-            // .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
-            .query(&[
-                ("datumTol", "2024-03-18T00:00:00".to_owned()),
-                ("datumIg", "2024-03-24T00:00:00".to_owned()),
-            ])
+            .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
             .headers(self.get_headers().await)
             .send()
             .await?;

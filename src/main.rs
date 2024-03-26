@@ -41,7 +41,7 @@ async fn main() -> AnyErr<()> {
         .get_timetable(Time::new(2024, 3, 18), Time::new(2024, 3, 24))
         .await?;
     println!("\ngot timetable...");
-    println!("{:?}", timetable);
+    // println!("{:?}", timetable);
 
     Ok(())
 }
