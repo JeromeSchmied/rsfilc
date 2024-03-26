@@ -182,6 +182,25 @@ impl User {
         let val = serde_json::from_str(&res.text().await?)?;
         Ok(val)
     }
+
+    /// get announced test
+    pub async fn get_announced(&self, from: Option<Time>) -> AnyErr<Value> {
+        let query = if let Some(from) = from {
+            vec![("datumTol", from.to_string())]
+        } else {
+            vec![]
+        };
+        let client = reqwest::Client::new();
+        let res = client
+            .get(base(&self.school_id) + endpoints::ANNOUNCED_TESTS)
+            .query(&query)
+            .headers(self.get_headers().await)
+            .send()
+            .await?;
+
+        let val = serde_json::from_str(&res.text().await?)?;
+        Ok(val)
+    }
 }
 
 /// kinds of message

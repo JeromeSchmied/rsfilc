@@ -43,5 +43,9 @@ async fn main() -> AnyErr<()> {
     println!("\ngot timetable...");
     // println!("{:?}", timetable);
 
+    let announced = user.get_announced(None).await?;
+    println!("\ngot announced...");
+    // println!("{:?}", announced);
+
     Ok(())
 }

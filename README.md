@@ -12,7 +12,7 @@
     -   [x] jegyek
     -   [x] órarend
     -   [x] üzenetek
-    -   [ ] előre bejelentett számonkérések
+    -   [x] előre bejelentett számonkérések
     -   [ ] hiányzások
 
 -   [ ] felhasználó adatainak használhatóvá tétele (struktúrákban)
