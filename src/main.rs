@@ -65,22 +65,22 @@ mod kreta {
     }
 
     pub mod admin_endpoints {
-        const SEND_MESSAGE: &str = "/api/v1/kommunikacio/uzenetek";
+        pub const SEND_MESSAGE: &str = "/api/v1/kommunikacio/uzenetek";
         pub fn get_all_messages(endpoint: &str) -> String {
             format!("/api/v1/kommunikacio/postaladaelemek/{endpoint}")
         }
         pub fn get_message(id: &str) -> String {
             format!("/api/v1/kommunikacio/postaladaelemek/{id}")
         }
-        const RECIPIENT_CATEGORIES: &str = "/api/v1/adatszotarak/cimzetttipusok";
-        const AVAILABLE_CATEGORIES: &str = "/api/v1/kommunikacio/cimezhetotipusok";
-        const RECIPIENTS_TEACHER: &str = "/api/v1/kreta/alkalmazottak/tanar";
-        const UPLOAD_ATTACHMENT: &str = "/ideiglenesfajlok";
-        fn download_attachment(id: &str) -> String {
+        pub const RECIPIENT_CATEGORIES: &str = "/api/v1/adatszotarak/cimzetttipusok";
+        pub const AVAILABLE_CATEGORIES: &str = "/api/v1/kommunikacio/cimezhetotipusok";
+        pub const RECIPIENTS_TEACHER: &str = "/api/v1/kreta/alkalmazottak/tanar";
+        pub const UPLOAD_ATTACHMENT: &str = "/ideiglenesfajlok";
+        pub fn download_attachment(id: &str) -> String {
             format!("/v1/dokumentumok/uzenetek/{id}")
         }
-        const TRASH_MESSAGE: &str = "/api/v1/kommunikacio/postaladaelemek/kuka";
-        const DELETE_MESSAGE: &str = "/api/v1/kommunikacio/postaladaelemek/torles";
+        pub const TRASH_MESSAGE: &str = "/api/v1/kommunikacio/postaladaelemek/kuka";
+        pub const DELETE_MESSAGE: &str = "/api/v1/kommunikacio/postaladaelemek/torles";
     }
 
     #[derive(Deserialize, Serialize, Debug)]
@@ -226,7 +226,28 @@ mod kreta {
 
         /// get evaluations
         pub async fn get_evals(&self) -> AnyErr<Value> {
-            todo!()
+            let client = reqwest::Client::new();
+            let res = client
+                .get(base(&self.school_id) + endpoints::EVALUATIONS)
+                .headers(self.get_headers().await)
+                .send()
+                .await?;
+
+            let val = serde_json::from_str(&res.text().await?)?;
+            Ok(val)
+        }
+
+        /// get timetable
+        pub async fn get_timetable(&self) -> AnyErr<Value> {
+            let client = reqwest::Client::new();
+            let res = client
+                .get(base(&self.school_id) + endpoints::TIMETABLE)
+                .headers(self.get_headers().await)
+                .send()
+                .await?;
+
+            let val = serde_json::from_str(&res.text().await?)?;
+            Ok(val)
         }
     }
     pub enum MessageKind {
@@ -358,6 +379,14 @@ async fn main() -> AnyErr<()> {
     // let messages = user.get_messages(MessageKind::Beerkezett).await?;
     // println!("\ngot messages...");
     // println!("{:?}", messages);
+
+    let evals = user.get_evals().await?;
+    println!("\ngot evals...");
+    // println!("{:?}", evals);
+
+    let timetable = user.get_timetable().await?;
+    println!("\ngot timetable...");
+    println!("{:?}", timetable);
 
     Ok(())
 }
