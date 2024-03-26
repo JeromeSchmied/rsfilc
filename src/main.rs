@@ -37,11 +37,11 @@ async fn main() -> AnyErr<()> {
     println!("\ngot evals...");
     // println!("{:?}", evals);
 
-    // let timetable = user
-    //     .get_timetable(Time::new(2023, 1, 1), Time::new(2024, 8, 1))
-    //     .await?;
-    // println!("\ngot timetable...");
-    // println!("{:?}", timetable);
+    let timetable = user
+        .get_timetable(Time::new(2024, 3, 18), Time::new(2024, 3, 24))
+        .await?;
+    println!("\ngot timetable...");
+    println!("{:?}", timetable);
 
     Ok(())
 }

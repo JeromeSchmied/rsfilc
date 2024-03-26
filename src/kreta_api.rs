@@ -176,8 +176,8 @@ impl User {
             .get(base(&self.school_id) + endpoints::TIMETABLE)
             // .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
             .query(&[
-                ("datumTol", "2020-01-01T00-00-00".to_owned()),
-                ("datumIg", "2020-12-01T00-00-00".to_owned()),
+                ("datumTol", "2024-03-18T00:00:00".to_owned()),
+                ("datumIg", "2024-03-24T00:00:00".to_owned()),
             ])
             .headers(self.get_headers().await)
             .send()
@@ -257,7 +257,7 @@ impl fmt::Display for Time {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}-{}-{}T{}-{}-{}",
+            "{}-{}-{}T{}:{}:{}",
             Self::fill(self.year),
             Self::fill(self.month.into()),
             Self::fill(self.day.into()),
