@@ -1,13 +1,18 @@
-#![allow(unused)]
-
-use std::time::Duration;
-
 use kreta::*;
 
 /// Result from T and Box<dyn Error>
 type AnyErr<T> = Result<T, Box<dyn std::error::Error>>;
 
 mod kreta {
+    use crate::AnyErr;
+    use base64::{engine::general_purpose::STANDARD, Engine};
+    use hmac::{Hmac, Mac};
+    use reqwest::header::HeaderMap;
+    use serde::{Deserialize, Serialize};
+    use serde_json::Value;
+    use sha2::Sha512;
+    use std::{cmp::Ordering, collections::HashMap, fmt};
+
     pub fn base(school_id: &str) -> String {
         format!("https://{school_id}.e-kreta.hu")
     }
@@ -15,7 +20,8 @@ mod kreta {
     const IDP: &str = "https://idp.e-kreta.hu";
     const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
     const FILES: &str = "https://files.e-kreta.hu";
-    pub const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
+    const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
+    const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
     /// ```json
     /// {
@@ -36,7 +42,6 @@ mod kreta {
         #[serde(rename = "GlobalMobileApiUrlPROD")]
         global_mobile_api_url_prod: String,
     }
-
     impl ApiUrls {
         pub fn get_api_url() -> String {
             "https://kretamobile.blob.core.windows.net/configuration/ConfigurationDescriptor.json"
@@ -98,9 +103,6 @@ mod kreta {
         user_name: String,
         password: String,
         school_id: String,
-
-        user_agent: String,
-        client_id: String,
     }
 
     impl User {
@@ -109,9 +111,6 @@ mod kreta {
                 user_name: user_name.to_string(),
                 password: password.to_string(),
                 school_id: school_id.to_string(),
-
-                user_agent: USER_AGENT.to_string(),
-                client_id: "kreta-ellenorzo-mobile-android".to_string(),
             }
         }
 
@@ -163,7 +162,7 @@ mod kreta {
             let result = mac.finalize();
 
             // Encode the result in base64
-            let generated = base64::encode(result.into_bytes());
+            let generated = STANDARD.encode(result.into_bytes());
 
             let mut headers = HeaderMap::new();
 
@@ -178,13 +177,12 @@ mod kreta {
             headers.insert("X-AuthorizationPolicy-Version", "v2".parse().unwrap());
             headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
 
-            let grant_type = String::from("password");
             let mut data = HashMap::new();
-            data.insert("userName", &self.user_name);
+            data.insert("userName", self.user_name.as_str());
             data.insert("password", &self.password);
             data.insert("institute_code", &self.school_id);
-            data.insert("grant_type", &grant_type);
-            data.insert("client_id", &self.client_id);
+            data.insert("grant_type", "password");
+            data.insert("client_id", CLIENT_ID);
 
             // eprintln!("sending data: {:?}", data);
 
@@ -259,6 +257,8 @@ mod kreta {
             Ok(val)
         }
     }
+
+    /// kinds of message
     pub enum MessageKind {
         Beerkezett,
         Elkuldott,
@@ -339,14 +339,6 @@ mod kreta {
         }
     }
 
-    use crate::AnyErr;
-    use hmac::{Hmac, Mac};
-    use reqwest::header::HeaderMap;
-    use serde::{Deserialize, Serialize};
-    use serde_json::Value;
-    use sha2::Sha512;
-    use std::{cmp::Ordering, collections::HashMap, fmt, time::Duration};
-
     #[derive(Deserialize, Serialize, Debug)]
     #[serde(rename_all = "camelCase")]
     pub struct School {
@@ -356,13 +348,7 @@ mod kreta {
     }
     impl School {
         pub async fn get_from_refilc() -> AnyErr<Vec<School>> {
-            let client = reqwest::Client::new();
-            let res = client
-                .get("https://api.refilc.hu/v1/public/school-list")
-                .send()
-                .await?;
-
-            // let res = reqwest::get("https://api.refilc.hu/v1/public/school-list").await?;
+            let res = reqwest::get("https://api.refilc.hu/v1/public/school-list").await?;
 
             Ok(serde_json::from_str(&res.text().await?)?)
         }
@@ -416,7 +402,7 @@ mod kreta {
         }
         #[tokio::test]
         async fn api_url_get() {
-            let apiruls = ApiUrls::get().await.unwrap();
+            let _apiurls = ApiUrls::get().await.unwrap();
         }
     }
 }
@@ -458,11 +444,11 @@ async fn main() -> AnyErr<()> {
     println!("\ngot evals...");
     // println!("{:?}", evals);
 
-    let timetable = user
-        .get_timetable(Time::new(2023, 1, 1), Time::new(2024, 8, 1))
-        .await?;
-    println!("\ngot timetable...");
-    println!("{:?}", timetable);
+    // let timetable = user
+    //     .get_timetable(Time::new(2023, 1, 1), Time::new(2024, 8, 1))
+    //     .await?;
+    // println!("\ngot timetable...");
+    // println!("{:?}", timetable);
 
     Ok(())
 }
