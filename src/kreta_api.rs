@@ -141,7 +141,7 @@ impl User {
     }
 
     /// get messages
-    pub async fn get_messages(&self, message_kind: MessageKind) -> AnyErr<Value> {
+    pub async fn get_messages(&self, message_kind: MessageKind) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + &admin_endpoints::get_message(&message_kind.val()))
@@ -149,8 +149,9 @@ impl User {
             .send()
             .await?;
 
-        let val = serde_json::from_str(&res.text().await?)?;
-        Ok(val)
+        // let val = serde_json::from_str(&res.text().await?)?;
+        // Ok(val)
+        Ok(res.text().await?)
     }
 
     /// get evaluations

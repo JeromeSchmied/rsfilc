@@ -13,13 +13,13 @@ async fn main() -> AnyErr<()> {
     let school_id = &args[3];
     let user = User::new(username, password, school_id);
 
-    let schools = School::get_from_refilc().await?;
-    println!("\ngot schools...");
-    // println!("{:#?}", schools);
-
     let apiurls = ApiUrls::get().await?;
     println!("\ngot api urls...");
     // println!("{:#?}", apiurls);
+
+    let schools = School::get_from_refilc().await?;
+    println!("\ngot schools...");
+    // println!("{:#?}", schools);
 
     let access_token = user.get_token().await?;
     println!("\ngot access_token...");
@@ -29,9 +29,9 @@ async fn main() -> AnyErr<()> {
     println!("\ngot user info...");
     // println!("{:?}", info);
 
-    // let messages = user.get_messages(MessageKind::Beerkezett).await?;
-    // println!("\ngot messages...");
-    // println!("{:?}", messages);
+    let messages = user.get_messages(MessageKind::Beerkezett).await?;
+    println!("\ngot messages...");
+    println!("{:?}", messages);
 
     let evals = user.get_evals().await?;
     println!("\ngot evals...");
