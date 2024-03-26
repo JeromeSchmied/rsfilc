@@ -10,7 +10,7 @@
     -   [x] token
     -   [x] általános információk
     -   [x] jegyek
-    -   [ ] órarend
+    -   [x] órarend
     -   [ ] üzenetek
     -   [ ] előre bejelentett számonkérések
     -   [ ] hiányzások
