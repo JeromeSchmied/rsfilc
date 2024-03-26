@@ -47,5 +47,9 @@ async fn main() -> AnyErr<()> {
     println!("\ngot announced...");
     // println!("{:?}", announced);
 
+    let absences = user.get_absencies().await?;
+    println!("\ngot absences...");
+    // println!("{:?}", absences);
+
     Ok(())
 }

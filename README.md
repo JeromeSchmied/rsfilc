@@ -13,7 +13,7 @@
     -   [x] órarend
     -   [x] üzenetek
     -   [x] előre bejelentett számonkérések
-    -   [ ] hiányzások
+    -   [x] hiányzások
 
 -   [ ] felhasználó adatainak használhatóvá tétele (struktúrákban)
 
