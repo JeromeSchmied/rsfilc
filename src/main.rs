@@ -2,7 +2,8 @@
 
 use kreta::*;
 
-type AnyErr = Box<dyn std::error::Error>;
+/// Result from T and Box<dyn Error>
+type AnyErr<T> = Result<T, Box<dyn std::error::Error>>;
 
 mod kreta {
     pub fn base(school_id: &str) -> String {
@@ -12,7 +13,7 @@ mod kreta {
     const IDP: &str = "https://idp.e-kreta.hu";
     const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
     const FILES: &str = "https://files.e-kreta.hu";
-    pub const USER_AGENT: &str = "hu.ekreta.student/3.0.4/Android/0/0";
+    pub const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
 
     /// ```json
     /// {
@@ -39,7 +40,7 @@ mod kreta {
             "https://kretamobile.blob.core.windows.net/configuration/ConfigurationDescriptor.json"
                 .to_string()
         }
-        pub async fn get() -> Result<ApiUrls, AnyErr> {
+        pub async fn get() -> AnyErr<ApiUrls> {
             let res = reqwest::get(ApiUrls::get_api_url()).await?;
 
             Ok(serde_json::from_str(&res.text().await?)?)
@@ -124,19 +125,17 @@ mod kreta {
             headers
         }
 
-        pub async fn get_info(&self) -> Result<String, AnyErr> {
-            let client = reqwest::Client::new();
-            let res = client
-                .get(base(&self.school_id) + endpoints::STUDENT)
-                .headers(self.get_headers().await)
-                .send()
-                .await?;
-
-            Ok(res.text().await?)
-        }
-
-        /// `curl "https://idp.e-kreta.hu/connect/token" -A "hu.ekreta.tanulo/1.0.5/Android/0/0" -H "X-AuthorizationPolicy-Key: xxx" -H "X-AuthorizationPolicy-Version: v2" -H "X-AuthorizationPolicy-Nonce: xxx" -d "userName=xxxxxxxx&password=xxxxxxxxx&institute_code=xxxxxxxxx&grant_type=password&client_id=kreta-ellenorzo-mobile-android"`
-        pub async fn get_token(&self) -> Result<Token, AnyErr> {
+        /// get access token from credentials, school_id
+        ///
+        /// ```shell
+        /// curl "https://idp.e-kreta.hu/connect/token"
+        /// -A "hu.ekreta.tanulo/1.0.5/Android/0/0"
+        /// -H "X-AuthorizationPolicy-Key: xxx"
+        /// -H "X-AuthorizationPolicy-Version: v2"
+        /// -H "X-AuthorizationPolicy-Nonce: xxx"
+        /// -d "userName=xxxxxxxx&password=xxxxxxxxx&institute_code=xxxxxxxxx&grant_type=password&client_id=kreta-ellenorzo-mobile-android"
+        /// ```
+        pub async fn get_token(&self) -> AnyErr<Token> {
             // Define the key as bytes
             let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
             let nonce = reqwest::get([IDP, endpoints::NONCE].concat())
@@ -185,7 +184,7 @@ mod kreta {
             data.insert("grant_type", &grant_type);
             data.insert("client_id", &self.client_id);
 
-            eprintln!("sending data: {:?}", data);
+            // eprintln!("sending data: {:?}", data);
 
             let client = reqwest::Client::new();
             let res = client
@@ -197,6 +196,51 @@ mod kreta {
 
             let token = serde_json::from_str(&res.text().await?)?;
             Ok(token)
+        }
+
+        /// get user info
+        pub async fn get_info(&self) -> AnyErr<Value> {
+            let client = reqwest::Client::new();
+            let res = client
+                .get(base(&self.school_id) + endpoints::STUDENT)
+                .headers(self.get_headers().await)
+                .send()
+                .await?;
+
+            let val = serde_json::from_str(&res.text().await?)?;
+            Ok(val)
+        }
+
+        /// get messages
+        pub async fn get_messages(&self, message_kind: MessageKind) -> AnyErr<Value> {
+            let client = reqwest::Client::new();
+            let res = client
+                .get(base(&self.school_id) + &admin_endpoints::get_message(&message_kind.val()))
+                .headers(self.get_headers().await)
+                .send()
+                .await?;
+
+            let val = serde_json::from_str(&res.text().await?)?;
+            Ok(val)
+        }
+
+        /// get evaluations
+        pub async fn get_evals(&self) -> AnyErr<Value> {
+            todo!()
+        }
+    }
+    pub enum MessageKind {
+        Beerkezett,
+        Elkuldott,
+        Torolt,
+    }
+    impl MessageKind {
+        pub fn val(&self) -> String {
+            match self {
+                MessageKind::Beerkezett => "beerkezett".to_owned(),
+                MessageKind::Elkuldott => "elkuldott".to_owned(),
+                MessageKind::Torolt => "torolt".to_owned(),
+            }
         }
     }
 
@@ -216,7 +260,7 @@ mod kreta {
         name: String,
     }
     impl School {
-        pub async fn get_refilc() -> Result<Vec<School>, AnyErr> {
+        pub async fn get_from_refilc() -> AnyErr<Vec<School>> {
             let client = reqwest::Client::new();
             let res = client
                 .get("https://api.refilc.hu/v1/public/school-list")
@@ -283,7 +327,7 @@ mod kreta {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), AnyErr> {
+async fn main() -> AnyErr<()> {
     let args = std::env::args().collect::<Vec<String>>();
     if args.len() != 4 {
         println!("Usage: <username> <password> <school_id>");
@@ -295,7 +339,7 @@ async fn main() -> Result<(), AnyErr> {
     let school_id = &args[3];
     let user = User::new(username, password, school_id);
 
-    let schools = School::get_refilc().await?;
+    let schools = School::get_from_refilc().await?;
     println!("\ngot schools...");
     // println!("{:#?}", schools);
 
@@ -304,10 +348,16 @@ async fn main() -> Result<(), AnyErr> {
     // println!("{:#?}", apiurls);
 
     let access_token = user.get_token().await?;
-    println!("{:?}", access_token);
+    println!("\ngot access_token...");
+    // println!("{:?}", access_token);
 
     let info = user.get_info().await?;
-    println!("{:?}", info);
+    println!("\ngot user info...");
+    // println!("{:?}", info);
+
+    // let messages = user.get_messages(MessageKind::Beerkezett).await?;
+    // println!("\ngot messages...");
+    // println!("{:?}", messages);
 
     Ok(())
 }
