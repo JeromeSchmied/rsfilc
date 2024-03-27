@@ -27,6 +27,9 @@ pub struct Lesson {
     /// whether it has been cancelled or what
     allapot: HashMap<String, String>,
 
+    /// type
+    tipus: HashMap<String, String>,
+
     /// info about the student being present
     tanulo_jelenlet: HashMap<String, String>,
 
@@ -50,6 +53,11 @@ impl Lesson {
         self.allapot
             .get("Nev")
             .is_some_and(|state| state == "Elmaradt")
+    }
+    pub fn wont_be(&self) -> bool {
+        self.tipus
+            .get("Nev")
+            .is_some_and(|state| state == "UresOra")
     }
     pub fn absent(&self) -> bool {
         self.tanulo_jelenlet
