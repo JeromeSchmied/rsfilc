@@ -1,6 +1,7 @@
 pub mod api;
 
 pub mod api_urls;
+pub mod args;
 pub mod messages;
 pub mod school_list;
 pub mod timetable;
