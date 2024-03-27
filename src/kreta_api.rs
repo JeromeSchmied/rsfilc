@@ -6,7 +6,7 @@ use serde::Deserialize;
 use sha2::Sha512;
 use std::{cmp::Ordering, collections::HashMap, fmt};
 
-use crate::kreta_api;
+use crate::api;
 
 mod admin_endpoints;
 mod endpoints;
@@ -44,7 +44,7 @@ impl User {
                 .parse()
                 .unwrap(),
         );
-        headers.insert("User-Agent", kreta_api::USER_AGENT.parse().unwrap());
+        headers.insert("User-Agent", api::USER_AGENT.parse().unwrap());
         headers
     }
 
@@ -61,7 +61,7 @@ impl User {
     pub async fn get_token(&self) -> AnyErr<Token> {
         // Define the key as bytes
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
-        let nonce = reqwest::get([kreta_api::IDP, endpoints::NONCE].concat())
+        let nonce = reqwest::get([api::IDP, endpoints::NONCE].concat())
             .await?
             .text()
             .await?;
@@ -93,7 +93,7 @@ impl User {
                 .parse()
                 .unwrap(),
         );
-        headers.insert("User-Agent", kreta_api::USER_AGENT.parse().unwrap());
+        headers.insert("User-Agent", api::USER_AGENT.parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Key", generated.parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Version", "v2".parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
@@ -103,11 +103,11 @@ impl User {
         data.insert("password", &self.password);
         data.insert("institute_code", &self.school_id);
         data.insert("grant_type", "password");
-        data.insert("client_id", kreta_api::CLIENT_ID);
+        data.insert("client_id", api::CLIENT_ID);
 
         let client = reqwest::Client::new();
         let res = client
-            .post([kreta_api::IDP, endpoints::TOKEN].concat())
+            .post([api::IDP, endpoints::TOKEN].concat())
             .headers(headers)
             .form(&data)
             .send()
@@ -135,7 +135,7 @@ impl User {
     pub async fn get_messages(&self, message_kind: MessageKind) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
-            .get(kreta_api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
+            .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
             .headers(self.get_headers().await)
             .send()
             .await?;
