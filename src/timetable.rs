@@ -30,7 +30,7 @@ pub struct Lesson {
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{} óra a {} teremben", self.nev, self.terem_neve)?;
+        writeln!(f, "{} óra a(z) {} teremben", self.nev, self.terem_neve)?;
 
         if let Some(tema) = &self.tema {
             writeln!(f, "Témája: {}", tema)?;
@@ -40,7 +40,7 @@ impl fmt::Display for Lesson {
         writeln!(f, "Tanár: {}", self.tanar_neve)?;
 
         if let Some(helyettes_tanar) = &self.helyettes_tanar_neve {
-            writeln!(f, "helyettes tanar: {:?}", helyettes_tanar)?;
+            writeln!(f, "Helyettesítő tanár: {:?}", helyettes_tanar)?;
         }
 
         Ok(())
