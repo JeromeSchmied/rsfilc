@@ -6,3 +6,6 @@ kreta_schools.json
 
 # credentials
 *creds.txt
+
+# 
+*.json
