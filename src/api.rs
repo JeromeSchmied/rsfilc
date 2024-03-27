@@ -1,4 +1,4 @@
-use crate::{messages::MessageKind, token::Token, AnyErr};
+use crate::{messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
@@ -173,7 +173,7 @@ impl User {
     }
 
     /// get timetable
-    pub async fn timetable(&self, from: DateTime, to: DateTime) -> AnyErr<String> {
+    pub async fn timetable(&self, from: DateTime, to: DateTime) -> AnyErr<Vec<Lesson>> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::TIMETABLE)
@@ -182,9 +182,8 @@ impl User {
             .send()
             .await?;
 
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(res.text().await?)
+        let val = serde_json::from_str(&res.text().await?)?;
+        Ok(val)
     }
 
     /// get announced test

@@ -44,7 +44,7 @@ async fn main() -> AnyErr<()> {
     // let from = DateTime::now(0).expect("invalid date-time");
     let timetable = user.timetable(from, to).await?;
     eprintln!("\ngot timetable...");
-    println!("{}", timetable);
+    println!("{:#?}", timetable);
 
     let announced = user.announced(None).await?;
     eprintln!("\ngot announced...");

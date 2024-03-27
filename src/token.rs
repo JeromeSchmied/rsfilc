@@ -14,7 +14,7 @@ pub struct Token {
     /// the token which can be used to refresh stuff
     pub refresh_token: String,
 
-    #[serde(flatten)]
     /// not needed
+    #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
 }

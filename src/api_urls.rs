@@ -66,6 +66,7 @@ pub mod tests {
     }
     #[tokio::test]
     async fn api_url_get() {
-        let _apiurls = ApiUrls::api_urls().await.unwrap();
+        let apiurls = ApiUrls::api_urls().await;
+        assert!(apiurls.is_ok());
     }
 }
