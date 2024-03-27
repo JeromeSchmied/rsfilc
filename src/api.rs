@@ -4,7 +4,7 @@ use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
 use sha2::Sha512;
 use speedate::DateTime;
-use std::collections::HashMap;
+use std::{collections::HashMap, fs::File, io::Write};
 
 use crate::api;
 
@@ -181,8 +181,12 @@ impl User {
             .headers(self.headers().await?)
             .send()
             .await?;
+        let text = res.text().await?;
 
-        let val = serde_json::from_str(&res.text().await?)?;
+        let mut logf = File::create("timetable.log")?;
+        write!(logf, "{}", text)?;
+
+        let val = serde_json::from_str(&text)?;
         Ok(val)
     }
 

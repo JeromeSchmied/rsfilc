@@ -40,15 +40,16 @@ async fn main() -> AnyErr<()> {
     eprintln!("\ngot evals...\n");
     // println!("{}", evals);
 
-    let from = DateTime::parse_str("2024-03-25T00:00").expect("invalid date-time");
-    let to = DateTime::parse_str("2024-03-25T23:59").expect("invalid date-time");
-    // let from = DateTime::parse_str("2024-03-27T00:00").expect("invalid date-time");
-    // let to = DateTime::parse_str("2024-03-28T00:00").expect("invalid date-time");
+    let date = "2024-03-27";
+    let from = DateTime::parse_str(&format!("{}T00:00", date)).expect("invalid date-time");
+    let to = DateTime::parse_str(&format!("{}T18:00", date)).expect("invalid date-time");
+    // let from = DateTime::parse_str("2024-03-22T00:00").expect("invalid date-time");
+    // let to = DateTime::parse_str("2024-03-22T23:59").expect("invalid date-time");
     // let from = DateTime::now(0).expect("invalid date-time");
     // let from = DateTime::now(0).expect("invalid date-time");
     let mut timetable = user.timetable(from, to).await?;
     eprintln!("\ngot timetable...\n");
-    timetable.sort_by(|a, b| a.tol().partial_cmp(&b.tol()).expect("couldn't compare"));
+    timetable.sort_by(|a, b| a.from().partial_cmp(&b.from()).expect("couldn't compare"));
     timetable::Lesson::print_day(timetable);
     // println!("{}", timetable);
 

@@ -24,9 +24,38 @@ pub struct Lesson {
     /// alternative teacher's name if any
     helyettes_tanar_neve: Option<String>,
 
+    /// whether it has been cancelled or what
+    allapot: HashMap<String, String>,
+
+    /// info about the student being present
+    tanulo_jelenlet: HashMap<String, String>,
+
     /// not needed
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
+}
+impl Lesson {
+    pub fn print_day(lessons: Vec<Lesson>) {
+        for lesson in lessons {
+            println!("{}\n", lesson);
+        }
+    }
+    pub fn from(&self) -> DateTime {
+        DateTime::from_str(&self.kezdet_idopont).expect("invalid date-time")
+    }
+    pub fn to(&self) -> DateTime {
+        DateTime::from_str(&self.veg_idopont).expect("invalid date-time")
+    }
+    pub fn cancelled(&self) -> bool {
+        self.allapot
+            .get("Nev")
+            .is_some_and(|state| state == "Elmaradt")
+    }
+    pub fn absent(&self) -> bool {
+        self.tanulo_jelenlet
+            .get("Nev")
+            .is_some_and(|presence| presence == "Hianyzas")
+    }
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -34,6 +63,10 @@ impl fmt::Display for Lesson {
 
         if let Some(tema) = &self.tema {
             writeln!(f, "Témája: {}", tema)?;
+        }
+
+        if self.cancelled() {
+            writeln!(f, "This lesson was cancelled")?;
         }
 
         writeln!(f, "{} -> {}", self.kezdet_idopont, self.veg_idopont)?;
@@ -44,19 +77,6 @@ impl fmt::Display for Lesson {
         }
 
         Ok(())
-    }
-}
-impl Lesson {
-    pub fn print_day(lessons: Vec<Lesson>) {
-        for lesson in lessons {
-            println!("{}\n", lesson);
-        }
-    }
-    pub fn tol(&self) -> DateTime {
-        DateTime::from_str(&self.kezdet_idopont).expect("invalid date-time")
-    }
-    pub fn ig(&self) -> DateTime {
-        DateTime::from_str(&self.veg_idopont).expect("invalid date-time")
     }
 }
 

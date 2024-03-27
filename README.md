@@ -17,7 +17,7 @@
 
 -   [ ] felhasználó adatainak használhatóvá tétele (struktúrák)
 
-    -   [x] token
+    -   [ ] token
     -   [ ] általános információk
     -   [ ] jegyek
     -   [ ] órarend
