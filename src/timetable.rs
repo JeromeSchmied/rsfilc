@@ -1,6 +1,7 @@
 use crate::AnyErr;
 use serde::Deserialize;
-use std::collections::HashMap;
+use speedate::DateTime;
+use std::{collections::HashMap, fmt, str::FromStr};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -16,7 +17,7 @@ pub struct Lesson {
     veg_idopont: String,
 
     /// topic of the lesson
-    tema: String,
+    tema: Option<String>,
 
     /// name of the teacher
     tanar_neve: String,
@@ -27,6 +28,37 @@ pub struct Lesson {
     #[serde(flatten)]
     extra: HashMap<String, serde_json::Value>,
 }
+impl fmt::Display for Lesson {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{} óra a {} teremben", self.nev, self.terem_neve)?;
+
+        if let Some(tema) = &self.tema {
+            writeln!(f, "Témája: {}", tema)?;
+        }
+
+        writeln!(f, "{} -> {}", self.kezdet_idopont, self.veg_idopont)?;
+        writeln!(f, "Tanár: {}", self.tanar_neve)?;
+
+        if let Some(helyettes_tanar) = &self.helyettes_tanar_neve {
+            writeln!(f, "helyettes tanar: {:?}", helyettes_tanar)?;
+        }
+
+        Ok(())
+    }
+}
+impl Lesson {
+    pub fn print_day(lessons: Vec<Lesson>) {
+        for lesson in lessons {
+            println!("{}\n", lesson);
+        }
+    }
+    pub fn tol(&self) -> DateTime {
+        DateTime::from_str(&self.kezdet_idopont).expect("invalid date-time")
+    }
+    pub fn ig(&self) -> DateTime {
+        DateTime::from_str(&self.veg_idopont).expect("invalid date-time")
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -35,7 +67,7 @@ mod tests {
     #[test]
     fn works() {
         let lesson_json = r#"{
-        "Uid": "7115068,TanitasiOra,2024-03-17T23:00:00Z",
+        "Uid": "XXXXXXX,TanitasiOra,2024-03-17T23:00:00Z",
         "Datum": "2024-03-17T23:00:00Z",
         "KezdetIdopont": "2024-03-18T08:50:00Z",
         "VegIdopont": "2024-03-18T09:35:00Z",
@@ -44,9 +76,9 @@ mod tests {
         "OraEvesSorszama": 72,
         "OsztalyCsoport": {
             "Uid": "837087",
-            "Nev": "10.C"
+            "Nev": "XX.X"
         },
-        "TanarNeve": "Molnárné DR. Demény Orsolya",
+        "TanarNeve": "Teszt Katalin",
         "Tantargy": {
             "Uid": "368813",
             "Nev": "fizika",
@@ -58,14 +90,14 @@ mod tests {
             "SortIndex": 0
         },
         "Tema": "Félvezetők",
-        "TeremNeve": "105",
+        "TeremNeve": "Fizika",
         "Tipus": {
             "Uid": "2,TanitasiOra",
             "Nev": "TanitasiOra",
             "Leiras": "Tanítási óra"
         },
         "TanuloJelenlet": {
-            "Uid": "1498,Jelenlet",
+            "Uid": "XXXX,Jelenlet",
             "Nev": "Jelenlet",
             "Leiras": "A tanuló részt vett a tanórán"
         },

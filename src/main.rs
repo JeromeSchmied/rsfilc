@@ -1,4 +1,6 @@
-use refilc::{api::*, api_urls::ApiUrls, messages::MessageKind, school_list::School, AnyErr};
+use refilc::{
+    api::*, api_urls::ApiUrls, messages::MessageKind, school_list::School, timetable, AnyErr,
+};
 use speedate::DateTime;
 
 #[tokio::main]
@@ -15,43 +17,47 @@ async fn main() -> AnyErr<()> {
     let user = User::new(username, password, school_id);
 
     let apiurls = ApiUrls::api_urls().await?;
-    eprintln!("\ngot api urls...");
+    eprintln!("\ngot api urls...\n");
     // println!("{:#?}", apiurls);
 
     let schools = School::get_from_refilc().await?;
-    eprintln!("\ngot schools...");
+    eprintln!("\ngot schools...\n");
     // println!("{:#?}", schools);
 
     let access_token = user.token().await?;
-    eprintln!("\ngot access_token...");
+    eprintln!("\ngot access_token...\n");
     // println!("{:?}", access_token);
 
     let info = user.info().await?;
-    eprintln!("\ngot user info...");
+    eprintln!("\ngot user info...\n");
     // println!("{}", info);
 
     let messages = user.messages(MessageKind::Beerkezett).await?;
-    eprintln!("\ngot messages...");
+    eprintln!("\ngot messages...\n");
     // println!("{}", messages);
 
     let evals = user.evals().await?;
-    eprintln!("\ngot evals...");
+    eprintln!("\ngot evals...\n");
     // println!("{}", evals);
 
-    let from = DateTime::parse_str("2024-03-18T08:00").expect("invalid date-time");
-    let to = DateTime::parse_str("2024-03-18T08:45").expect("invalid date-time");
+    let from = DateTime::parse_str("2024-03-25T00:00").expect("invalid date-time");
+    let to = DateTime::parse_str("2024-03-25T23:59").expect("invalid date-time");
+    // let from = DateTime::parse_str("2024-03-27T00:00").expect("invalid date-time");
+    // let to = DateTime::parse_str("2024-03-28T00:00").expect("invalid date-time");
     // let from = DateTime::now(0).expect("invalid date-time");
     // let from = DateTime::now(0).expect("invalid date-time");
-    let timetable = user.timetable(from, to).await?;
-    eprintln!("\ngot timetable...");
-    println!("{:#?}", timetable);
+    let mut timetable = user.timetable(from, to).await?;
+    eprintln!("\ngot timetable...\n");
+    timetable.sort_by(|a, b| a.tol().partial_cmp(&b.tol()).expect("couldn't compare"));
+    timetable::Lesson::print_day(timetable);
+    // println!("{}", timetable);
 
     let announced = user.announced(None).await?;
-    eprintln!("\ngot announced...");
+    eprintln!("\ngot announced...\n");
     // println!("{}", announced);
 
     let absences = user.absencies().await?;
-    eprintln!("\ngot absences...");
+    eprintln!("\ngot absences...\n");
     // println!("{}", absences);
 
     Ok(())
