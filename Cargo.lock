@@ -848,22 +848,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "refilc"
-version = "0.1.0"
-dependencies = [
- "base64 0.22.0",
- "clap",
- "dirs",
- "hmac",
- "reqwest",
- "serde",
- "serde_json",
- "sha2",
- "speedate",
- "tokio",
-]
-
-[[package]]
 name = "reqwest"
 version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -903,6 +887,22 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "winreg",
+]
+
+[[package]]
+name = "rsfilc"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.0",
+ "clap",
+ "dirs",
+ "hmac",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "speedate",
+ "tokio",
 ]
 
 [[package]]

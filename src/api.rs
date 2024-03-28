@@ -4,7 +4,11 @@ use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
 use sha2::Sha512;
 use speedate::DateTime;
-use std::{collections::HashMap, fs::File, io::Write};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::{self, Write},
+};
 
 use crate::api;
 
@@ -29,18 +33,109 @@ const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 /// Kréta user
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
-    user_name: String,
+    username: String,
     /// the password, usually it defaults to the date of birth of the user: `YYYY-MM-DD`
     password: String,
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
     school_id: String,
 }
 impl User {
-    pub fn new(user_name: &str, password: &str, school_id: &str) -> Self {
-        Self {
-            user_name: user_name.to_string(),
+    /// create new instance of user and save it
+    pub fn new(username: &str, password: &str, school_id: &str) -> Self {
+        let user = Self {
+            username: username.to_string(),
             password: password.to_string(),
             school_id: school_id.to_string(),
+        };
+        user.save();
+        user
+    }
+
+    /// load user account from saved dir
+    /// ```toml
+    /// [[user]]
+    /// username = "70123456789"
+    /// password = "2000-01-01"
+    /// school_id = "klik012345678"
+    /// ```
+    pub fn load() -> Option<Self> {
+        let cred_path = dirs::config_dir()?.join("rsfilc").join("credentials.toml");
+
+        if cred_path.exists() {
+            let content = fs::read_to_string(cred_path).unwrap();
+            let mut user: User = User::new("username", "password", "school_id");
+            if let Some(username) = Self::get_val(&content, "username") {
+                user.username = username;
+            } else {
+                return None;
+            }
+            if let Some(password) = Self::get_val(&content, "password") {
+                user.password = password;
+            } else {
+                return None;
+            }
+            if let Some(school_id) = Self::get_val(&content, "school_id") {
+                user.school_id = school_id;
+            } else {
+                return None;
+            }
+            Some(user)
+        } else {
+            None
+        }
+    }
+    /// get value for key from content (eg. toml file)
+    fn get_val(content: &str, key: &str) -> Option<String> {
+        let k = &format!("{key} = ");
+        if !content.contains(k) {
+            return None;
+        }
+
+        let val = content
+            .lines()
+            .find(|line| line.contains(k))?
+            .split('=')
+            .last()?
+            .trim()
+            .trim_matches(|c| c == '"' || c == '\'')
+            .to_string();
+
+        Some(val)
+    }
+    pub fn create() -> Self {
+        print!("username: ");
+        let mut username = String::new();
+        io::stdin()
+            .read_line(&mut username)
+            .expect("couldn't read username");
+
+        print!("password: ");
+        let mut password = String::new();
+        io::stdin()
+            .read_line(&mut password)
+            .expect("couldn't read password");
+
+        print!("school_id: ");
+        let mut school_id = String::new();
+        io::stdin()
+            .read_line(&mut school_id)
+            .expect("couldn't read school_id");
+
+        Self::new(&username, &password, &school_id)
+    }
+    fn save(&self) {
+        let cred_path = dirs::config_dir()
+            .expect("couldn't get config_dir")
+            .join("rsfilc")
+            .join("credentials.toml");
+        if !cred_path.exists() {
+            fs::create_dir_all(cred_path.parent().expect("couldn't get config dir"))
+                .expect("couldn't create config dir");
+            let mut cred_file = File::create(cred_path).expect("couldn't save user credentials");
+            writeln!(cred_file, "[[user]]").unwrap();
+            writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
+            writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
+            writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
         }
     }
 
@@ -84,7 +179,7 @@ impl User {
             "{}{}{}",
             self.school_id.to_uppercase(),
             nonce,
-            self.user_name.to_uppercase()
+            self.username.to_uppercase()
         );
 
         // Create a new HMAC instance
@@ -112,7 +207,7 @@ impl User {
         headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
 
         let mut data = HashMap::new();
-        data.insert("userName", self.user_name.as_str());
+        data.insert("userName", self.username.as_str());
         data.insert("password", &self.password);
         data.insert("institute_code", &self.school_id);
         data.insert("grant_type", "password");
