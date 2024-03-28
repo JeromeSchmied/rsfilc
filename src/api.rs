@@ -1,4 +1,4 @@
-use crate::{messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
+use crate::{info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
@@ -104,18 +104,21 @@ impl User {
     }
     pub fn create() -> Self {
         print!("username: ");
+        io::stdout().flush().unwrap();
         let mut username = String::new();
         io::stdin()
             .read_line(&mut username)
             .expect("couldn't read username");
 
         print!("password: ");
+        io::stdout().flush().unwrap();
         let mut password = String::new();
         io::stdin()
             .read_line(&mut password)
             .expect("couldn't read password");
 
         print!("school_id: ");
+        io::stdout().flush().unwrap();
         let mut school_id = String::new();
         io::stdin()
             .read_line(&mut school_id)
@@ -123,6 +126,7 @@ impl User {
 
         Self::new(&username, &password, &school_id)
     }
+    /// save credentials
     fn save(&self) {
         let cred_path = dirs::config_dir()
             .expect("couldn't get config_dir")
@@ -136,6 +140,12 @@ impl User {
             writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
             writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
             writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
+        }
+    }
+    /// greet user
+    pub async fn greet(&self) {
+        if let Ok(info) = self.info().await {
+            println!("Hello {}!", info.nev);
         }
     }
 
@@ -226,7 +236,7 @@ impl User {
     }
 
     /// get user info
-    pub async fn info(&self) -> AnyErr<String> {
+    pub async fn info(&self) -> AnyErr<Info> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::STUDENT)
@@ -234,9 +244,8 @@ impl User {
             .send()
             .await?;
 
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(res.text().await?)
+        let info = serde_json::from_str(&res.text().await?)?;
+        Ok(info)
     }
 
     /// get messages

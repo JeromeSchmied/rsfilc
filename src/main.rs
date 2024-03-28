@@ -5,16 +5,13 @@ use speedate::DateTime;
 
 #[tokio::main]
 async fn main() -> AnyErr<()> {
-    let args = std::env::args().collect::<Vec<String>>();
-    if args.len() != 4 {
-        println!("Usage: <username> <password> <school_id>");
-        return Ok(());
-    }
-
-    let username = &args[1];
-    let password = &args[2];
-    let school_id = &args[3];
-    let user = User::new(username, password, school_id);
+    let user = if let Some(loaded_user) = User::load() {
+        loaded_user
+    } else {
+        User::create()
+    };
+    user.greet().await;
+    // let user = User::new(username, password, school_id);
 
     let apiurls = ApiUrls::api_urls().await?;
     eprintln!("\ngot api urls...\n");
