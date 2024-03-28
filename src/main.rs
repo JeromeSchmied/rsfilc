@@ -1,4 +1,4 @@
-use refilc::{
+use rsfilc::{
     api::*, api_urls::ApiUrls, messages::MessageKind, school_list::School, timetable, AnyErr,
 };
 use speedate::DateTime;
