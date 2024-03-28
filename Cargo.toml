@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 base64 = "0.22.0"
 clap = { version = "4.5.4", features = ["derive"] }
+dirs = "5.0.1"
 hmac = "0.12.1"
 reqwest = "0.12.1"
 serde = { version = "1.0.197", features = ["derive"] }
