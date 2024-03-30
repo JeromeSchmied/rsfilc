@@ -29,6 +29,7 @@
 
 -   [ ] API alapvető használata
 -   [ ] kért adatok alapvető megjelenítése
+-   [ ] ...
 
 ## TUI
 

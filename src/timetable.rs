@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Datelike, Local};
 use serde::Deserialize;
 use std::{collections::HashMap, fmt, str::FromStr};
 
@@ -36,7 +36,11 @@ pub struct Lesson {
 impl Lesson {
     pub fn print_day(lessons: Vec<Lesson>) {
         if let Some(first_lesson) = lessons.first() {
-            println!("{}\n", first_lesson.start().date_naive());
+            println!(
+                "{}({})\n",
+                first_lesson.start().date_naive(),
+                first_lesson.start().weekday()
+            );
         }
         for lesson in lessons {
             println!("{}\n", lesson);
