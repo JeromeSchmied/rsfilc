@@ -34,7 +34,12 @@ pub struct Lesson {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Lesson {
-    pub fn print_day(lessons: Vec<Lesson>) {
+    pub fn print_day(lessons: &[Lesson]) {
+        if lessons.is_empty() {
+            println!("Ezen a napon nincs órád, juhé!");
+        } else {
+            eprintln!("lessons:\n{:?}", lessons);
+        }
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "{}({})\n",
@@ -44,8 +49,6 @@ impl Lesson {
             for lesson in lessons {
                 println!("{}\n", lesson);
             }
-        } else {
-            println!("Ezen a napon nincs órád, juhé!");
         }
     }
     pub fn from(&self) -> DateTime<Local> {
