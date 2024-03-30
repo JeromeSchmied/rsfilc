@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local};
 use serde::Deserialize;
 use std::{collections::HashMap, fmt, str::FromStr};
 
@@ -8,7 +8,7 @@ pub struct Lesson {
     // ora neve
     nev: String,
     // terem
-    terem_neve: String,
+    terem_neve: Option<String>,
 
     // datetime
     kezdet_idopont: String,
@@ -19,56 +19,53 @@ pub struct Lesson {
     tema: Option<String>,
 
     /// name of the teacher
-    tanar_neve: String,
+    tanar_neve: Option<String>,
     /// alternative teacher's name if any
     helyettes_tanar_neve: Option<String>,
 
     /// whether it has been cancelled or what
-    allapot: HashMap<String, String>,
-
-    /// type
-    tipus: HashMap<String, String>,
+    allapot: Option<HashMap<String, String>>,
 
     /// info about the student being present
-    tanulo_jelenlet: HashMap<String, String>,
+    tanulo_jelenlet: Option<HashMap<String, String>>,
 
     /// not needed
     #[serde(flatten)]
-    extra: HashMap<String, serde_json::Value>,
+    _extra: HashMap<String, serde_json::Value>,
 }
 impl Lesson {
     pub fn print_day(lessons: Vec<Lesson>) {
+        if let Some(first_lesson) = lessons.first() {
+            println!("{}\n", first_lesson.start().date_naive());
+        }
         for lesson in lessons {
             println!("{}\n", lesson);
         }
     }
-    pub fn from(&self) -> DateTime<Utc> {
+    pub fn from(&self) -> DateTime<Local> {
         DateTime::from_str(&self.kezdet_idopont).expect("invalid date-time")
     }
-    pub fn to(&self) -> DateTime<Utc> {
+    pub fn to(&self) -> DateTime<Local> {
         DateTime::from_str(&self.veg_idopont).expect("invalid date-time")
     }
     pub fn cancelled(&self) -> bool {
         self.allapot
-            .get("Nev")
-            .is_some_and(|state| state == "Elmaradt")
-    }
-    pub fn wont_be(&self) -> bool {
-        self.tipus
-            .get("Nev")
-            .is_some_and(|state| state == "UresOra")
+            .as_ref()
+            .is_some_and(|state| state.get("Nev").is_some_and(|state| state == "Elmaradt"))
     }
     pub fn absent(&self) -> bool {
-        self.tanulo_jelenlet
-            .get("Nev")
-            .is_some_and(|presence| presence == "Hianyzas")
+        self.tanulo_jelenlet.as_ref().is_some_and(|absence| {
+            absence
+                .get("Nev")
+                .is_some_and(|presence| presence == "Hianyzas")
+        })
     }
-    pub fn start(&self) -> DateTime<Utc> {
+    pub fn start(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.kezdet_idopont)
             .expect("coudln't parse kezdet_idopont")
             .into()
     }
-    pub fn end(&self) -> DateTime<Utc> {
+    pub fn end(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.veg_idopont)
             .expect("coudln't parse veg_idopont")
             .into()
@@ -77,7 +74,12 @@ impl Lesson {
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{} óra a(z) {} teremben", self.nev, self.terem_neve)?;
+        write!(f, "{} óra ", self.nev)?;
+        if let Some(room) = &self.terem_neve {
+            writeln!(f, "a(z) {} teremben", room)?;
+        } else {
+            writeln!(f)?;
+        }
 
         if let Some(tema) = &self.tema {
             writeln!(f, "Témája: {}", tema)?;
@@ -88,7 +90,10 @@ impl fmt::Display for Lesson {
         }
 
         writeln!(f, "{} -> {}", self.start().time(), self.end().time())?;
-        writeln!(f, "Tanár: {}", self.tanar_neve)?;
+
+        if let Some(teacher) = &self.tanar_neve {
+            writeln!(f, "Tanár: {}", teacher)?;
+        }
 
         if let Some(helyettes_tanar) = &self.helyettes_tanar_neve {
             writeln!(f, "Helyettesítő tanár: {:?}", helyettes_tanar)?;
