@@ -1,6 +1,6 @@
 use crate::{info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
 use sha2::Sha512;
@@ -278,14 +278,11 @@ impl User {
     }
 
     /// get timetable
-    pub async fn timetable(&self, from: DateTime<Utc>, to: DateTime<Utc>) -> AnyErr<Vec<Lesson>> {
+    pub async fn timetable(&self, from: NaiveDateTime, to: NaiveDateTime) -> AnyErr<Vec<Lesson>> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::TIMETABLE)
-            .query(&[
-                ("datumTol", from.to_rfc3339()),
-                ("datumIg", to.to_rfc3339()),
-            ])
+            .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
             .headers(self.headers().await?)
             .send()
             .await?;

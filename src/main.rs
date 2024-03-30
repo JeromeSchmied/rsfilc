@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Offset, Timelike, Utc};
+use chrono::{DateTime, Datelike, NaiveDate, NaiveDateTime, Offset, Timelike, Utc};
 use clap::Parser;
 use rsfilc::{
     api::*, api_urls::ApiUrls, args::Commands, messages::MessageKind, school_list::School,
@@ -21,10 +21,18 @@ async fn main() -> AnyErr<()> {
         Some(cm) => match cm {
             Commands::Tui {} => todo!("TUI is to be written (soon)"),
             Commands::TimeTable { time } => {
+                let day = if let Some(date) = time {
+                    NaiveDate::parse_from_str(&date, "%Y-%m-%d")
+                        .expect("couldn't parse date got from user")
+                    // DateTime::parse_from_str(&date, "%Y-%m-%d")
+                    //     .expect("couldn't parse date")
+                    //     .into()
+                } else {
+                    Utc::now().date_naive()
+                };
                 // let date = "2024-03-27";
-                let now = Utc::now();
-                let from = now.with_hour(0).expect("couldn't make from");
-                let to = now.with_hour(23).expect("couldn't make from");
+                let from = day.and_hms_opt(0, 0, 0).expect("couldn't make from");
+                let to = day.and_hms_opt(23, 59, 59).expect("couldn't make from");
                 // let from = DateTime::parse_from_rfc2822(&format!("{}T00:00Z", date)).expect("invalid date-time");
                 // let to = DateTime::parse_from_str(&format!("{}T18:00Z", date)).expect("invalid date-time");
                 // let from = DateTime::parse_str("2024-03-22T00:00").expect("invalid date-time");

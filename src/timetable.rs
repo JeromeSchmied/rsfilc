@@ -63,6 +63,16 @@ impl Lesson {
             .get("Nev")
             .is_some_and(|presence| presence == "Hianyzas")
     }
+    pub fn start(&self) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(&self.kezdet_idopont)
+            .expect("coudln't parse kezdet_idopont")
+            .into()
+    }
+    pub fn end(&self) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(&self.veg_idopont)
+            .expect("coudln't parse veg_idopont")
+            .into()
+    }
     // pub fn parse_time(time: &str) ->
 }
 impl fmt::Display for Lesson {
@@ -77,7 +87,7 @@ impl fmt::Display for Lesson {
             writeln!(f, "This lesson was cancelled")?;
         }
 
-        writeln!(f, "{} -> {}", self.kezdet_idopont, self.veg_idopont)?;
+        writeln!(f, "{} -> {}", self.start().time(), self.end().time())?;
         writeln!(f, "Tanár: {}", self.tanar_neve)?;
 
         if let Some(helyettes_tanar) = &self.helyettes_tanar_neve {
