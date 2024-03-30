@@ -5,7 +5,7 @@
 -   [x] Kréta API Url-ek lekérése (nem tudom mire jók)
 -   [x] iskolák lekérése [ReFilc API](https://api.refilc.hu/v1/public/school-list)-ból
 
--   [ ] felhasználó adatainak lekérése (json)
+-   [x] felhasználó adatainak lekérése (json)
 
     -   [x] token
     -   [x] általános információk

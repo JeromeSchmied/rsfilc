@@ -1,10 +1,16 @@
-use crate::{messages::MessageKind, token::Token, AnyErr};
+#![allow(unused)]
+
+use crate::{info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
 use base64::{engine::general_purpose::STANDARD, Engine};
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
 use sha2::Sha512;
-use speedate::DateTime;
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::{self, Write},
+};
 
 use crate::api;
 
@@ -29,18 +35,120 @@ const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 /// Kréta user
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
-    user_name: String,
+    username: String,
     /// the password, usually it defaults to the date of birth of the user: `YYYY-MM-DD`
     password: String,
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
     school_id: String,
 }
 impl User {
-    pub fn new(user_name: &str, password: &str, school_id: &str) -> Self {
-        Self {
-            user_name: user_name.to_string(),
+    /// create new instance of user and save it
+    pub fn new(username: &str, password: &str, school_id: &str) -> Self {
+        let user = Self {
+            username: username.to_string(),
             password: password.to_string(),
             school_id: school_id.to_string(),
+        };
+        user.save();
+        user
+    }
+
+    /// load user account from saved dir
+    /// ```toml
+    /// [[user]]
+    /// username = "70123456789"
+    /// password = "2000-01-01"
+    /// school_id = "klik012345678"
+    /// ```
+    pub fn load() -> Option<Self> {
+        let cred_path = dirs::config_dir()?.join("rsfilc").join("credentials.toml");
+
+        if cred_path.exists() {
+            let content = fs::read_to_string(cred_path).unwrap();
+            let mut user: User = User::new("username", "password", "school_id");
+            if let Some(username) = Self::get_val(&content, "username") {
+                user.username = username;
+            } else {
+                return None;
+            }
+            if let Some(password) = Self::get_val(&content, "password") {
+                user.password = password;
+            } else {
+                return None;
+            }
+            if let Some(school_id) = Self::get_val(&content, "school_id") {
+                user.school_id = school_id;
+            } else {
+                return None;
+            }
+            Some(user)
+        } else {
+            None
+        }
+    }
+    /// get value for key from content (eg. toml file)
+    fn get_val(content: &str, key: &str) -> Option<String> {
+        let k = &format!("{key} = ");
+        if !content.contains(k) {
+            return None;
+        }
+
+        let val = content
+            .lines()
+            .find(|line| line.contains(k))?
+            .split('=')
+            .last()?
+            .trim()
+            .trim_matches(|c| c == '"' || c == '\'')
+            .to_string();
+
+        Some(val)
+    }
+    pub fn create() -> Self {
+        println!("please login");
+        print!("username: ");
+        io::stdout().flush().unwrap();
+        let mut username = String::new();
+        io::stdin()
+            .read_line(&mut username)
+            .expect("couldn't read username");
+
+        print!("password: ");
+        io::stdout().flush().unwrap();
+        let mut password = String::new();
+        io::stdin()
+            .read_line(&mut password)
+            .expect("couldn't read password");
+
+        print!("school_id: ");
+        io::stdout().flush().unwrap();
+        let mut school_id = String::new();
+        io::stdin()
+            .read_line(&mut school_id)
+            .expect("couldn't read school_id");
+
+        Self::new(&username, &password, &school_id)
+    }
+    /// save credentials
+    fn save(&self) {
+        let cred_path = dirs::config_dir()
+            .expect("couldn't get config_dir")
+            .join("rsfilc")
+            .join("credentials.toml");
+        if !cred_path.exists() {
+            fs::create_dir_all(cred_path.parent().expect("couldn't get config dir"))
+                .expect("couldn't create config dir");
+            let mut cred_file = File::create(cred_path).expect("couldn't save user credentials");
+            writeln!(cred_file, "[[user]]").unwrap();
+            writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
+            writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
+            writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
+        }
+    }
+    /// greet user
+    pub async fn greet(&self) {
+        if let Ok(info) = self.info().await {
+            println!("Hello {}!", info.nev);
         }
     }
 
@@ -84,7 +192,7 @@ impl User {
             "{}{}{}",
             self.school_id.to_uppercase(),
             nonce,
-            self.user_name.to_uppercase()
+            self.username.to_uppercase()
         );
 
         // Create a new HMAC instance
@@ -112,7 +220,7 @@ impl User {
         headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
 
         let mut data = HashMap::new();
-        data.insert("userName", self.user_name.as_str());
+        data.insert("userName", self.username.as_str());
         data.insert("password", &self.password);
         data.insert("institute_code", &self.school_id);
         data.insert("grant_type", "password");
@@ -131,7 +239,7 @@ impl User {
     }
 
     /// get user info
-    pub async fn info(&self) -> AnyErr<String> {
+    pub async fn info(&self) -> AnyErr<Info> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::STUDENT)
@@ -139,9 +247,8 @@ impl User {
             .send()
             .await?;
 
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(res.text().await?)
+        let info = serde_json::from_str(&res.text().await?)?;
+        Ok(info)
     }
 
     /// get messages
@@ -173,7 +280,11 @@ impl User {
     }
 
     /// get timetable
-    pub async fn timetable(&self, from: DateTime, to: DateTime) -> AnyErr<String> {
+    pub async fn timetable(
+        &self,
+        from: DateTime<Local>,
+        to: DateTime<Local>,
+    ) -> AnyErr<Vec<Lesson>> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::TIMETABLE)
@@ -181,16 +292,19 @@ impl User {
             .headers(self.headers().await?)
             .send()
             .await?;
+        let text = res.text().await?;
 
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(res.text().await?)
+        let mut logf = File::create("timetable.log")?;
+        write!(logf, "{}", text)?;
+
+        let val = serde_json::from_str(&text)?;
+        Ok(val)
     }
 
     /// get announced test
-    pub async fn announced(&self, from: Option<DateTime>) -> AnyErr<String> {
+    pub async fn announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<String> {
         let query = if let Some(from) = from {
-            vec![("datumTol", from.to_string())]
+            vec![("datumTol", from.to_rfc3339())]
         } else {
             vec![]
         };
