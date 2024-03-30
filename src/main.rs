@@ -47,7 +47,17 @@ async fn main() -> AnyErr<()> {
                 delete,
                 create,
                 switch,
-            } => todo!(),
+            } => {
+                if delete {
+                    todo!("user deletion is not yet ready");
+                } else if create {
+                    User::create();
+                } else if switch {
+                    todo!("switching between accounts is not yet ready");
+                } else {
+                    println!("{}", user.info().await?);
+                }
+            }
             Commands::Schools { search } => {
                 let schools = School::get_from_refilc().await?;
                 eprintln!("\ngot schools...\n");
@@ -70,8 +80,8 @@ async fn main() -> AnyErr<()> {
     // eprintln!("\ngot api urls...\n");
     // println!("{:#?}", apiurls);
 
-    let access_token = user.token().await?;
-    eprintln!("\ngot access_token...\n");
+    // let access_token = user.token().await?;
+    // eprintln!("\ngot access_token...\n");
     // println!("{:?}", access_token);
 
     let info = user.info().await?;
