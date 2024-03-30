@@ -1,4 +1,13 @@
-# Kréta kliens [Rust](https://rust-lang.org)ban
+# [RsFilc](https://codeberg.org/jark/rsfilc): Kréta kliens [Rust](https://rust-lang.org)ban
+
+## Letöltés
+
+-   [Rust](https://rustup.rs)
+-   `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
+
+## Használat
+
+`rsfilc --help`
 
 ## API
 
