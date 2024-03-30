@@ -25,21 +25,12 @@ async fn main() -> AnyErr<()> {
         Some(cm) => match cm {
             Commands::Tui {} => todo!("TUI is to be written (soon)"),
             Commands::TimeTable { time } => {
-                // let babi = Local::now().date_naive();
-                // let babi = Local.with_ymd_and_hms(, , , , , );
                 let day = if let Some(date) = time {
                     NaiveDate::parse_from_str(&date, "%Y-%m-%d")
                         .expect("couldn't parse date got from user")
-                    // DateTime::parse_from_str(&date, "%Y-%m-%d")
-                    //     .expect("couldn't parse date")
-                    //     .into()
                 } else {
-                    // Utc::now().naive_local()
-                    // Local::now().naive_local()
-                    // Local::now().date_naive()
                     Local::now().date_naive()
                 };
-                // let date = "2024-03-27";
                 let from = day
                     .and_hms_opt(0, 0, 0)
                     .expect("couldn't make from")
@@ -50,20 +41,11 @@ async fn main() -> AnyErr<()> {
                     .expect("couldn't make from")
                     .and_local_timezone(Local)
                     .unwrap();
-                // let from = day.with_hour(0).expect("couldn't make from");
-                // let to = day.with_hour(23).expect("couldn't make from");
-                // let from = DateTime::parse_from_rfc2822(&format!("{}T00:00Z", date)).expect("invalid date-time");
-                // let to = DateTime::parse_from_str(&format!("{}T18:00Z", date)).expect("invalid date-time");
-                // let from = DateTime::parse_str("2024-03-22T00:00").expect("invalid date-time");
-                // let to = DateTime::parse_str("2024-03-22T23:59").expect("invalid date-time");
-                // let from = DateTime::now(0).expect("invalid date-time");
-                // let from = DateTime::now(0).expect("invalid date-time");
                 let mut timetable = user.timetable(from, to).await?;
                 eprintln!("\ngot timetable...\n");
                 timetable
                     .sort_by(|a, b| a.from().partial_cmp(&b.from()).expect("couldn't compare"));
                 timetable::Lesson::print_day(timetable);
-                // println!("{}", timetable);
             }
 
             Commands::Evaluations { subject, number } => {
