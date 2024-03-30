@@ -79,7 +79,11 @@ impl User {
         let password = Self::get_val(content, "password");
         let school_id = Self::get_val(content, "school_id");
         match (username, password, school_id) {
-            (Some(un), Some(pw), Some(si)) => Some(User::new(&un, &pw, &si)),
+            (Some(un), Some(pw), Some(si)) => Some(User {
+                username: un,
+                password: pw,
+                school_id: si,
+            }),
             _ => None,
         }
     }
