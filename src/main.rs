@@ -1,3 +1,4 @@
+use clap::Parser;
 use rsfilc::{
     api::*, api_urls::ApiUrls, messages::MessageKind, school_list::School, timetable, AnyErr,
 };
@@ -5,6 +6,8 @@ use speedate::DateTime;
 
 #[tokio::main]
 async fn main() -> AnyErr<()> {
+    let args = rsfilc::args::Args::parse();
+
     let user = if let Some(loaded_user) = User::load() {
         loaded_user
     } else {

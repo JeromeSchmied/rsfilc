@@ -103,6 +103,7 @@ impl User {
         Some(val)
     }
     pub fn create() -> Self {
+        println!("please login");
         print!("username: ");
         io::stdout().flush().unwrap();
         let mut username = String::new();
