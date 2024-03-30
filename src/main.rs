@@ -13,8 +13,10 @@ use rsfilc::{
 async fn main() -> AnyErr<()> {
     let cli_args = rsfilc::args::Args::parse();
 
-    let user = if let Some(loaded_user) = User::load() {
-        loaded_user
+    let users = User::load_all();
+
+    let user = if let Some(loaded_user) = users.get(0) {
+        loaded_user.clone()
     } else {
         User::create()
     };

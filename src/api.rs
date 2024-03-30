@@ -6,8 +6,9 @@ use reqwest::header::HeaderMap;
 use sha2::Sha512;
 use std::{
     collections::HashMap,
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::{self, Write},
+    path::PathBuf,
 };
 
 use crate::api;
@@ -31,6 +32,7 @@ const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
 const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
 /// Kréta user
+#[derive(Clone)]
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
     username: String,
@@ -40,6 +42,15 @@ pub struct User {
     school_id: String,
 }
 impl User {
+    /// get path for saved user credentials
+    fn cred_path() -> Option<PathBuf> {
+        Some(dirs::config_dir()?.join("rsfilc").join("credentials.toml"))
+    }
+    /// get path for config
+    fn config_path() -> Option<PathBuf> {
+        Some(dirs::config_dir()?.join("rsfilc").join("config.toml"))
+    }
+
     /// create new instance of user and save it
     pub fn new(username: &str, password: &str, school_id: &str) -> Self {
         let user = Self {
@@ -57,32 +68,30 @@ impl User {
     /// username = "70123456789"
     /// password = "2000-01-01"
     /// school_id = "klik012345678"
+    ///
+    /// [[user]]
+    /// username = "70000000000"
+    /// password = "2002-01-01"
+    /// school_id = "klik000000000"
     /// ```
-    pub fn load() -> Option<Self> {
-        let cred_path = dirs::config_dir()?.join("rsfilc").join("credentials.toml");
-
-        if cred_path.exists() {
-            let content = fs::read_to_string(cred_path).unwrap();
-            let mut user: User = User::new("username", "password", "school_id");
-            if let Some(username) = Self::get_val(&content, "username") {
-                user.username = username;
-            } else {
-                return None;
-            }
-            if let Some(password) = Self::get_val(&content, "password") {
-                user.password = password;
-            } else {
-                return None;
-            }
-            if let Some(school_id) = Self::get_val(&content, "school_id") {
-                user.school_id = school_id;
-            } else {
-                return None;
-            }
-            Some(user)
+    pub fn parse(content: &str) -> Option<Self> {
+        let mut user: User = User::new("username", "password", "school_id");
+        if let Some(username) = Self::get_val(content, "username") {
+            user.username = username;
         } else {
-            None
+            return None;
         }
+        if let Some(password) = Self::get_val(content, "password") {
+            user.password = password;
+        } else {
+            return None;
+        }
+        if let Some(school_id) = Self::get_val(content, "school_id") {
+            user.school_id = school_id;
+        } else {
+            return None;
+        }
+        Some(user)
     }
     /// get value for key from content (eg. toml file)
     fn get_val(content: &str, key: &str) -> Option<String> {
@@ -102,6 +111,7 @@ impl User {
 
         Some(val)
     }
+    /// create a new user, and save it
     pub fn create() -> Self {
         println!("please login");
         print!("username: ");
@@ -125,23 +135,43 @@ impl User {
             .read_line(&mut school_id)
             .expect("couldn't read school_id");
 
-        Self::new(&username, &password, &school_id)
+        Self::new(username.trim(), password.trim(), school_id.trim())
+    }
+    pub fn load_all() -> Vec<Self> {
+        let cred_path = Self::cred_path().expect("couldn't find config dir");
+
+        if !cred_path.exists() {
+            return vec![];
+        }
+
+        let content = fs::read_to_string(cred_path).unwrap();
+
+        let mut users = Vec::new();
+        for user_s in content.split("[[user]]") {
+            if let Some(parsed_user) = Self::parse(user_s) {
+                users.push(parsed_user)
+            }
+        }
+
+        users
     }
     /// save credentials
     fn save(&self) {
-        let cred_path = dirs::config_dir()
-            .expect("couldn't get config_dir")
-            .join("rsfilc")
-            .join("credentials.toml");
+        let cred_path = Self::cred_path().expect("couldn't find config dir");
         if !cred_path.exists() {
             fs::create_dir_all(cred_path.parent().expect("couldn't get config dir"))
                 .expect("couldn't create config dir");
-            let mut cred_file = File::create(cred_path).expect("couldn't save user credentials");
-            writeln!(cred_file, "[[user]]").unwrap();
-            writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
-            writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
-            writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
         }
+        let mut cred_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(cred_path)
+            .expect("couldn't save user credentials");
+
+        writeln!(cred_file, "[[user]]").unwrap();
+        writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
+        writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
+        writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
     }
     /// greet user
     pub async fn greet(&self) {
