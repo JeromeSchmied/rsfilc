@@ -4,11 +4,11 @@ use clap::{Parser, Subcommand};
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
-    command: Option<Commands>,
+    pub command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub enum Commands {
     /// starts Text User Interface
     Tui {},
     /// timetable
@@ -55,5 +55,11 @@ enum Commands {
         /// switch between existing accounts
         #[arg(short, long, default_value_t = false)]
         switch: bool,
+    },
+    /// information about schools
+    Schools {
+        /// search for school
+        #[arg(short, long)]
+        search: Option<String>,
     },
 }

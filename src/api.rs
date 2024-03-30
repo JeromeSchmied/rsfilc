@@ -1,9 +1,9 @@
 use crate::{info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
 use base64::{engine::general_purpose::STANDARD, Engine};
+use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
 use sha2::Sha512;
-use speedate::DateTime;
 use std::{
     collections::HashMap,
     fs::{self, File},
@@ -278,11 +278,14 @@ impl User {
     }
 
     /// get timetable
-    pub async fn timetable(&self, from: DateTime, to: DateTime) -> AnyErr<Vec<Lesson>> {
+    pub async fn timetable(&self, from: DateTime<Utc>, to: DateTime<Utc>) -> AnyErr<Vec<Lesson>> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::TIMETABLE)
-            .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
+            .query(&[
+                ("datumTol", from.to_rfc3339()),
+                ("datumIg", to.to_rfc3339()),
+            ])
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -296,9 +299,9 @@ impl User {
     }
 
     /// get announced test
-    pub async fn announced(&self, from: Option<DateTime>) -> AnyErr<String> {
+    pub async fn announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<String> {
         let query = if let Some(from) = from {
-            vec![("datumTol", from.to_string())]
+            vec![("datumTol", from.to_rfc3339())]
         } else {
             vec![]
         };

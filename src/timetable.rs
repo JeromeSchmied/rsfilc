@@ -1,6 +1,5 @@
-use crate::AnyErr;
+use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use speedate::DateTime;
 use std::{collections::HashMap, fmt, str::FromStr};
 
 #[derive(Debug, Deserialize)]
@@ -43,10 +42,10 @@ impl Lesson {
             println!("{}\n", lesson);
         }
     }
-    pub fn from(&self) -> DateTime {
+    pub fn from(&self) -> DateTime<Utc> {
         DateTime::from_str(&self.kezdet_idopont).expect("invalid date-time")
     }
-    pub fn to(&self) -> DateTime {
+    pub fn to(&self) -> DateTime<Utc> {
         DateTime::from_str(&self.veg_idopont).expect("invalid date-time")
     }
     pub fn cancelled(&self) -> bool {
@@ -64,6 +63,7 @@ impl Lesson {
             .get("Nev")
             .is_some_and(|presence| presence == "Hianyzas")
     }
+    // pub fn parse_time(time: &str) ->
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
