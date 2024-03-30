@@ -32,7 +32,7 @@ const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
 const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
 /// Kréta user
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
     username: String,
@@ -75,23 +75,13 @@ impl User {
     /// school_id = "klik000000000"
     /// ```
     pub fn parse(content: &str) -> Option<Self> {
-        let mut user: User = User::new("username", "password", "school_id");
-        if let Some(username) = Self::get_val(content, "username") {
-            user.username = username;
-        } else {
-            return None;
+        let username = Self::get_val(content, "username");
+        let password = Self::get_val(content, "password");
+        let school_id = Self::get_val(content, "school_id");
+        match (username, password, school_id) {
+            (Some(un), Some(pw), Some(si)) => Some(User::new(&un, &pw, &si)),
+            _ => None,
         }
-        if let Some(password) = Self::get_val(content, "password") {
-            user.password = password;
-        } else {
-            return None;
-        }
-        if let Some(school_id) = Self::get_val(content, "school_id") {
-            user.school_id = school_id;
-        } else {
-            return None;
-        }
-        Some(user)
     }
     /// get value for key from content (eg. toml file)
     fn get_val(content: &str, key: &str) -> Option<String> {
@@ -157,6 +147,9 @@ impl User {
     }
     /// save credentials
     fn save(&self) {
+        if Self::load_all().contains(self) {
+            return;
+        }
         let cred_path = Self::cred_path().expect("couldn't find config dir");
         if !cred_path.exists() {
             fs::create_dir_all(cred_path.parent().expect("couldn't get config dir"))
