@@ -41,9 +41,11 @@ impl Lesson {
                 first_lesson.start().date_naive(),
                 first_lesson.start().weekday()
             );
-        }
-        for lesson in lessons {
-            println!("{}\n", lesson);
+            for lesson in lessons {
+                println!("{}\n", lesson);
+            }
+        } else {
+            println!("Ezen a napon nincs órád, juhé!");
         }
     }
     pub fn from(&self) -> DateTime<Local> {

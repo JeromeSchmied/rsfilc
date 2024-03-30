@@ -55,6 +55,9 @@ pub enum Commands {
         /// switch between existing accounts
         #[arg(short, long, default_value_t = false)]
         switch: bool,
+        /// list all users
+        #[arg(short, long, default_value_t = false)]
+        list: bool,
     },
     /// information about schools
     Schools {

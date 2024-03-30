@@ -55,25 +55,30 @@ async fn main() -> AnyErr<()> {
                 eprintln!("\ngot evals...\n");
                 println!("{}", evals);
             }
+
             Commands::Messages { number } => {
                 let messages = user.messages(MessageKind::Beerkezett).await?;
                 eprintln!("\ngot messages...\n");
                 println!("{}", messages);
             }
+
             Commands::Absences { number } => {
                 let absences = user.absencies().await?;
                 eprintln!("\ngot absences...\n");
                 println!("{}", absences);
             }
+
             Commands::Exams { number } => {
                 let announced = user.announced(None).await?;
                 eprintln!("\ngot announced...\n");
                 println!("{}", announced);
             }
+
             Commands::User {
                 delete,
                 create,
                 switch,
+                list,
             } => {
                 if delete {
                     todo!("user deletion is not yet ready");
@@ -81,10 +86,16 @@ async fn main() -> AnyErr<()> {
                     User::create();
                 } else if switch {
                     todo!("switching between accounts is not yet ready");
+                } else if list {
+                    println!("\nFelhasználók:\n");
+                    for current_user in users {
+                        println!("{}\n", current_user.info().await?);
+                    }
                 } else {
                     println!("{}", user.info().await?);
                 }
             }
+
             Commands::Schools { search } => {
                 let schools = School::get_from_refilc().await?;
                 eprintln!("\ngot schools...\n");

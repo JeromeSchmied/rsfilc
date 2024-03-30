@@ -105,7 +105,7 @@ impl User {
 
         Some(val)
     }
-    /// create a new user, and save it
+    /// create a user from cli
     pub fn create() -> Self {
         println!("please login");
         print!("username: ");
