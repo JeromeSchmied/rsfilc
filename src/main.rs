@@ -26,8 +26,8 @@ async fn main() -> AnyErr<()> {
     match cli_args.command {
         Some(cm) => match cm {
             Commands::Tui {} => todo!("TUI is to be written (soon)"),
-            Commands::TimeTable { time } => {
-                let day = if let Some(date) = time {
+            Commands::Timetable { day } => {
+                let day = if let Some(date) = day {
                     NaiveDate::parse_from_str(&date, "%Y-%m-%d")
                         .expect("couldn't parse date got from user")
                 } else {

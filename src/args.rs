@@ -9,15 +9,17 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// starts Text User Interface
+    /// starts the Text User Interface
     Tui {},
-    /// timetable
-    TimeTable {
+
+    /// information about lessons
+    Timetable {
         /// which day to show
         #[arg(short, long)]
-        time: Option<String>,
+        day: Option<String>,
     },
-    /// evaluations/grades
+
+    /// evaluations/grades the user recieved
     Evaluations {
         /// the subject to show
         #[arg(short, long)]
@@ -26,25 +28,29 @@ pub enum Commands {
         #[arg(short, long)]
         number: Option<u16>,
     },
-    /// messages
+
+    /// messages the user either recieved or sent
     Messages {
         /// number of entries to show
         #[arg(short, long)]
         number: Option<u16>,
     },
-    /// absences
+
+    /// information about lessons the user missed
     Absences {
         /// number of entries to show
         #[arg(short, long)]
         number: Option<u16>,
     },
+
     /// information about forecoming exams/tests
     Exams {
         /// number of entries to show
         #[arg(short, long)]
         number: Option<u16>,
     },
-    /// user
+
+    /// managing users of this program
     User {
         /// delete an existing account
         #[arg(short, long, default_value_t = false)]
@@ -59,7 +65,8 @@ pub enum Commands {
         #[arg(short, long, default_value_t = false)]
         list: bool,
     },
-    /// information about schools
+
+    /// information about all schools in the `Kréta` database
     Schools {
         /// search for school
         #[arg(short, long)]

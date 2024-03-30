@@ -173,7 +173,7 @@ impl User {
     /// greet user
     pub async fn greet(&self) {
         if let Ok(info) = self.info().await {
-            println!("Hello {}!", info.nev);
+            println!("Hello {}!\n\n", info.nev);
         }
     }
 
