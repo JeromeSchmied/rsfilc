@@ -39,10 +39,26 @@ async fn main() -> AnyErr<()> {
                 // println!("{}", timetable);
             }
 
-            Commands::Evaluations { subject, number } => todo!(),
-            Commands::Messages { number } => todo!(),
-            Commands::Absences { number } => todo!(),
-            Commands::Exams { number } => todo!(),
+            Commands::Evaluations { subject, number } => {
+                let evals = user.evals().await?;
+                eprintln!("\ngot evals...\n");
+                println!("{}", evals);
+            }
+            Commands::Messages { number } => {
+                let messages = user.messages(MessageKind::Beerkezett).await?;
+                eprintln!("\ngot messages...\n");
+                println!("{}", messages);
+            }
+            Commands::Absences { number } => {
+                let absences = user.absencies().await?;
+                eprintln!("\ngot absences...\n");
+                println!("{}", absences);
+            }
+            Commands::Exams { number } => {
+                let announced = user.announced(None).await?;
+                eprintln!("\ngot announced...\n");
+                println!("{}", announced);
+            }
             Commands::User {
                 delete,
                 create,
@@ -83,26 +99,6 @@ async fn main() -> AnyErr<()> {
     // let access_token = user.token().await?;
     // eprintln!("\ngot access_token...\n");
     // println!("{:?}", access_token);
-
-    let info = user.info().await?;
-    eprintln!("\ngot user info...\n");
-    // println!("{}", info);
-
-    let messages = user.messages(MessageKind::Beerkezett).await?;
-    eprintln!("\ngot messages...\n");
-    // println!("{}", messages);
-
-    let evals = user.evals().await?;
-    eprintln!("\ngot evals...\n");
-    // println!("{}", evals);
-
-    let announced = user.announced(None).await?;
-    eprintln!("\ngot announced...\n");
-    // println!("{}", announced);
-
-    let absences = user.absencies().await?;
-    eprintln!("\ngot absences...\n");
-    // println!("{}", absences);
 
     Ok(())
 }
