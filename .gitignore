@@ -1,11 +1,11 @@
 # Cargo build files
 /target
 
-# every school, downloaded
-kreta_schools.json
-
-# credentials
+# credentials: private data
 *creds.txt
 
-# 
+# temporarily downloaded files from my account, contains private data
 *.json
+
+# log files
+*.log
