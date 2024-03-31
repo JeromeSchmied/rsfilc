@@ -15,7 +15,9 @@ async fn main() -> AnyErr<()> {
 
     let users = User::load_all();
 
-    let user = if let Some(loaded_user) = users.get(0) {
+    let user = if let Some(default_user) = User::load_conf().await {
+        default_user
+    } else if let Some(loaded_user) = users.first() {
         loaded_user.clone()
     } else {
         User::create()
@@ -43,6 +45,10 @@ async fn main() -> AnyErr<()> {
                 .and_local_timezone(Local)
                 .unwrap();
             let mut lessons = user.timetable(from, to).await?;
+            if lessons.is_empty() {
+                println!("Ezen a napon {}({}) nincs órád, juhé!", day, day.weekday());
+                return Ok(());
+            }
 
             // eprintln!("\ngot timetable...\n");
             lessons.sort_by(|a, b| a.from().partial_cmp(&b.from()).expect("couldn't compare"));
@@ -79,12 +85,17 @@ async fn main() -> AnyErr<()> {
             switch,
             list,
         } => {
+            if let Some(switch_to) = switch {
+                let usr = User::load_user(&switch_to).await.unwrap();
+                println!("switched to {}", switch_to);
+                usr.greet().await;
+
+                return Ok(());
+            }
             if delete {
                 todo!("user deletion is not yet ready");
             } else if create {
                 User::create();
-            } else if switch {
-                todo!("switching between accounts is not yet ready");
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in users {

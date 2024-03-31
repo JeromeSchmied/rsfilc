@@ -35,11 +35,6 @@ pub struct Lesson {
 }
 impl Lesson {
     pub fn print_day(lessons: &[Lesson]) {
-        if lessons.is_empty() {
-            println!("Ezen a napon nincs órád, juhé!");
-        } else {
-            eprintln!("lessons:\n{:?}", lessons);
-        }
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "{}({})\n",
