@@ -104,6 +104,25 @@ impl Eval {
                     .is_some_and(|kd| kd.to_lowercase().contains(&subj.to_lowercase()))
         });
     }
+
+    /// Calculate average of `evals`
+    pub fn average(evals: &[Eval]) -> f32 {
+        let evals = evals.iter().filter(|eval| {
+            !eval
+                .type_name()
+                .is_some_and(|t| t.contains("felevi") || t.contains("evvegi"))
+        });
+
+        let sum: u16 = evals
+            .clone()
+            .fold(0, |sum, cur| sum + cur.szam_ertek.unwrap_or(0) as u16);
+
+        sum as f32 / evals.count() as f32
+    }
+
+    fn type_name(&self) -> Option<String> {
+        Some(self.tipus.as_ref()?.get("Nev")?.to_owned())
+    }
 }
 impl fmt::Display for Eval {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

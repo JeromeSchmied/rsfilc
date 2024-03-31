@@ -1,13 +1,10 @@
-#![allow(unused)]
-
-use chrono::{
-    DateTime, Datelike, Local, NaiveDate, NaiveDateTime, Offset, TimeZone, Timelike, Utc,
-};
+use chrono::{Datelike, Local, NaiveDate};
 use clap::Parser;
 use rsfilc::{
     api::*, args::Commands, evals::Eval, messages::MessageKind, school_list::School, timetable,
     AnyErr,
 };
+use std::{fs::File, io::Write};
 
 #[tokio::main]
 async fn main() -> AnyErr<()> {
@@ -71,6 +68,14 @@ async fn main() -> AnyErr<()> {
             }
             if let Some(subject) = subject {
                 Eval::filter_evals_by_subject(&mut evals, &subject);
+            }
+            let mut logf = File::create("evals_filtered.log")?;
+            write!(logf, "{:?}", evals)?;
+
+            if average {
+                println!("Average: {}", Eval::average(&evals));
+
+                return Ok(());
             }
 
             for eval in evals.iter().take(number.into()) {
