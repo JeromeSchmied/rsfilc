@@ -57,7 +57,11 @@ async fn main() -> AnyErr<()> {
             timetable::Lesson::print_day(&lessons);
         }
 
-        Commands::Evals { subject, number } => {
+        Commands::Evals {
+            subject,
+            number,
+            average,
+        } => {
             let evals = user.evals().await?;
             eprintln!("\ngot evals...\n");
             println!("{evals}");

@@ -315,7 +315,11 @@ impl User {
             .send()
             .await?;
 
-        let token = serde_json::from_str(&res.text().await?)?;
+        let text = res.text().await?;
+        let mut logf = File::create("token.log")?;
+        write!(logf, "{text}")?;
+
+        let token = serde_json::from_str(&text)?;
         Ok(token)
     }
 
@@ -328,7 +332,11 @@ impl User {
             .send()
             .await?;
 
-        let info = serde_json::from_str(&res.text().await?)?;
+        let text = res.text().await?;
+        let mut logf = File::create("info.log")?;
+        write!(logf, "{text}")?;
+
+        let info = serde_json::from_str(&text)?;
         Ok(info)
     }
 
@@ -341,9 +349,12 @@ impl User {
             .send()
             .await?;
 
+        let text = res.text().await?;
+        let mut logf = File::create("messages.log")?;
+        write!(logf, "{text}")?;
         // let val = serde_json::from_str(&res.text().await?)?;
         // Ok(val)
-        Ok(res.text().await?)
+        Ok(text)
     }
 
     /// get evaluations
@@ -355,9 +366,12 @@ impl User {
             .send()
             .await?;
 
+        let text = res.text().await?;
+        let mut logf = File::create("evals.log")?;
+        write!(logf, "{text}")?;
         // let val = serde_json::from_str(&res.text().await?)?;
         // Ok(val)
-        Ok(res.text().await?)
+        Ok(text)
     }
 
     /// get timetable
@@ -397,9 +411,13 @@ impl User {
             .send()
             .await?;
 
+        let text = res.text().await?;
+        let mut logf = File::create("announced.log")?;
+        write!(logf, "{text}")?;
+
         // let val = serde_json::from_str(&res.text().await?)?;
         // Ok(val)
-        Ok(res.text().await?)
+        Ok(text)
     }
 
     /// get information about being absent
@@ -411,8 +429,11 @@ impl User {
             .send()
             .await?;
 
+        let text = res.text().await?;
+        let mut logf = File::create("absences.log")?;
+        write!(logf, "{text}")?;
         // let val = serde_json::from_str(&res.text().await?)?;
         // Ok(val)
-        Ok(res.text().await?)
+        Ok(text)
     }
 }

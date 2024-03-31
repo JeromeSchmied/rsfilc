@@ -23,12 +23,15 @@ pub enum Commands {
 
     /// evaluations/grades the user recieved
     Evals {
-        /// the subject to show
+        /// filter the subject to show
         #[arg(short, long)]
         subject: Option<String>,
         /// number of entries to show
         #[arg(short, long)]
         number: Option<u16>,
+        /// average
+        #[arg(short, long, default_value_t = false)]
+        average: bool,
     },
 
     /// messages the user either recieved or sent
