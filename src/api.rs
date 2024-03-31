@@ -176,6 +176,50 @@ impl User {
             println!("Hello {}!\n\n", info.nev);
         }
     }
+    /// load user with `username`
+    pub async fn load_user(username: &str) -> Option<Self> {
+        let mut matching_users = Vec::new();
+        for user in Self::load_all() {
+            if user
+                .info()
+                .await
+                .unwrap()
+                .nev
+                .to_lowercase()
+                .contains(&username.to_lowercase())
+            {
+                matching_users.push(user);
+            }
+        }
+        let user = matching_users.first()?;
+
+        user.save_to_conf().await;
+
+        Some(user.clone())
+    }
+    /// save to config.toml
+    async fn save_to_conf(&self) {
+        let conf_path = Self::config_path().expect("coudln't find config path");
+        if !conf_path.exists() {
+            fs::create_dir_all(conf_path.parent().expect("couldn't get config dir"))
+                .expect("couldn't create config dir");
+        }
+        let mut conf_file = File::create(conf_path).expect("couldn't create config file");
+
+        writeln!(conf_file, "[user]").unwrap();
+        writeln!(conf_file, "name = \"{}\"", self.info().await.unwrap().nev).unwrap();
+    }
+    /// load user configured in config.toml
+    pub async fn load_conf() -> Option<Self> {
+        let conf_path = Self::config_path().expect("coudln't find config path");
+        if !conf_path.exists() {
+            return None;
+        }
+        let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
+        let username = Self::get_val(&config_content, "name")?;
+
+        Self::load_user(&username).await
+    }
 
     /// get headers which are necessary for making certain requests
     pub async fn headers(&self) -> AnyErr<HeaderMap> {

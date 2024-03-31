@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 #[command(version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
-    pub command: Option<Commands>,
+    pub command: Commands,
 }
 
 #[derive(Subcommand)]
@@ -59,8 +59,8 @@ pub enum Commands {
         #[arg(short, long, default_value_t = false)]
         create: bool,
         /// switch between existing accounts
-        #[arg(short, long, default_value_t = false)]
-        switch: bool,
+        #[arg(short, long)]
+        switch: Option<String>,
         /// list all users
         #[arg(short, long, default_value_t = false)]
         list: bool,
