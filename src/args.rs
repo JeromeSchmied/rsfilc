@@ -26,6 +26,9 @@ pub enum Commands {
         /// filter the subject to show
         #[arg(short, long)]
         subject: Option<String>,
+        /// filter the kind to show
+        #[arg(short, long)]
+        kind: Option<String>,
         /// number of entries to show
         #[arg(short, long, default_value_t = u16::MAX)]
         number: u16,

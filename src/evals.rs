@@ -85,6 +85,25 @@ impl Eval {
             .expect("coudln't parse veg_idopont")
             .into()
     }
+
+    /// Filter `evals` by `kind`
+    pub fn filter_evals_by_kind(evals: &mut Vec<Eval>, kind: &str) {
+        evals.retain(|eval| {
+            eval.kind()
+                .is_some_and(|kd| kd.to_lowercase().contains(&kind.to_lowercase()))
+        });
+    }
+
+    /// Filter `evals` by `subject`
+    pub fn filter_evals_by_subject(evals: &mut Vec<Eval>, subj: &str) {
+        evals.retain(|eval| {
+            eval.subject()
+                .is_some_and(|kd| kd.to_lowercase().contains(&subj.to_lowercase()))
+                || eval
+                    .subject_name()
+                    .is_some_and(|kd| kd.to_lowercase().contains(&subj.to_lowercase()))
+        });
+    }
 }
 impl fmt::Display for Eval {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

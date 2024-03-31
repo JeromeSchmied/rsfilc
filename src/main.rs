@@ -5,7 +5,8 @@ use chrono::{
 };
 use clap::Parser;
 use rsfilc::{
-    api::*, args::Commands, messages::MessageKind, school_list::School, timetable, AnyErr,
+    api::*, args::Commands, evals::Eval, messages::MessageKind, school_list::School, timetable,
+    AnyErr,
 };
 
 #[tokio::main]
@@ -59,11 +60,19 @@ async fn main() -> AnyErr<()> {
 
         Commands::Evals {
             subject,
+            kind,
             number,
             average,
         } => {
-            let evals = user.evals().await?;
-            eprintln!("\ngot evals...\n");
+            let mut evals = user.evals().await?;
+            // eprintln!("\ngot evals...\n");
+            if let Some(kind) = kind {
+                Eval::filter_evals_by_kind(&mut evals, &kind);
+            }
+            if let Some(subject) = subject {
+                Eval::filter_evals_by_subject(&mut evals, &subject);
+            }
+
             for eval in evals.iter().take(number.into()) {
                 println!("{}", eval);
             }
