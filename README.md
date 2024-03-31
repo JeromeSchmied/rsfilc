@@ -39,6 +39,7 @@
 -   [ ] API alapvető használata
 -   [ ] kért adatok alapvető megjelenítése
 -   [x] több fiókos rendszer
+-   [ ] kb minden cache-elése a valódi élmény érdekében
 -   [ ] ...
 
 ## TUI
