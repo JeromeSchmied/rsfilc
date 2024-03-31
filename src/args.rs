@@ -27,8 +27,8 @@ pub enum Commands {
         #[arg(short, long)]
         subject: Option<String>,
         /// number of entries to show
-        #[arg(short, long)]
-        number: Option<u16>,
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
         /// average
         #[arg(short, long, default_value_t = false)]
         average: bool,

@@ -64,7 +64,7 @@ async fn main() -> AnyErr<()> {
         } => {
             let evals = user.evals().await?;
             eprintln!("\ngot evals...\n");
-            for eval in evals {
+            for eval in evals.iter().take(number.into()) {
                 println!("{}", eval);
             }
         }
