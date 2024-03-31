@@ -64,7 +64,9 @@ async fn main() -> AnyErr<()> {
         } => {
             let evals = user.evals().await?;
             eprintln!("\ngot evals...\n");
-            println!("{evals}");
+            for eval in evals {
+                println!("{}", eval);
+            }
         }
 
         Commands::Messages { number } => {

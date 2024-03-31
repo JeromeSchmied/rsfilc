@@ -1,6 +1,8 @@
 //! `Kréta` API
 
-use crate::{info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
+use crate::{
+    evals::Eval, info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr,
+};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Local, Utc};
 use hmac::{Hmac, Mac};
@@ -358,7 +360,7 @@ impl User {
     }
 
     /// get evaluations
-    pub async fn evals(&self) -> AnyErr<String> {
+    pub async fn evals(&self) -> AnyErr<Vec<Eval>> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::EVALUATIONS)
@@ -369,9 +371,9 @@ impl User {
         let text = res.text().await?;
         let mut logf = File::create("evals.log")?;
         write!(logf, "{text}")?;
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(text)
+
+        let evals = serde_json::from_str(&text)?;
+        Ok(evals)
     }
 
     /// get timetable
