@@ -1,6 +1,7 @@
 use chrono::{DateTime, Datelike, Local};
 use serde::Deserialize;
-use std::{collections::HashMap, fmt, str::FromStr};
+use serde_json::Value;
+use std::{collections::HashMap, fmt};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -23,6 +24,9 @@ pub struct Lesson {
     /// alternative teacher's name if any
     helyettes_tanar_neve: Option<String>,
 
+    /// information about the type of the lesson: eg.: maths, history
+    tantargy: Option<HashMap<String, Value>>,
+
     /// whether it has been cancelled or what
     allapot: Option<HashMap<String, String>>,
 
@@ -34,6 +38,7 @@ pub struct Lesson {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Lesson {
+    /// print all lessons of a day
     pub fn print_day(lessons: &[Lesson]) {
         if let Some(first_lesson) = lessons.first() {
             println!(
@@ -46,17 +51,13 @@ impl Lesson {
             }
         }
     }
-    pub fn from(&self) -> DateTime<Local> {
-        DateTime::from_str(&self.kezdet_idopont).expect("invalid date-time")
-    }
-    pub fn to(&self) -> DateTime<Local> {
-        DateTime::from_str(&self.veg_idopont).expect("invalid date-time")
-    }
+    /// Returns whether this [`Lesson`] has been cancelled.
     pub fn cancelled(&self) -> bool {
         self.allapot
             .as_ref()
             .is_some_and(|state| state.get("Nev").is_some_and(|state| state == "Elmaradt"))
     }
+    /// Returns whether the student has appeared on this [`Lesson`].
     pub fn absent(&self) -> bool {
         self.tanulo_jelenlet.as_ref().is_some_and(|absence| {
             absence
@@ -64,15 +65,37 @@ impl Lesson {
                 .is_some_and(|presence| presence == "Hianyzas")
         })
     }
+    /// Returns the start of this [`Lesson`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `kezdet_idopont` is invalid as date.
     pub fn start(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.kezdet_idopont)
             .expect("coudln't parse kezdet_idopont")
             .into()
     }
+    /// Returns the end of this [`Lesson`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `veg_idopont` is invalid as date.
     pub fn end(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.veg_idopont)
             .expect("coudln't parse veg_idopont")
             .into()
+    }
+    /// Returns the subject of this [`Lesson`].
+    pub fn subject(&self) -> Option<String> {
+        Some(
+            self.tantargy
+                .as_ref()?
+                .get("Kategoria")?
+                .get("Nev")?
+                .to_string()
+                .trim_matches('"')
+                .to_string(),
+        )
     }
     // pub fn parse_time(time: &str) ->
 }
@@ -89,10 +112,8 @@ impl fmt::Display for Lesson {
             writeln!(f, "Témája: {}", tema)?;
         }
 
-        if let Some(absence_info) = &self.tanulo_jelenlet {
-            if absence_info.get("Nev").is_some_and(|b| b == "Hianyzas") {
-                writeln!(f, "Ezen az órán nem voltál jelen.")?;
-            }
+        if self.absent() {
+            writeln!(f, "Ezen az órán nem voltál jelen.")?;
         }
 
         if self.cancelled() {
@@ -182,6 +203,18 @@ mod tests {
 
         let lesson = serde_json::from_str::<Lesson>(lesson_json);
 
-        assert!(lesson.is_ok());
+        assert!(lesson.is_ok(), "{:?}", lesson);
+        let lesson = lesson.unwrap();
+
+        assert_eq!(lesson.nev, "fizika");
+        assert_eq!(lesson.terem_neve, Some("Fizika".to_string()));
+        assert_eq!(lesson.tema, Some("Félvezetők".to_string()));
+        assert_eq!(lesson.kezdet_idopont, "2024-03-18T08:50:00Z");
+        assert_eq!(lesson.veg_idopont, "2024-03-18T09:35:00Z");
+        assert_eq!(lesson.tanar_neve, Some("Teszt Katalin".to_string()));
+        assert_eq!(lesson.helyettes_tanar_neve, None);
+        assert!(!lesson.cancelled());
+        assert!(!lesson.absent());
+        assert_eq!(lesson.subject(), Some("fizika".to_string()));
     }
 }

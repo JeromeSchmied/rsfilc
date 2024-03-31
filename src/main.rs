@@ -51,7 +51,7 @@ async fn main() -> AnyErr<()> {
             }
 
             // eprintln!("\ngot timetable...\n");
-            lessons.sort_by(|a, b| a.from().partial_cmp(&b.from()).expect("couldn't compare"));
+            lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
             timetable::Lesson::print_day(&lessons);
         }
 
