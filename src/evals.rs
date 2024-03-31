@@ -113,17 +113,31 @@ impl Eval {
                 .is_some_and(|t| t.contains("felevi") || t.contains("evvegi"))
         });
 
-        let sum: u16 = evals
-            .clone()
-            .fold(0, |sum, cur| sum + cur.szam_ertek.unwrap_or(0) as u16);
+        let sum: u16 = evals.clone().fold(0, |sum, cur| {
+            eprintln!(
+                "sum: {sum}; szam: {}; szorzo: {}",
+                cur.szam_ertek.unwrap_or(0) as u16,
+                cur.multi_from_percent()
+            );
+            sum + cur.szam_ertek.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
+        });
 
-        sum as f32 / evals.count() as f32
+        let count = evals
+            .clone()
+            .fold(0, |sum, cur| sum + cur.multi_from_percent() as u16);
+
+        sum as f32 / count as f32
+    }
+    fn multi_from_percent(&self) -> u8 {
+        (self.suly_szazalek_erteke.unwrap_or(100) / 100) as u8
     }
 
+    /// Returns the type name of this [`Eval`].
     fn type_name(&self) -> Option<String> {
         Some(self.tipus.as_ref()?.get("Nev")?.to_owned())
     }
 }
+
 impl fmt::Display for Eval {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(subject) = self.subject_name() {
