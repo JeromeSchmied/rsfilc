@@ -20,7 +20,7 @@ pub enum Commands {
     },
 
     /// evaluations/grades the user recieved
-    Evaluations {
+    Evals {
         /// the subject to show
         #[arg(short, long)]
         subject: Option<String>,

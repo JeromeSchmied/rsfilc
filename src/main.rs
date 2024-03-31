@@ -46,7 +46,7 @@ async fn main() -> AnyErr<()> {
                 .unwrap();
             let mut lessons = user.timetable(from, to).await?;
             if lessons.is_empty() {
-                println!("Ezen a napon {}({}) nincs órád, juhé!", day, day.weekday());
+                println!("Ezen a napon {} ({}) nincs órád, juhé!", day, day.weekday());
                 return Ok(());
             }
 
@@ -55,7 +55,7 @@ async fn main() -> AnyErr<()> {
             timetable::Lesson::print_day(&lessons);
         }
 
-        Commands::Evaluations { subject, number } => {
+        Commands::Evals { subject, number } => {
             let evals = user.evals().await?;
             eprintln!("\ngot evals...\n");
             println!("{}", evals);

@@ -5,14 +5,14 @@ use std::{collections::HashMap, fmt, str::FromStr};
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Lesson {
-    // ora neve
+    // name of the lesson
     nev: String,
-    // terem
+    // room in which it will be held
     terem_neve: Option<String>,
 
-    // datetime
+    // start datetime
     kezdet_idopont: String,
-    // datetime
+    // end datetime
     veg_idopont: String,
 
     /// topic of the lesson
@@ -37,7 +37,7 @@ impl Lesson {
     pub fn print_day(lessons: &[Lesson]) {
         if let Some(first_lesson) = lessons.first() {
             println!(
-                "{}({})\n",
+                "{} ({})\n",
                 first_lesson.start().date_naive(),
                 first_lesson.start().weekday()
             );
@@ -89,18 +89,29 @@ impl fmt::Display for Lesson {
             writeln!(f, "Témája: {}", tema)?;
         }
 
-        if self.cancelled() {
-            writeln!(f, "This lesson was cancelled")?;
+        if let Some(absence_info) = &self.tanulo_jelenlet {
+            if absence_info.get("Nev").is_some_and(|b| b == "Hianyzas") {
+                writeln!(f, "Ezen az órán nem voltál jelen.")?;
+            }
         }
 
-        writeln!(f, "{} -> {}", self.start().time(), self.end().time())?;
+        if self.cancelled() {
+            writeln!(f, "Ez az óra elmaradt.")?;
+        }
+
+        writeln!(
+            f,
+            "{} -> {}",
+            self.start().time().format("%H:%M"),
+            self.end().time().format("%H:%M")
+        )?;
 
         if let Some(teacher) = &self.tanar_neve {
             writeln!(f, "Tanár: {}", teacher)?;
         }
 
         if let Some(helyettes_tanar) = &self.helyettes_tanar_neve {
-            writeln!(f, "Helyettesítő tanár: {:?}", helyettes_tanar)?;
+            writeln!(f, "Helyettesítő tanár: {}", helyettes_tanar)?;
         }
 
         Ok(())
