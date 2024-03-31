@@ -50,6 +50,10 @@ impl User {
     fn config_path() -> Option<PathBuf> {
         Some(dirs::config_dir()?.join("rsfilc").join("config.toml"))
     }
+    /// get name of user
+    async fn name(&self) -> String {
+        self.info().await.expect("coudln't get user info").nev
+    }
 
     /// create new instance of user and save it
     pub fn new(username: &str, password: &str, school_id: &str) -> Self {
@@ -138,7 +142,7 @@ impl User {
             return vec![];
         }
 
-        let content = fs::read_to_string(cred_path).unwrap();
+        let content = fs::read_to_string(cred_path).expect("coudln't read credentials from file");
 
         let mut users = Vec::new();
         for user_s in content.split("[[user]]") {
@@ -181,10 +185,8 @@ impl User {
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
-                .info()
+                .name()
                 .await
-                .unwrap()
-                .nev
                 .to_lowercase()
                 .contains(&username.to_lowercase())
             {
@@ -207,7 +209,7 @@ impl User {
         let mut conf_file = File::create(conf_path).expect("couldn't create config file");
 
         writeln!(conf_file, "[user]").unwrap();
-        writeln!(conf_file, "name = \"{}\"", self.info().await.unwrap().nev).unwrap();
+        writeln!(conf_file, "name = \"{}\"", self.name().await).unwrap();
     }
     /// load user configured in config.toml
     pub async fn load_conf() -> Option<Self> {
