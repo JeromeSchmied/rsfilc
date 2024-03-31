@@ -2,6 +2,11 @@
 name = "rsfilc"
 version = "0.1.0"
 edition = "2021"
+authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
+description = "A `Kréta` API and client(cli and TUI: todo!) written entirely in Rust from the ground up."
+categories = ["command-line-interface"]
+repository = "https://codeberg.org/jark/kreta-rs"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
