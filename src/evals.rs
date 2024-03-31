@@ -142,6 +142,10 @@ impl Eval {
 
 impl fmt::Display for Eval {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(desc) = &self.tema {
+            write!(f, "{desc}: ")?;
+        }
+        writeln!(f, "{}", self.szoveges_ertek)?;
         if let Some(subject) = self.subject_name() {
             writeln!(f, "Tantárgy: {subject}")?;
         }
@@ -149,11 +153,6 @@ impl fmt::Display for Eval {
             writeln!(f, "Értékelő tanár: {teacher}")?;
         }
 
-        writeln!(f, "Értékelés: {}", self.szoveges_ertek)?;
-
-        if let Some(desc) = &self.tema {
-            writeln!(f, "Leírás: {desc}")?;
-        }
         if let Some(kind) = &self.kind() {
             writeln!(f, "Típus: {kind}")?;
         }

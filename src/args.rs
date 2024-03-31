@@ -14,7 +14,7 @@ pub enum Commands {
     /// starts the Text User Interface
     Tui {},
 
-    /// information about lessons
+    /// information about lessons, today by default
     Timetable {
         /// which day to show
         #[arg(short, long)]

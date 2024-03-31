@@ -62,6 +62,11 @@ async fn main() -> AnyErr<()> {
             average,
         } => {
             let mut evals = user.evals().await?;
+            evals.sort_by(|a, b| {
+                b.earned()
+                    .partial_cmp(&a.earned())
+                    .expect("couldn't compare")
+            });
             // eprintln!("\ngot evals...\n");
             if let Some(kind) = kind {
                 Eval::filter_evals_by_kind(&mut evals, &kind);
