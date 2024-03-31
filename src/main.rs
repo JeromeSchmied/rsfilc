@@ -5,8 +5,7 @@ use chrono::{
 };
 use clap::Parser;
 use rsfilc::{
-    api::*, api_urls::ApiUrls, args::Commands, messages::MessageKind, school_list::School,
-    timetable, AnyErr,
+    api::*, args::Commands, messages::MessageKind, school_list::School, timetable, AnyErr,
 };
 
 #[tokio::main]
@@ -46,7 +45,10 @@ async fn main() -> AnyErr<()> {
                 .unwrap();
             let mut lessons = user.timetable(from, to).await?;
             if lessons.is_empty() {
-                println!("Ezen a napon {} ({}) nincs órád, juhé!", day, day.weekday());
+                println!(
+                    "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
+                    day.weekday()
+                );
                 return Ok(());
             }
 
@@ -58,25 +60,25 @@ async fn main() -> AnyErr<()> {
         Commands::Evals { subject, number } => {
             let evals = user.evals().await?;
             eprintln!("\ngot evals...\n");
-            println!("{}", evals);
+            println!("{evals}");
         }
 
         Commands::Messages { number } => {
             let messages = user.messages(MessageKind::Beerkezett).await?;
             eprintln!("\ngot messages...\n");
-            println!("{}", messages);
+            println!("{messages}");
         }
 
         Commands::Absences { number } => {
-            let absences = user.absencies().await?;
+            let absences = user.absences().await?;
             eprintln!("\ngot absences...\n");
-            println!("{}", absences);
+            println!("{absences}");
         }
 
         Commands::Exams { number } => {
             let announced = user.announced(None).await?;
             eprintln!("\ngot announced...\n");
-            println!("{}", announced);
+            println!("{announced}");
         }
 
         Commands::User {
@@ -86,9 +88,9 @@ async fn main() -> AnyErr<()> {
             list,
         } => {
             if let Some(switch_to) = switch {
-                let usr = User::load_user(&switch_to).await.unwrap();
-                println!("switched to {}", switch_to);
-                usr.greet().await;
+                let switched_to = User::load_user(&switch_to).await.unwrap();
+                println!("switched to {switch_to}");
+                switched_to.greet().await;
 
                 return Ok(());
             }
@@ -112,11 +114,11 @@ async fn main() -> AnyErr<()> {
             if let Some(school_name) = search {
                 let found = School::search(&school_name, &schools);
                 for school in found {
-                    println!("{}\n", school);
+                    println!("{school}\n");
                 }
             } else {
                 for school in schools {
-                    println!("{}\n", school);
+                    println!("{school}\n");
                 }
             }
         }

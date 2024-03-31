@@ -1,3 +1,5 @@
+//! lessons the student has
+
 use chrono::{DateTime, Datelike, Local};
 use serde::Deserialize;
 use serde_json::Value;
@@ -24,7 +26,7 @@ pub struct Lesson {
     /// alternative teacher's name if any
     helyettes_tanar_neve: Option<String>,
 
-    /// information about the type of the lesson: eg.: maths, history
+    /// subject: information about the type of the lesson: eg.: maths, history
     tantargy: Option<HashMap<String, Value>>,
 
     /// whether it has been cancelled or what
@@ -47,7 +49,7 @@ impl Lesson {
                 first_lesson.start().weekday()
             );
             for lesson in lessons {
-                println!("{}\n", lesson);
+                println!("{lesson}\n");
             }
         }
     }
@@ -103,13 +105,13 @@ impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} óra ", self.nev)?;
         if let Some(room) = &self.terem_neve {
-            writeln!(f, "a(z) {} teremben", room)?;
+            writeln!(f, "a(z) {room} teremben")?;
         } else {
             writeln!(f)?;
         }
 
         if let Some(tema) = &self.tema {
-            writeln!(f, "Témája: {}", tema)?;
+            writeln!(f, "Témája: {tema}")?;
         }
 
         if self.absent() {
@@ -120,19 +122,21 @@ impl fmt::Display for Lesson {
             writeln!(f, "Ez az óra elmaradt.")?;
         }
 
-        writeln!(
-            f,
-            "{} -> {}",
-            self.start().time().format("%H:%M"),
-            self.end().time().format("%H:%M")
-        )?;
+        if !self.start().signed_duration_since(self.end()).is_zero() {
+            writeln!(
+                f,
+                "{} -> {}",
+                self.start().time().format("%H:%M"),
+                self.end().time().format("%H:%M")
+            )?;
+        }
 
         if let Some(teacher) = &self.tanar_neve {
-            writeln!(f, "Tanár: {}", teacher)?;
+            writeln!(f, "Tanár: {teacher}")?;
         }
 
         if let Some(helyettes_tanar) = &self.helyettes_tanar_neve {
-            writeln!(f, "Helyettesítő tanár: {}", helyettes_tanar)?;
+            writeln!(f, "Helyettesítő tanár: {helyettes_tanar}")?;
         }
 
         Ok(())

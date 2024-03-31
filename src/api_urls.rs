@@ -1,3 +1,5 @@
+//! these URLs are for accessing main API I guess
+
 use crate::AnyErr;
 use serde::Deserialize;
 

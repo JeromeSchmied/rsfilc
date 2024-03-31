@@ -1,3 +1,5 @@
+//! Bearer token, that's used to access any user-related data
+
 use serde::Deserialize;
 use std::collections::HashMap;
 

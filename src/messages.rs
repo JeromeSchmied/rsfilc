@@ -1,3 +1,5 @@
+//! messaging with teachers and staff
+
 /// kinds of message
 pub enum MessageKind {
     Beerkezett,

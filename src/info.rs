@@ -1,3 +1,4 @@
+//! basic User info `Kréta` stores
 use std::{collections::HashMap, fmt};
 
 use serde::Deserialize;

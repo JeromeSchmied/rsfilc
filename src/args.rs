@@ -1,3 +1,5 @@
+//! CLI arugments
+
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]

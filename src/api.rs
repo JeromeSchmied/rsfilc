@@ -1,3 +1,5 @@
+//! `Kréta` API
+
 use crate::{info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Local, Utc};
@@ -31,7 +33,7 @@ const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
 /// client id, just like as if it was official
 const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
-/// Kréta user
+/// Kréta, app user
 #[derive(Clone, PartialEq)]
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
@@ -91,6 +93,7 @@ impl User {
             _ => None,
         }
     }
+
     /// get value for key from content (eg. toml file)
     fn get_val(content: &str, key: &str) -> Option<String> {
         let k = &format!("{key} = ");
@@ -109,7 +112,8 @@ impl User {
 
         Some(val)
     }
-    /// create a user from cli
+
+    /// create a [`user`] from cli
     pub fn create() -> Self {
         println!("please login");
         print!("username: ");
@@ -135,6 +139,12 @@ impl User {
 
         Self::new(username.trim(), password.trim(), school_id.trim())
     }
+
+    /// Load every saved [`User`] from [`User::cred_path`]
+    ///
+    /// # Panics
+    ///
+    /// Panics if cred path does not exist.
     pub fn load_all() -> Vec<Self> {
         let cred_path = Self::cred_path().expect("couldn't find config dir");
 
@@ -147,7 +157,7 @@ impl User {
         let mut users = Vec::new();
         for user_s in content.split("[[user]]") {
             if let Some(parsed_user) = Self::parse(user_s) {
-                users.push(parsed_user)
+                users.push(parsed_user);
             }
         }
 
@@ -180,7 +190,7 @@ impl User {
             println!("Hello {}!\n\n", info.nev);
         }
     }
-    /// load user with `username`
+    /// load [`User`] with [`User::username`] and save it to [`User::config_path`]
     pub async fn load_user(username: &str) -> Option<Self> {
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
@@ -234,7 +244,7 @@ impl User {
         Ok(headers)
     }
 
-    /// get `Token` from credentials, school_id
+    /// get [`Token`] from credentials, [`User::school_id`]
     ///
     /// ```shell
     /// curl "https://idp.e-kreta.hu/connect/token"
@@ -366,7 +376,7 @@ impl User {
         let text = res.text().await?;
 
         let mut logf = File::create("timetable.log")?;
-        write!(logf, "{}", text)?;
+        write!(logf, "{text}")?;
 
         let val = serde_json::from_str(&text)?;
         Ok(val)
@@ -393,7 +403,7 @@ impl User {
     }
 
     /// get information about being absent
-    pub async fn absencies(&self) -> AnyErr<String> {
+    pub async fn absences(&self) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::ABSENCES)
