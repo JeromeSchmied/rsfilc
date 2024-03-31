@@ -1,6 +1,6 @@
 //! evaluations/grades the user recieved
 
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -56,6 +56,7 @@ impl Eval {
                 .to_string(),
         )
     }
+
     /// Returns the subject's name of this [`Eval`].
     pub fn subject_name(&self) -> Option<String> {
         Some(
@@ -69,10 +70,16 @@ impl Eval {
         )
     }
 
+    /// Returns the kind of this [`Eval`].
     fn kind(&self) -> Option<String> {
         Some(self.r#mod.as_ref()?.get("Leiras")?.to_owned())
     }
 
+    /// Returns the date when earned of this [`Eval`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `keszites_datuma` is invalid date-time.
     pub fn earned(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.keszites_datuma)
             .expect("coudln't parse veg_idopont")
