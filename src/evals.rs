@@ -128,6 +128,8 @@ impl Eval {
 
         sum as f32 / count as f32
     }
+
+    /// Returns the multiplication value from percent of this [`Eval`].
     fn multi_from_percent(&self) -> u8 {
         (self.suly_szazalek_erteke.unwrap_or(100) / 100) as u8
     }
