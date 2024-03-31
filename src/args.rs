@@ -40,22 +40,22 @@ pub enum Commands {
     /// messages the user either recieved or sent
     Messages {
         /// number of entries to show
-        #[arg(short, long)]
-        number: Option<u16>,
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
     },
 
     /// information about lessons the user missed
     Absences {
         /// number of entries to show
-        #[arg(short, long)]
-        number: Option<u16>,
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
     },
 
     /// information about forecoming exams/tests
     Exams {
         /// number of entries to show
-        #[arg(short, long)]
-        number: Option<u16>,
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
     },
 
     /// managing users of this program
