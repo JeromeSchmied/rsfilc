@@ -31,7 +31,7 @@ const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
 /// kreta files base Url
 const FILES: &str = "https://files.e-kreta.hu";
 /// just a random `USER_AGENT`
-const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
+const USER_AGENT: &str = "hu.ekreta.student/9.1.1/Linux/0";
 /// client id, just like as if it was official
 const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
