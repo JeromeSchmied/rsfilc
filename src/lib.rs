@@ -1,6 +1,7 @@
 pub mod api;
-pub mod api_urls;
+mod api_urls;
 pub mod args;
+pub mod evals;
 pub mod info;
 pub mod messages;
 pub mod school_list;

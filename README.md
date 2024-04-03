@@ -27,9 +27,9 @@
 -   [ ] felhasználó adatainak használhatóvá tétele (struktúrák)
 
     -   [ ] token
-    -   [ ] általános információk
-    -   [ ] jegyek
-    -   [ ] órarend
+    -   [x] általános információk
+    -   [x] jegyek
+    -   [x] órarend
     -   [ ] üzenetek
     -   [ ] előre bejelentett számonkérések
     -   [ ] hiányzások
@@ -38,6 +38,8 @@
 
 -   [ ] API alapvető használata
 -   [ ] kért adatok alapvető megjelenítése
+-   [x] több fiókos rendszer
+-   [ ] kb minden cache-elése a valódi élmény érdekében
 -   [ ] ...
 
 ## TUI

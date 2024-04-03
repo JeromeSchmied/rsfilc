@@ -1,3 +1,5 @@
+//! every school that uses the `Kréta` system
+
 use crate::AnyErr;
 use serde::Deserialize;
 use std::fmt;
@@ -45,6 +47,7 @@ impl School {
     //     Ok(res.text().await?)
     // }
 }
+
 impl fmt::Display for School {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.name.replace('"', ""))?;

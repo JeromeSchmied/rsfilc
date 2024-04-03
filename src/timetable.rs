@@ -1,18 +1,21 @@
+//! lessons the student has
+
 use chrono::{DateTime, Datelike, Local};
 use serde::Deserialize;
-use std::{collections::HashMap, fmt, str::FromStr};
+use serde_json::Value;
+use std::{collections::HashMap, fmt};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Lesson {
-    // ora neve
+    // name of the lesson
     nev: String,
-    // terem
+    // room in which it will be held
     terem_neve: Option<String>,
 
-    // datetime
+    // start datetime
     kezdet_idopont: String,
-    // datetime
+    // end datetime
     veg_idopont: String,
 
     /// topic of the lesson
@@ -22,6 +25,9 @@ pub struct Lesson {
     tanar_neve: Option<String>,
     /// alternative teacher's name if any
     helyettes_tanar_neve: Option<String>,
+
+    /// subject: information about the type of the lesson: eg.: maths, history
+    tantargy: Option<HashMap<String, Value>>,
 
     /// whether it has been cancelled or what
     allapot: Option<HashMap<String, String>>,
@@ -34,29 +40,26 @@ pub struct Lesson {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Lesson {
+    /// print all lessons of a day
     pub fn print_day(lessons: &[Lesson]) {
         if let Some(first_lesson) = lessons.first() {
             println!(
-                "{}({})\n",
+                "{} ({})\n",
                 first_lesson.start().date_naive(),
                 first_lesson.start().weekday()
             );
             for lesson in lessons {
-                println!("{}\n", lesson);
+                println!("{lesson}\n");
             }
         }
     }
-    pub fn from(&self) -> DateTime<Local> {
-        DateTime::from_str(&self.kezdet_idopont).expect("invalid date-time")
-    }
-    pub fn to(&self) -> DateTime<Local> {
-        DateTime::from_str(&self.veg_idopont).expect("invalid date-time")
-    }
+    /// Returns whether this [`Lesson`] has been cancelled.
     pub fn cancelled(&self) -> bool {
         self.allapot
             .as_ref()
             .is_some_and(|state| state.get("Nev").is_some_and(|state| state == "Elmaradt"))
     }
+    /// Returns whether the student has appeared on this [`Lesson`].
     pub fn absent(&self) -> bool {
         self.tanulo_jelenlet.as_ref().is_some_and(|absence| {
             absence
@@ -64,15 +67,37 @@ impl Lesson {
                 .is_some_and(|presence| presence == "Hianyzas")
         })
     }
+    /// Returns the start of this [`Lesson`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `kezdet_idopont` is invalid as date.
     pub fn start(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.kezdet_idopont)
             .expect("coudln't parse kezdet_idopont")
             .into()
     }
+    /// Returns the end of this [`Lesson`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `veg_idopont` is invalid as date.
     pub fn end(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.veg_idopont)
             .expect("coudln't parse veg_idopont")
             .into()
+    }
+    /// Returns the subject of this [`Lesson`].
+    pub fn subject(&self) -> Option<String> {
+        Some(
+            self.tantargy
+                .as_ref()?
+                .get("Kategoria")?
+                .get("Nev")?
+                .to_string()
+                .trim_matches('"')
+                .to_string(),
+        )
     }
     // pub fn parse_time(time: &str) ->
 }
@@ -80,27 +105,38 @@ impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} óra ", self.nev)?;
         if let Some(room) = &self.terem_neve {
-            writeln!(f, "a(z) {} teremben", room)?;
+            writeln!(f, "a(z) {room} teremben")?;
         } else {
             writeln!(f)?;
         }
 
         if let Some(tema) = &self.tema {
-            writeln!(f, "Témája: {}", tema)?;
+            writeln!(f, "Témája: {tema}")?;
+        }
+
+        if self.absent() {
+            writeln!(f, "Ezen az órán nem voltál jelen.")?;
         }
 
         if self.cancelled() {
-            writeln!(f, "This lesson was cancelled")?;
+            writeln!(f, "Ez az óra elmaradt.")?;
         }
 
-        writeln!(f, "{} -> {}", self.start().time(), self.end().time())?;
+        if !self.start().signed_duration_since(self.end()).is_zero() {
+            writeln!(
+                f,
+                "{} -> {}",
+                self.start().time().format("%H:%M"),
+                self.end().time().format("%H:%M")
+            )?;
+        }
 
         if let Some(teacher) = &self.tanar_neve {
-            writeln!(f, "Tanár: {}", teacher)?;
+            writeln!(f, "Tanár: {teacher}")?;
         }
 
         if let Some(helyettes_tanar) = &self.helyettes_tanar_neve {
-            writeln!(f, "Helyettesítő tanár: {:?}", helyettes_tanar)?;
+            writeln!(f, "Helyettesítő tanár: {helyettes_tanar}")?;
         }
 
         Ok(())
@@ -171,6 +207,18 @@ mod tests {
 
         let lesson = serde_json::from_str::<Lesson>(lesson_json);
 
-        assert!(lesson.is_ok());
+        assert!(lesson.is_ok(), "{:?}", lesson);
+        let lesson = lesson.unwrap();
+
+        assert_eq!(lesson.nev, "fizika");
+        assert_eq!(lesson.terem_neve, Some("Fizika".to_string()));
+        assert_eq!(lesson.tema, Some("Félvezetők".to_string()));
+        assert_eq!(lesson.kezdet_idopont, "2024-03-18T08:50:00Z");
+        assert_eq!(lesson.veg_idopont, "2024-03-18T09:35:00Z");
+        assert_eq!(lesson.tanar_neve, Some("Teszt Katalin".to_string()));
+        assert_eq!(lesson.helyettes_tanar_neve, None);
+        assert!(!lesson.cancelled());
+        assert!(!lesson.absent());
+        assert_eq!(lesson.subject(), Some("fizika".to_string()));
     }
 }

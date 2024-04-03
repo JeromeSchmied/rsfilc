@@ -1,4 +1,8 @@
-use crate::{info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr};
+//! `Kréta` API
+
+use crate::{
+    evals::Eval, info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr,
+};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Local, Utc};
 use hmac::{Hmac, Mac};
@@ -27,11 +31,11 @@ const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
 /// kreta files base Url
 const FILES: &str = "https://files.e-kreta.hu";
 /// just a random `USER_AGENT`
-const USER_AGENT: &str = "hu.ekreta.student/1.0.4/Android/0/0";
+const USER_AGENT: &str = "hu.ekreta.student/9.1.1/Linux/0";
 /// client id, just like as if it was official
 const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
-/// Kréta user
+/// Kréta, app user
 #[derive(Clone, PartialEq)]
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
@@ -49,6 +53,10 @@ impl User {
     /// get path for config
     fn config_path() -> Option<PathBuf> {
         Some(dirs::config_dir()?.join("rsfilc").join("config.toml"))
+    }
+    /// get name of user
+    async fn name(&self) -> String {
+        self.info().await.expect("coudln't get user info").nev
     }
 
     /// create new instance of user and save it
@@ -87,6 +95,7 @@ impl User {
             _ => None,
         }
     }
+
     /// get value for key from content (eg. toml file)
     fn get_val(content: &str, key: &str) -> Option<String> {
         let k = &format!("{key} = ");
@@ -105,7 +114,8 @@ impl User {
 
         Some(val)
     }
-    /// create a user from cli
+
+    /// create a [`user`] from cli
     pub fn create() -> Self {
         println!("please login");
         print!("username: ");
@@ -131,6 +141,12 @@ impl User {
 
         Self::new(username.trim(), password.trim(), school_id.trim())
     }
+
+    /// Load every saved [`User`] from [`User::cred_path`]
+    ///
+    /// # Panics
+    ///
+    /// Panics if cred path does not exist.
     pub fn load_all() -> Vec<Self> {
         let cred_path = Self::cred_path().expect("couldn't find config dir");
 
@@ -138,12 +154,12 @@ impl User {
             return vec![];
         }
 
-        let content = fs::read_to_string(cred_path).unwrap();
+        let content = fs::read_to_string(cred_path).expect("coudln't read credentials from file");
 
         let mut users = Vec::new();
         for user_s in content.split("[[user]]") {
             if let Some(parsed_user) = Self::parse(user_s) {
-                users.push(parsed_user)
+                users.push(parsed_user);
             }
         }
 
@@ -176,15 +192,13 @@ impl User {
             println!("Hello {}!\n\n", info.nev);
         }
     }
-    /// load user with `username`
+    /// load [`User`] with [`User::username`] and save it to [`User::config_path`]
     pub async fn load_user(username: &str) -> Option<Self> {
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
-                .info()
+                .name()
                 .await
-                .unwrap()
-                .nev
                 .to_lowercase()
                 .contains(&username.to_lowercase())
             {
@@ -207,7 +221,7 @@ impl User {
         let mut conf_file = File::create(conf_path).expect("couldn't create config file");
 
         writeln!(conf_file, "[user]").unwrap();
-        writeln!(conf_file, "name = \"{}\"", self.info().await.unwrap().nev).unwrap();
+        writeln!(conf_file, "name = \"{}\"", self.name().await).unwrap();
     }
     /// load user configured in config.toml
     pub async fn load_conf() -> Option<Self> {
@@ -232,7 +246,7 @@ impl User {
         Ok(headers)
     }
 
-    /// get `Token` from credentials, school_id
+    /// get [`Token`] from credentials, [`User::school_id`]
     ///
     /// ```shell
     /// curl "https://idp.e-kreta.hu/connect/token"
@@ -303,7 +317,11 @@ impl User {
             .send()
             .await?;
 
-        let token = serde_json::from_str(&res.text().await?)?;
+        let text = res.text().await?;
+        let mut logf = File::create("token.log")?;
+        write!(logf, "{text}")?;
+
+        let token = serde_json::from_str(&text)?;
         Ok(token)
     }
 
@@ -316,7 +334,11 @@ impl User {
             .send()
             .await?;
 
-        let info = serde_json::from_str(&res.text().await?)?;
+        let text = res.text().await?;
+        let mut logf = File::create("info.log")?;
+        write!(logf, "{text}")?;
+
+        let info = serde_json::from_str(&text)?;
         Ok(info)
     }
 
@@ -329,13 +351,16 @@ impl User {
             .send()
             .await?;
 
+        let text = res.text().await?;
+        let mut logf = File::create("messages.log")?;
+        write!(logf, "{text}")?;
         // let val = serde_json::from_str(&res.text().await?)?;
         // Ok(val)
-        Ok(res.text().await?)
+        Ok(text)
     }
 
     /// get evaluations
-    pub async fn evals(&self) -> AnyErr<String> {
+    pub async fn evals(&self) -> AnyErr<Vec<Eval>> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::EVALUATIONS)
@@ -343,9 +368,12 @@ impl User {
             .send()
             .await?;
 
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(res.text().await?)
+        let text = res.text().await?;
+        let mut logf = File::create("evals.log")?;
+        write!(logf, "{text}")?;
+
+        let evals = serde_json::from_str(&text)?;
+        Ok(evals)
     }
 
     /// get timetable
@@ -364,7 +392,7 @@ impl User {
         let text = res.text().await?;
 
         let mut logf = File::create("timetable.log")?;
-        write!(logf, "{}", text)?;
+        write!(logf, "{text}")?;
 
         let val = serde_json::from_str(&text)?;
         Ok(val)
@@ -385,13 +413,17 @@ impl User {
             .send()
             .await?;
 
+        let text = res.text().await?;
+        let mut logf = File::create("announced.log")?;
+        write!(logf, "{text}")?;
+
         // let val = serde_json::from_str(&res.text().await?)?;
         // Ok(val)
-        Ok(res.text().await?)
+        Ok(text)
     }
 
     /// get information about being absent
-    pub async fn absencies(&self) -> AnyErr<String> {
+    pub async fn absences(&self) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::ABSENCES)
@@ -399,8 +431,11 @@ impl User {
             .send()
             .await?;
 
+        let text = res.text().await?;
+        let mut logf = File::create("absences.log")?;
+        write!(logf, "{text}")?;
         // let val = serde_json::from_str(&res.text().await?)?;
         // Ok(val)
-        Ok(res.text().await?)
+        Ok(text)
     }
 }

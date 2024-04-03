@@ -1,13 +1,10 @@
-#![allow(unused)]
-
-use chrono::{
-    DateTime, Datelike, Local, NaiveDate, NaiveDateTime, Offset, TimeZone, Timelike, Utc,
-};
+use chrono::{Datelike, Local, NaiveDate};
 use clap::Parser;
 use rsfilc::{
-    api::*, api_urls::ApiUrls, args::Commands, messages::MessageKind, school_list::School,
-    timetable, AnyErr,
+    api::*, args::Commands, evals::Eval, messages::MessageKind, school_list::School, timetable,
+    AnyErr,
 };
+use std::{fs::File, io::Write};
 
 #[tokio::main]
 async fn main() -> AnyErr<()> {
@@ -46,37 +43,67 @@ async fn main() -> AnyErr<()> {
                 .unwrap();
             let mut lessons = user.timetable(from, to).await?;
             if lessons.is_empty() {
-                println!("Ezen a napon {}({}) nincs órád, juhé!", day, day.weekday());
+                println!(
+                    "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
+                    day.weekday()
+                );
                 return Ok(());
             }
 
             // eprintln!("\ngot timetable...\n");
-            lessons.sort_by(|a, b| a.from().partial_cmp(&b.from()).expect("couldn't compare"));
+            lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
             timetable::Lesson::print_day(&lessons);
         }
 
-        Commands::Evaluations { subject, number } => {
-            let evals = user.evals().await?;
-            eprintln!("\ngot evals...\n");
-            println!("{}", evals);
+        Commands::Evals {
+            subject,
+            kind,
+            number,
+            average,
+        } => {
+            let mut evals = user.evals().await?;
+            evals.sort_by(|a, b| {
+                b.earned()
+                    .partial_cmp(&a.earned())
+                    .expect("couldn't compare")
+            });
+            // eprintln!("\ngot evals...\n");
+            if let Some(kind) = kind {
+                Eval::filter_evals_by_kind(&mut evals, &kind);
+            }
+            if let Some(subject) = subject {
+                Eval::filter_evals_by_subject(&mut evals, &subject);
+            }
+            let mut logf = File::create("evals_filtered.log")?;
+            write!(logf, "{:?}", evals)?;
+
+            if average {
+                println!("Average: {}", Eval::average(&evals));
+
+                return Ok(());
+            }
+
+            for eval in evals.iter().take(number.into()) {
+                println!("{}", eval);
+            }
         }
 
         Commands::Messages { number } => {
             let messages = user.messages(MessageKind::Beerkezett).await?;
             eprintln!("\ngot messages...\n");
-            println!("{}", messages);
+            println!("{messages}");
         }
 
         Commands::Absences { number } => {
-            let absences = user.absencies().await?;
+            let absences = user.absences().await?;
             eprintln!("\ngot absences...\n");
-            println!("{}", absences);
+            println!("{absences}");
         }
 
         Commands::Exams { number } => {
             let announced = user.announced(None).await?;
             eprintln!("\ngot announced...\n");
-            println!("{}", announced);
+            println!("{announced}");
         }
 
         Commands::User {
@@ -86,9 +113,9 @@ async fn main() -> AnyErr<()> {
             list,
         } => {
             if let Some(switch_to) = switch {
-                let usr = User::load_user(&switch_to).await.unwrap();
-                println!("switched to {}", switch_to);
-                usr.greet().await;
+                let switched_to = User::load_user(&switch_to).await.unwrap();
+                println!("switched to {switch_to}");
+                switched_to.greet().await;
 
                 return Ok(());
             }
@@ -112,11 +139,11 @@ async fn main() -> AnyErr<()> {
             if let Some(school_name) = search {
                 let found = School::search(&school_name, &schools);
                 for school in found {
-                    println!("{}\n", school);
+                    println!("{school}\n");
                 }
             } else {
                 for school in schools {
-                    println!("{}\n", school);
+                    println!("{school}\n");
                 }
             }
         }

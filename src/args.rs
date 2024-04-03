@@ -1,3 +1,5 @@
+//! CLI arugments
+
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -12,7 +14,7 @@ pub enum Commands {
     /// starts the Text User Interface
     Tui {},
 
-    /// information about lessons
+    /// information about lessons, today by default
     Timetable {
         /// which day to show
         #[arg(short, long)]
@@ -20,34 +22,40 @@ pub enum Commands {
     },
 
     /// evaluations/grades the user recieved
-    Evaluations {
-        /// the subject to show
+    Evals {
+        /// filter the subject to show
         #[arg(short, long)]
         subject: Option<String>,
-        /// number of entries to show
+        /// filter the kind to show
         #[arg(short, long)]
-        number: Option<u16>,
+        kind: Option<String>,
+        /// number of entries to show
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
+        /// average
+        #[arg(short, long, default_value_t = false)]
+        average: bool,
     },
 
     /// messages the user either recieved or sent
     Messages {
         /// number of entries to show
-        #[arg(short, long)]
-        number: Option<u16>,
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
     },
 
     /// information about lessons the user missed
     Absences {
         /// number of entries to show
-        #[arg(short, long)]
-        number: Option<u16>,
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
     },
 
     /// information about forecoming exams/tests
     Exams {
         /// number of entries to show
-        #[arg(short, long)]
-        number: Option<u16>,
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
     },
 
     /// managing users of this program
