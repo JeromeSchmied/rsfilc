@@ -342,8 +342,8 @@ impl User {
         Ok(info)
     }
 
-    /// get messages
-    pub async fn messages(&self, message_kind: MessageKind) -> AnyErr<String> {
+    /// get messages of a kind
+    pub async fn messages_of_kind(&self, message_kind: MessageKind) -> AnyErr<String> {
         let client = reqwest::Client::new();
         let res = client
             .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
@@ -357,6 +357,20 @@ impl User {
         // let val = serde_json::from_str(&res.text().await?)?;
         // Ok(val)
         Ok(text)
+    }
+
+    /// get all messages, of any kind
+    pub async fn all_messages(&self) -> AnyErr<String> {
+        let mut messages = String::new();
+
+        messages.push_str(&self.messages_of_kind(MessageKind::Beerkezett).await?);
+        messages.push('\n');
+        messages.push_str(&self.messages_of_kind(MessageKind::Elkuldott).await?);
+        messages.push('\n');
+        messages.push_str(&self.messages_of_kind(MessageKind::Torolt).await?);
+        messages.push('\n');
+
+        Ok(messages)
     }
 
     /// get evaluations

@@ -89,8 +89,8 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Messages { number } => {
-            let messages = user.messages(MessageKind::Beerkezett).await?;
-            eprintln!("\ngot messages...\n");
+            let messages = user.all_messages().await?;
+            eprintln!("\ngot every message...\n");
             println!("{messages}");
         }
 
