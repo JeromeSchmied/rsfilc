@@ -90,8 +90,10 @@ async fn main() -> AnyErr<()> {
 
         Commands::Messages { number } => {
             let messages = user.all_messages().await?;
-            eprintln!("\ngot every message...\n");
-            println!("{messages}");
+
+            for message in messages.iter().take(number.into()) {
+                println!("{:?}", message);
+            }
         }
 
         Commands::Absences { number } => {

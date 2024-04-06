@@ -1,7 +1,12 @@
 //! `Kréta` API
 
 use crate::{
-    evals::Eval, info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr,
+    evals::Eval,
+    info::Info,
+    messages::{Message, MessageKind, MessagePreview},
+    timetable::Lesson,
+    token::Token,
+    AnyErr,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Local, Utc};
@@ -17,8 +22,8 @@ use std::{
 
 use crate::api;
 
-mod admin_endpoints;
-mod endpoints;
+pub mod admin_endpoints;
+pub mod endpoints;
 
 pub fn base(school_id: &str) -> String {
     format!("https://{school_id}.e-kreta.hu")
@@ -343,7 +348,7 @@ impl User {
     }
 
     /// get messages of a kind
-    pub async fn messages_of_kind(&self, message_kind: MessageKind) -> AnyErr<String> {
+    pub async fn messages_of_kind(&self, message_kind: MessageKind) -> AnyErr<Vec<MessagePreview>> {
         let client = reqwest::Client::new();
         let res = client
             .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
@@ -354,23 +359,49 @@ impl User {
         let text = res.text().await?;
         let mut logf = File::create("messages.log")?;
         write!(logf, "{text}")?;
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(text)
+
+        let msg = serde_json::from_str(&text)?;
+        Ok(msg)
     }
 
     /// get all messages, of any kind
-    pub async fn all_messages(&self) -> AnyErr<String> {
-        let mut messages = String::new();
+    pub async fn all_messages(&self) -> AnyErr<Vec<MessagePreview>> {
+        let mut messages = Vec::new();
 
-        messages.push_str(&self.messages_of_kind(MessageKind::Beerkezett).await?);
-        messages.push('\n');
-        messages.push_str(&self.messages_of_kind(MessageKind::Elkuldott).await?);
-        messages.push('\n');
-        messages.push_str(&self.messages_of_kind(MessageKind::Torolt).await?);
-        messages.push('\n');
+        // messages.push(self.messages_of_kind(MessageKind::Beerkezett).await?);
+        messages = [
+            messages,
+            self.messages_of_kind(MessageKind::Beerkezett).await?,
+        ]
+        .concat();
+        messages = [
+            messages,
+            self.messages_of_kind(MessageKind::Elkuldott).await?,
+        ]
+        .concat();
+        messages = [messages, self.messages_of_kind(MessageKind::Torolt).await?].concat();
+        // messages.push(self.messages_of_kind(MessageKind::Elkuldott).await?);
+        // messages.push(self.messages_of_kind(MessageKind::Torolt).await?);
 
         Ok(messages)
+    }
+
+    /// Get whole message from the id of a messagepreview
+    async fn whole_message(&self, message_preview: &MessagePreview) -> AnyErr<Message> {
+        let client = reqwest::Client::new();
+        let res = client
+            .get(
+                api::base(&self.school_id).to_owned()
+                    + &api::admin_endpoints::get_message(&message_preview.azonosito.to_string()),
+            )
+            .headers(self.headers().await?)
+            .send()
+            .await?;
+
+        let text = res.text().await?;
+
+        let msg = serde_json::from_str(&text)?;
+        Ok(msg)
     }
 
     /// get evaluations

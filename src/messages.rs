@@ -1,25 +1,25 @@
 //! messaging with teachers and staff
 
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::HashMap, fmt};
+use std::collections::HashMap;
 
 /// this is just a short representation of the real message
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct MessagePreview {
     /// id
-    azonosito: u64,
+    pub azonosito: u64,
     /// another id
     uzenet_azonosito: u64,
 
     /// date of sending
     uzenet_kuldes_datum: String,
-    /// sender
-    uzenet_felado_nev: String,
-    /// title
-    uzenet_felado_titulus: String,
+    // /// sender
+    // uzenet_felado_nev: String,
+    // /// title
+    // uzenet_felado_titulus: String,
     /// subject
     uzenet_targy: String,
 
@@ -34,7 +34,7 @@ pub struct MessagePreview {
 impl MessagePreview {}
 
 /// the message itself
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Message {
     /// id
