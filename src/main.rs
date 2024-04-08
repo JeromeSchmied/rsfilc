@@ -89,12 +89,12 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Messages { number } => {
-            let mut message_previews = user.all_messages().await?;
-            message_previews
+            let mut message_overviews = user.all_message_overviews().await?;
+            message_overviews
                 .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
 
-            for message_preview in message_previews.iter().take(number.into()) {
-                println!("{}", message_preview);
+            for message_overview in message_overviews.iter().take(number.into()) {
+                println!("{}", message_overview);
             }
         }
 

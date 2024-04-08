@@ -8,7 +8,7 @@ use std::{collections::HashMap, fmt};
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct MessagePreview {
+pub struct MessageOverview {
     /// id
     pub azonosito: u64,
     /// another id
@@ -31,8 +31,8 @@ pub struct MessagePreview {
     #[serde(flatten)]
     extra: HashMap<String, Value>,
 }
-impl MessagePreview {
-    /// Returns the date when this [`MessagePreview`] was sent.
+impl MessageOverview {
+    /// Returns the date when this [`MessageOverview`] was sent.
     ///
     /// # Panics
     ///
@@ -43,7 +43,7 @@ impl MessagePreview {
             .into()
     }
 }
-impl fmt::Display for MessagePreview {
+impl fmt::Display for MessageOverview {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.sent().format("%Y/%m/%d %H:%M"))?;
         writeln!(f, "{}", self.uzenet_targy)?;
@@ -121,7 +121,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn message_preview_parsing() {
+    fn message_overview_parsing() {
         let message_json = r#"{
         "azonosito": 137283859,
         "uzenetAzonosito": 26669244,
@@ -133,7 +133,7 @@ mod test {
         "isElolvasva": true
     }"#;
 
-        let message = serde_json::from_str::<MessagePreview>(message_json);
+        let message = serde_json::from_str::<MessageOverview>(message_json);
         if let Err(e) = &message {
             eprintln!("woohoo: {}", e);
         }

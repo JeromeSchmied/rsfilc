@@ -3,7 +3,7 @@
 use crate::{
     evals::Eval,
     info::Info,
-    messages::{Message, MessageKind, MessagePreview},
+    messages::{Message, MessageKind, MessageOverview},
     timetable::Lesson,
     token::Token,
     AnyErr,
@@ -348,7 +348,10 @@ impl User {
     }
 
     /// get messages of a kind
-    pub async fn messages_of_kind(&self, message_kind: MessageKind) -> AnyErr<Vec<MessagePreview>> {
+    pub async fn message_overviews_of_kind(
+        &self,
+        message_kind: MessageKind,
+    ) -> AnyErr<Vec<MessageOverview>> {
         let client = reqwest::Client::new();
         let res = client
             .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
@@ -365,21 +368,27 @@ impl User {
     }
 
     /// get all messages, of any kind
-    pub async fn all_messages(&self) -> AnyErr<Vec<MessagePreview>> {
+    pub async fn all_message_overviews(&self) -> AnyErr<Vec<MessageOverview>> {
         let mut messages = Vec::new();
 
         // messages.push(self.messages_of_kind(MessageKind::Beerkezett).await?);
         messages = [
             messages,
-            self.messages_of_kind(MessageKind::Beerkezett).await?,
+            self.message_overviews_of_kind(MessageKind::Beerkezett)
+                .await?,
         ]
         .concat();
         messages = [
             messages,
-            self.messages_of_kind(MessageKind::Elkuldott).await?,
+            self.message_overviews_of_kind(MessageKind::Elkuldott)
+                .await?,
         ]
         .concat();
-        messages = [messages, self.messages_of_kind(MessageKind::Torolt).await?].concat();
+        messages = [
+            messages,
+            self.message_overviews_of_kind(MessageKind::Torolt).await?,
+        ]
+        .concat();
         // messages.push(self.messages_of_kind(MessageKind::Elkuldott).await?);
         // messages.push(self.messages_of_kind(MessageKind::Torolt).await?);
 
@@ -387,7 +396,7 @@ impl User {
     }
 
     /// Get whole message from the id of a messagepreview
-    async fn whole_message(&self, message_preview: &MessagePreview) -> AnyErr<Message> {
+    async fn whole_message(&self, message_preview: &MessageOverview) -> AnyErr<Message> {
         let client = reqwest::Client::new();
         let res = client
             .get(
