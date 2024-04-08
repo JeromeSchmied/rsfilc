@@ -1,3 +1,4 @@
+pub mod absences;
 pub mod api;
 mod api_urls;
 pub mod args;

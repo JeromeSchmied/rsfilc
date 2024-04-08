@@ -1,9 +1,6 @@
 use chrono::{Datelike, Local, NaiveDate};
 use clap::Parser;
-use rsfilc::{
-    api::*, args::Commands, evals::Eval, messages::MessageKind, school_list::School, timetable,
-    AnyErr,
-};
+use rsfilc::{api::*, args::Commands, evals::Eval, school_list::School, timetable, AnyErr};
 use std::{fs::File, io::Write};
 
 #[tokio::main]
@@ -101,9 +98,11 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Absences { number } => {
-            let absences = user.absences().await?;
-            eprintln!("\ngot absences...\n");
-            println!("{absences}");
+            let mut absences = user.absences().await?;
+            absences.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+            for absence in absences {
+                println!("{}", absence);
+            }
         }
 
         Commands::Exams { number } => {
