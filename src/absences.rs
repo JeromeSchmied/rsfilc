@@ -3,6 +3,8 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
+use crate::pretty_date;
+
 /// Absence
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -13,8 +15,8 @@ pub struct Abs {
     /// lesson from, to it was held
     ora: HashMap<String, Value>,
 
-    /// date of something
-    datum: String,
+    /// teacher who entered it
+    rogzito_tanar_neve: String,
 
     /// minutes of being late
     keses_percben: Option<String>,
@@ -25,13 +27,67 @@ pub struct Abs {
 
     /// not needed
     #[serde(flatten)]
-    _extra: HashMap<String, serde_json::Value>,
+    extra: HashMap<String, serde_json::Value>,
 }
 impl Abs {
-    pub fn recvd(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.datum)
-            .expect("invalid date-time")
-            .into()
+    pub fn start(&self) -> DateTime<Local> {
+        DateTime::parse_from_rfc3339(
+            self.ora
+                .get("KezdoDatum")
+                .expect("couldn't find starting date")
+                .to_string()
+                .trim_matches('"'),
+        )
+        .expect("invalid date-time")
+        .into()
+    }
+    pub fn end(&self) -> DateTime<Local> {
+        DateTime::parse_from_rfc3339(
+            self.ora
+                .get("VegDatum")
+                .expect("couldn't find starting date")
+                .to_string()
+                .trim_matches('"'),
+        )
+        .expect("invalid date-time")
+        .into()
+    }
+    fn verif(&self) -> bool {
+        self.igazolas_allapota == "Igazolt"
+    }
+    fn subj(&self) -> String {
+        self.tantargy
+            .get("Nev")
+            .expect("couldn't find subject")
+            .to_string()
+            .trim_matches('"')
+            .to_string()
+    }
+}
+impl fmt::Display for Abs {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.rogzito_tanar_neve)?;
+        writeln!(f, "{}", self.subj())?;
+        writeln!(
+            f,
+            "{} -> {}",
+            pretty_date(&self.start()),
+            pretty_date(&self.end()),
+        )?;
+
+        if self.verif() {
+            writeln!(f, "igazolt")?;
+        } else {
+            writeln!(f, "igazolatlan")?;
+        }
+
+        if let Some(late) = &self.keses_percben {
+            writeln!(f, "Kestel {} percet", late)?;
+        }
+
+        writeln!(f)?;
+
+        Ok(())
     }
 }
 
