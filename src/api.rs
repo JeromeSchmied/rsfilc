@@ -1,6 +1,7 @@
 //! `Kréta` API
 
 use crate::{
+    absences::Abs,
     evals::Eval,
     info::Info,
     messages::{MessageKind, Msg, MsgOverview},
@@ -476,7 +477,7 @@ impl User {
     }
 
     /// get information about being absent
-    pub async fn absences(&self) -> AnyErr<String> {
+    pub async fn absences(&self) -> AnyErr<Vec<Abs>> {
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::ABSENCES)
@@ -487,8 +488,8 @@ impl User {
         let text = res.text().await?;
         let mut logf = File::create("absences.log")?;
         write!(logf, "{text}")?;
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(text)
+
+        let abss = serde_json::from_str(&text)?;
+        Ok(abss)
     }
 }

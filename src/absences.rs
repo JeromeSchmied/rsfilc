@@ -13,6 +13,9 @@ pub struct Abs {
     /// lesson from, to it was held
     ora: HashMap<String, Value>,
 
+    /// date of something
+    datum: String,
+
     /// minutes of being late
     keses_percben: Option<String>,
     /// whether it's already verified
@@ -23,6 +26,13 @@ pub struct Abs {
     /// not needed
     #[serde(flatten)]
     _extra: HashMap<String, serde_json::Value>,
+}
+impl Abs {
+    pub fn recvd(&self) -> DateTime<Local> {
+        DateTime::parse_from_rfc3339(&self.datum)
+            .expect("invalid date-time")
+            .into()
+    }
 }
 
 #[cfg(test)]

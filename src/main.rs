@@ -99,9 +99,9 @@ async fn main() -> AnyErr<()> {
 
         Commands::Absences { number } => {
             let mut absences = user.absences().await?;
-            absences.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+            absences.sort_by(|a, b| b.recvd().partial_cmp(&a.recvd()).expect("couldn't compare"));
             for absence in absences {
-                println!("{}", absence);
+                println!("{:?}", absence);
             }
         }
 
