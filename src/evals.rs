@@ -82,7 +82,7 @@ impl Eval {
     /// Panics if `keszites_datuma` is invalid date-time.
     pub fn earned(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.keszites_datuma)
-            .expect("coudln't parse veg_idopont")
+            .expect("couldn't parse veg_idopont")
             .into()
     }
 

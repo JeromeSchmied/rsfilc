@@ -89,9 +89,15 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Messages { number } => {
-            let messages = user.messages(MessageKind::Beerkezett).await?;
-            eprintln!("\ngot messages...\n");
-            println!("{messages}");
+            let mut msg_overviews = user.all_message_overviews().await?;
+            msg_overviews
+                .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+
+            for msg_overview in msg_overviews.iter().take(number.into()) {
+                let full_msg = user.full_message(msg_overview).await?;
+                // println!("{}", msg_overview);
+                println!("{}", full_msg);
+            }
         }
 
         Commands::Absences { number } => {

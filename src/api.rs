@@ -1,7 +1,12 @@
 //! `Kréta` API
 
 use crate::{
-    evals::Eval, info::Info, messages::MessageKind, timetable::Lesson, token::Token, AnyErr,
+    evals::Eval,
+    info::Info,
+    messages::{MessageKind, Msg, MsgOverview},
+    timetable::Lesson,
+    token::Token,
+    AnyErr,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Local, Utc};
@@ -17,8 +22,8 @@ use std::{
 
 use crate::api;
 
-mod admin_endpoints;
-mod endpoints;
+pub mod admin_endpoints;
+pub mod endpoints;
 
 pub fn base(school_id: &str) -> String {
     format!("https://{school_id}.e-kreta.hu")
@@ -56,7 +61,7 @@ impl User {
     }
     /// get name of user
     async fn name(&self) -> String {
-        self.info().await.expect("coudln't get user info").nev
+        self.info().await.expect("couldn't get user info").nev
     }
 
     /// create new instance of user and save it
@@ -154,7 +159,7 @@ impl User {
             return vec![];
         }
 
-        let content = fs::read_to_string(cred_path).expect("coudln't read credentials from file");
+        let content = fs::read_to_string(cred_path).expect("couldn't read credentials from file");
 
         let mut users = Vec::new();
         for user_s in content.split("[[user]]") {
@@ -213,7 +218,7 @@ impl User {
     }
     /// save to config.toml
     async fn save_to_conf(&self) {
-        let conf_path = Self::config_path().expect("coudln't find config path");
+        let conf_path = Self::config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             fs::create_dir_all(conf_path.parent().expect("couldn't get config dir"))
                 .expect("couldn't create config dir");
@@ -225,7 +230,7 @@ impl User {
     }
     /// load user configured in config.toml
     pub async fn load_conf() -> Option<Self> {
-        let conf_path = Self::config_path().expect("coudln't find config path");
+        let conf_path = Self::config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             return None;
         }
@@ -342,8 +347,11 @@ impl User {
         Ok(info)
     }
 
-    /// get messages
-    pub async fn messages(&self, message_kind: MessageKind) -> AnyErr<String> {
+    /// get messages of a kind
+    pub async fn message_overviews_of_kind(
+        &self,
+        message_kind: MessageKind,
+    ) -> AnyErr<Vec<MsgOverview>> {
         let client = reqwest::Client::new();
         let res = client
             .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
@@ -354,9 +362,54 @@ impl User {
         let text = res.text().await?;
         let mut logf = File::create("messages.log")?;
         write!(logf, "{text}")?;
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(text)
+
+        let msg = serde_json::from_str(&text)?;
+        Ok(msg)
+    }
+
+    /// get all messages, of any kind
+    pub async fn all_message_overviews(&self) -> AnyErr<Vec<MsgOverview>> {
+        let mut messages = Vec::new();
+
+        messages = [
+            messages,
+            self.message_overviews_of_kind(MessageKind::Beerkezett)
+                .await?,
+        ]
+        .concat();
+        messages = [
+            messages,
+            self.message_overviews_of_kind(MessageKind::Elkuldott)
+                .await?,
+        ]
+        .concat();
+        messages = [
+            messages,
+            self.message_overviews_of_kind(MessageKind::Torolt).await?,
+        ]
+        .concat();
+
+        Ok(messages)
+    }
+
+    /// Get whole message from the id of a messagepreview
+    pub async fn full_message(&self, message_overview: &MsgOverview) -> AnyErr<Msg> {
+        let client = reqwest::Client::new();
+        let res = client
+            .get(
+                api::ADMIN.to_owned()
+                    + &api::admin_endpoints::get_message(&message_overview.azonosito.to_string()),
+            )
+            .headers(self.headers().await?)
+            .send()
+            .await?;
+
+        let text = res.text().await?;
+        let mut logf = File::create("full_message.log")?;
+        write!(logf, "{text}")?;
+
+        let msg = serde_json::from_str(&text)?;
+        Ok(msg)
     }
 
     /// get evaluations
