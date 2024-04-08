@@ -8,11 +8,11 @@ use std::{collections::HashMap, fmt};
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct MessageOverview {
+pub struct MsgOverview {
     /// id
     pub azonosito: u64,
     /// another id
-    uzenet_azonosito: u64,
+    // uzenet_azonosito: u64,
 
     /// date of sending
     uzenet_kuldes_datum: String,
@@ -23,15 +23,14 @@ pub struct MessageOverview {
     /// subject
     uzenet_targy: String,
 
-    /// has attachment
-    has_csatolmany: bool,
-    /// is read
-    is_elolvasva: bool,
-
+    // /// has attachment
+    // has_csatolmany: bool,
+    // /// is read
+    // is_elolvasva: bool,
     #[serde(flatten)]
     extra: HashMap<String, Value>,
 }
-impl MessageOverview {
+impl MsgOverview {
     /// Returns the date when this [`MessageOverview`] was sent.
     ///
     /// # Panics
@@ -42,8 +41,28 @@ impl MessageOverview {
             .expect("couldn't parse kezdet_idopont")
             .into()
     }
+    /// Get whole message from the id of a messagepreview
+    pub async fn full_message(&self, message_overview: &MsgOverview) -> AnyErr<Msg> {
+        eprintln!("fetching full message");
+        let client = reqwest::Client::new();
+        let res = client
+            .get(
+                api::ADMIN.to_owned()
+                    + &api::admin_endpoints::get_message(&message_overview.azonosito.to_string()),
+            )
+            .headers(self.headers().await?)
+            .send()
+            .await?;
+
+        let text = res.text().await?;
+        let mut logf = File::create("full_message.log")?;
+        write!(logf, "{text}")?;
+
+        let msg = serde_json::from_str(&text)?;
+        Ok(msg)
+    }
 }
-impl fmt::Display for MessageOverview {
+impl fmt::Display for MsgOverview {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.sent().format("%Y/%m/%d %H:%M"))?;
         writeln!(f, "{}", self.uzenet_targy)?;
@@ -58,7 +77,7 @@ impl fmt::Display for MessageOverview {
 /// the message itself
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Message {
+pub struct Msg {
     /// id
     azonosito: u32,
 
@@ -69,14 +88,13 @@ pub struct Message {
 
     /// kind
     tipus: HashMap<String, Value>,
-
     /// the message itself
     uzenet: HashMap<String, Value>,
 
     #[serde(flatten)]
     extra: HashMap<String, Value>,
 }
-impl Message {
+impl Msg {
     /// Returns the date and time when this [`Message`] was sent.
     ///
     /// # Panics
@@ -133,7 +151,7 @@ mod test {
         "isElolvasva": true
     }"#;
 
-        let message = serde_json::from_str::<MessageOverview>(message_json);
+        let message = serde_json::from_str::<MsgOverview>(message_json);
         if let Err(e) = &message {
             eprintln!("woohoo: {}", e);
         }
@@ -142,15 +160,15 @@ mod test {
         let message = message.unwrap();
 
         assert_eq!(message.azonosito, 137283859);
-        assert_eq!(message.uzenet_azonosito, 26669244);
+        // assert_eq!(message.uzenet_azonosito, 26669244);
 
         assert_eq!(message.uzenet_kuldes_datum, "2022-09-07T08:18:17");
         // assert_eq!(message.uzenet_felado_nev, "Schultz Zoltán");
         // assert_eq!(message.uzenet_felado_titulus, "intézményvezető");
         assert_eq!(message.uzenet_targy, "Tájékoztató - Elf Bar - Rendőrség");
 
-        assert!(message.has_csatolmany);
-        assert!(message.is_elolvasva);
+        // assert!(message.has_csatolmany);
+        // assert!(message.is_elolvasva);
     }
 
     #[test]
@@ -216,12 +234,13 @@ mod test {
 	}
 }"#;
 
-        let message = serde_json::from_str::<Message>(message_json);
+        let message = serde_json::from_str::<Msg>(message_json);
         if let Err(e) = &message {
             eprintln!("woohoo: {}", e);
         }
         assert!(message.is_ok());
 
         let message = message.unwrap();
+        assert_eq!(message.azonosito, 1000000);
     }
 }

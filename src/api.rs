@@ -3,7 +3,7 @@
 use crate::{
     evals::Eval,
     info::Info,
-    messages::{Message, MessageKind, MessageOverview},
+    messages::{MessageKind, Msg, MsgOverview},
     timetable::Lesson,
     token::Token,
     AnyErr,
@@ -351,7 +351,7 @@ impl User {
     pub async fn message_overviews_of_kind(
         &self,
         message_kind: MessageKind,
-    ) -> AnyErr<Vec<MessageOverview>> {
+    ) -> AnyErr<Vec<MsgOverview>> {
         let client = reqwest::Client::new();
         let res = client
             .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
@@ -368,10 +368,9 @@ impl User {
     }
 
     /// get all messages, of any kind
-    pub async fn all_message_overviews(&self) -> AnyErr<Vec<MessageOverview>> {
+    pub async fn all_message_overviews(&self) -> AnyErr<Vec<MsgOverview>> {
         let mut messages = Vec::new();
 
-        // messages.push(self.messages_of_kind(MessageKind::Beerkezett).await?);
         messages = [
             messages,
             self.message_overviews_of_kind(MessageKind::Beerkezett)
@@ -389,28 +388,8 @@ impl User {
             self.message_overviews_of_kind(MessageKind::Torolt).await?,
         ]
         .concat();
-        // messages.push(self.messages_of_kind(MessageKind::Elkuldott).await?);
-        // messages.push(self.messages_of_kind(MessageKind::Torolt).await?);
 
         Ok(messages)
-    }
-
-    /// Get whole message from the id of a messagepreview
-    async fn whole_message(&self, message_preview: &MessageOverview) -> AnyErr<Message> {
-        let client = reqwest::Client::new();
-        let res = client
-            .get(
-                api::base(&self.school_id).to_owned()
-                    + &api::admin_endpoints::get_message(&message_preview.azonosito.to_string()),
-            )
-            .headers(self.headers().await?)
-            .send()
-            .await?;
-
-        let text = res.text().await?;
-
-        let msg = serde_json::from_str(&text)?;
-        Ok(msg)
     }
 
     /// get evaluations

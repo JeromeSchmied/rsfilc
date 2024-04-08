@@ -89,12 +89,14 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Messages { number } => {
-            let mut message_overviews = user.all_message_overviews().await?;
-            message_overviews
+            let mut msg_overviews = user.all_message_overviews().await?;
+            msg_overviews
                 .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
 
-            for message_overview in message_overviews.iter().take(number.into()) {
-                println!("{}", message_overview);
+            for msg_overview in msg_overviews.iter().take(number.into()) {
+                let full_msg = user.full_message(msg_overview).await?;
+                println!("{}", msg_overview);
+                println!("{:?}", full_msg);
             }
         }
 
