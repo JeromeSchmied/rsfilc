@@ -61,7 +61,7 @@ impl User {
     }
     /// get name of user
     async fn name(&self) -> String {
-        self.info().await.expect("coudln't get user info").nev
+        self.info().await.expect("couldn't get user info").nev
     }
 
     /// create new instance of user and save it
@@ -159,7 +159,7 @@ impl User {
             return vec![];
         }
 
-        let content = fs::read_to_string(cred_path).expect("coudln't read credentials from file");
+        let content = fs::read_to_string(cred_path).expect("couldn't read credentials from file");
 
         let mut users = Vec::new();
         for user_s in content.split("[[user]]") {
@@ -218,7 +218,7 @@ impl User {
     }
     /// save to config.toml
     async fn save_to_conf(&self) {
-        let conf_path = Self::config_path().expect("coudln't find config path");
+        let conf_path = Self::config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             fs::create_dir_all(conf_path.parent().expect("couldn't get config dir"))
                 .expect("couldn't create config dir");
@@ -230,7 +230,7 @@ impl User {
     }
     /// load user configured in config.toml
     pub async fn load_conf() -> Option<Self> {
-        let conf_path = Self::config_path().expect("coudln't find config path");
+        let conf_path = Self::config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             return None;
         }

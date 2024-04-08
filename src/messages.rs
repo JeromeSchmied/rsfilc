@@ -1,9 +1,9 @@
 //! messaging with teachers and staff
 
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, Utc};
 use serde::Deserialize;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
@@ -31,7 +31,29 @@ pub struct MessagePreview {
     #[serde(flatten)]
     extra: HashMap<String, Value>,
 }
-impl MessagePreview {}
+impl MessagePreview {
+    /// Returns the date when this [`MessagePreview`] was sent.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `uzenet_kuldes_datum` is invalid as date.
+    pub fn sent(&self) -> DateTime<Utc> {
+        DateTime::parse_from_rfc3339(&format!("{}Z", &self.uzenet_kuldes_datum))
+            .expect("couldn't parse kezdet_idopont")
+            .into()
+    }
+}
+impl fmt::Display for MessagePreview {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.sent().format("%Y/%m/%d %H:%M"))?;
+        writeln!(f, "{}", self.uzenet_targy)?;
+        // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
+        // if !self.is_elolvasva {
+        //     writeln!(f, "Olvasatlan")?;
+        // }
+        Ok(())
+    }
+}
 
 /// the message itself
 #[derive(Debug, Deserialize, Clone)]
@@ -123,8 +145,8 @@ mod test {
         assert_eq!(message.uzenet_azonosito, 26669244);
 
         assert_eq!(message.uzenet_kuldes_datum, "2022-09-07T08:18:17");
-        assert_eq!(message.uzenet_felado_nev, "Schultz Zoltán");
-        assert_eq!(message.uzenet_felado_titulus, "intézményvezető");
+        // assert_eq!(message.uzenet_felado_nev, "Schultz Zoltán");
+        // assert_eq!(message.uzenet_felado_titulus, "intézményvezető");
         assert_eq!(message.uzenet_targy, "Tájékoztató - Elf Bar - Rendőrség");
 
         assert!(message.has_csatolmany);

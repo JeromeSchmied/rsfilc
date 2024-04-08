@@ -35,7 +35,7 @@ impl fmt::Display for Info {
             "Szuletesi datum: {}",
             self.extra
                 .get("SzuletesiDatum")
-                .expect("coudln't get birth date")
+                .expect("couldn't get birth date")
         )?;
 
         Ok(())

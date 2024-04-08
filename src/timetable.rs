@@ -74,7 +74,7 @@ impl Lesson {
     /// Panics if `kezdet_idopont` is invalid as date.
     pub fn start(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.kezdet_idopont)
-            .expect("coudln't parse kezdet_idopont")
+            .expect("couldn't parse kezdet_idopont")
             .into()
     }
     /// Returns the end of this [`Lesson`].
@@ -84,7 +84,7 @@ impl Lesson {
     /// Panics if `veg_idopont` is invalid as date.
     pub fn end(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.veg_idopont)
-            .expect("coudln't parse veg_idopont")
+            .expect("couldn't parse veg_idopont")
             .into()
     }
     /// Returns the subject of this [`Lesson`].
