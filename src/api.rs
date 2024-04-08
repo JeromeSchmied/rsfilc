@@ -392,6 +392,26 @@ impl User {
         Ok(messages)
     }
 
+    /// Get whole message from the id of a messagepreview
+    pub async fn full_message(&self, message_overview: &MsgOverview) -> AnyErr<Msg> {
+        let client = reqwest::Client::new();
+        let res = client
+            .get(
+                api::ADMIN.to_owned()
+                    + &api::admin_endpoints::get_message(&message_overview.azonosito.to_string()),
+            )
+            .headers(self.headers().await?)
+            .send()
+            .await?;
+
+        let text = res.text().await?;
+        let mut logf = File::create("full_message.log")?;
+        write!(logf, "{text}")?;
+
+        let msg = serde_json::from_str(&text)?;
+        Ok(msg)
+    }
+
     /// get evaluations
     pub async fn evals(&self) -> AnyErr<Vec<Eval>> {
         let client = reqwest::Client::new();

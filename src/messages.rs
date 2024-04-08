@@ -20,8 +20,8 @@ pub struct MsgOverview {
     // uzenet_felado_nev: String,
     // /// title
     // uzenet_felado_titulus: String,
-    /// subject
-    uzenet_targy: String,
+    // /// subject
+    // uzenet_targy: String,
 
     // /// has attachment
     // has_csatolmany: bool,
@@ -36,43 +36,23 @@ impl MsgOverview {
     /// # Panics
     ///
     /// Panics if `uzenet_kuldes_datum` is invalid as date.
-    pub fn sent(&self) -> DateTime<Utc> {
+    pub fn sent(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&format!("{}Z", &self.uzenet_kuldes_datum))
             .expect("couldn't parse kezdet_idopont")
             .into()
     }
-    /// Get whole message from the id of a messagepreview
-    pub async fn full_message(&self, message_overview: &MsgOverview) -> AnyErr<Msg> {
-        eprintln!("fetching full message");
-        let client = reqwest::Client::new();
-        let res = client
-            .get(
-                api::ADMIN.to_owned()
-                    + &api::admin_endpoints::get_message(&message_overview.azonosito.to_string()),
-            )
-            .headers(self.headers().await?)
-            .send()
-            .await?;
-
-        let text = res.text().await?;
-        let mut logf = File::create("full_message.log")?;
-        write!(logf, "{text}")?;
-
-        let msg = serde_json::from_str(&text)?;
-        Ok(msg)
-    }
 }
-impl fmt::Display for MsgOverview {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.sent().format("%Y/%m/%d %H:%M"))?;
-        writeln!(f, "{}", self.uzenet_targy)?;
-        // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
-        // if !self.is_elolvasva {
-        //     writeln!(f, "Olvasatlan")?;
-        // }
-        Ok(())
-    }
-}
+// impl fmt::Display for MsgOverview {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         writeln!(f, "{}", self.sent().format("%Y/%m/%d %H:%M"))?;
+//         writeln!(f, "{}", self.uzenet_targy)?;
+//         // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
+//         // if !self.is_elolvasva {
+//         //     writeln!(f, "Olvasatlan")?;
+//         // }
+//         Ok(())
+//     }
+// }
 
 /// the message itself
 #[derive(Debug, Deserialize, Clone)]
@@ -100,21 +80,52 @@ impl Msg {
     /// # Panics
     ///
     /// Panics if
-    /// - message doesn't contain `uzenet` key.
-    /// - which doesn't contain `kuldesDatum` key.
+    /// - message doesn't contain `kuldesDatum` key.
     /// - which contains invalid date-time value.
     pub fn time_sent(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(
-            &self
-                .uzenet
-                .get("uzenet")
-                .expect("couldn't find info about message")
-                .get("kuldesDatum")
-                .expect("couldn't find date of sending")
-                .to_string(),
-        )
-        .expect("invalid date-time of date of sending")
-        .into()
+        DateTime::parse_from_rfc3339(&format!("{}Z", self.msg_kv("kuldesDatum")))
+            .expect("invalid date-time of date of sending")
+            .into()
+    }
+
+    fn msg_kv(&self, v: &str) -> String {
+        self.uzenet
+            .get(v)
+            .expect("couldn't find key")
+            .to_string()
+            .trim_matches('"')
+            .to_string()
+    }
+
+    pub fn subj(&self) -> String {
+        self.msg_kv("targy")
+        // self.uzenet
+        //     .get("targy")
+        //     .expect("couldn't find subject")
+        //     .to_string()
+    }
+    pub fn text(&self) -> String {
+        self.msg_kv("szoveg")
+    }
+    pub fn sender(&self) -> String {
+        self.msg_kv("feladoNev")
+    }
+    pub fn sender_title(&self) -> String {
+        self.msg_kv("feladoTitulus")
+    }
+}
+impl fmt::Display for Msg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Kiküldve: {}", self.time_sent().format("%Y/%m/%d %H:%M"))?;
+        writeln!(f, "Feladó: {} {}", self.sender(), self.sender_title())?;
+        writeln!(f, "Tárgy: {}", self.subj())?;
+        writeln!(f, "Üzenet: {}", self.text())?;
+        writeln!(f)?;
+        // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
+        // if !self.is_elolvasva {
+        //     writeln!(f, "Olvasatlan")?;
+        // }
+        Ok(())
     }
 }
 
@@ -165,7 +176,7 @@ mod test {
         assert_eq!(message.uzenet_kuldes_datum, "2022-09-07T08:18:17");
         // assert_eq!(message.uzenet_felado_nev, "Schultz Zoltán");
         // assert_eq!(message.uzenet_felado_titulus, "intézményvezető");
-        assert_eq!(message.uzenet_targy, "Tájékoztató - Elf Bar - Rendőrség");
+        // assert_eq!(message.uzenet_targy, "Tájékoztató - Elf Bar - Rendőrség");
 
         // assert!(message.has_csatolmany);
         // assert!(message.is_elolvasva);
