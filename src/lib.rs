@@ -1,6 +1,7 @@
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Datelike, Local, Timelike};
 
 pub mod absences;
+pub mod announced;
 pub mod api;
 mod api_urls;
 pub mod args;
@@ -23,11 +24,16 @@ pub fn pretty_date(date: &DateTime<Local>) -> String {
         format!(
             "{} {}",
             month(date.month().try_into().unwrap()),
-            date.format("%d. %H:%M")
+            date.format(if date.hour() == 0 && date.minute() == 0 {
+                "%d."
+            } else {
+                "%d. %H:%M"
+            })
         )
     }
 }
-fn month(m: u8) -> String {
+/// converts from month as number to month as hungarian text
+pub fn month(m: u8) -> String {
     match m {
         1 => "jan.".to_string(),
         2 => "feb.".to_string(),
@@ -42,5 +48,18 @@ fn month(m: u8) -> String {
         11 => "nov.".to_string(),
         12 => "dec.".to_string(),
         _ => unreachable!("invalid month"),
+    }
+}
+/// converts from day as number of week to day as hungarian text
+pub fn day_of_week(d: u8) -> String {
+    match d {
+        1 => "hétfő".to_string(),
+        2 => "kedd".to_string(),
+        3 => "szerda".to_string(),
+        4 => "csütörtök".to_string(),
+        5 => "péntek".to_string(),
+        6 => "szombat".to_string(),
+        7 => "vasárnap".to_string(),
+        _ => unreachable!("invalid day of week"),
     }
 }

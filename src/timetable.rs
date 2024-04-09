@@ -1,9 +1,11 @@
 //! lessons the student has
 
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Datelike, Local, Weekday};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
+
+use crate::{day_of_week, pretty_date};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -45,8 +47,15 @@ impl Lesson {
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "{} ({})\n",
-                first_lesson.start().date_naive(),
-                first_lesson.start().weekday()
+                pretty_date(&first_lesson.start()),
+                day_of_week(
+                    first_lesson
+                        .start()
+                        .weekday()
+                        .number_from_monday()
+                        .try_into()
+                        .unwrap()
+                )
             );
             for lesson in lessons {
                 println!("{lesson}\n");

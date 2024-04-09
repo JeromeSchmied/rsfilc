@@ -2,6 +2,7 @@
 
 use crate::{
     absences::Abs,
+    announced::Announced,
     evals::Eval,
     info::Info,
     messages::{MessageKind, Msg, MsgOverview},
@@ -414,10 +415,22 @@ impl User {
     }
 
     /// get evaluations
-    pub async fn evals(&self) -> AnyErr<Vec<Eval>> {
+    pub async fn evals(
+        &self,
+        from: Option<DateTime<Local>>,
+        to: Option<DateTime<Local>>,
+    ) -> AnyErr<Vec<Eval>> {
+        let mut query = vec![];
+        if let Some(from) = from {
+            query.push(("datumTol", from.to_rfc3339()));
+        }
+        if let Some(to) = to {
+            query.push(("datumIg", to.to_rfc3339()));
+        }
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::EVALUATIONS)
+            .query(&query)
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -453,7 +466,7 @@ impl User {
     }
 
     /// get announced test
-    pub async fn announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<String> {
+    pub async fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Announced>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {
@@ -471,16 +484,27 @@ impl User {
         let mut logf = File::create("announced.log")?;
         write!(logf, "{text}")?;
 
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(text)
+        let all_announced = serde_json::from_str(&text)?;
+        Ok(all_announced)
     }
 
     /// get information about being absent
-    pub async fn absences(&self) -> AnyErr<Vec<Abs>> {
+    pub async fn absences(
+        &self,
+        from: Option<DateTime<Local>>,
+        to: Option<DateTime<Local>>,
+    ) -> AnyErr<Vec<Abs>> {
+        let mut query = vec![];
+        if let Some(from) = from {
+            query.push(("datumTol", from.to_rfc3339()));
+        }
+        if let Some(to) = to {
+            query.push(("datumIg", to.to_rfc3339()));
+        }
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::ABSENCES)
+            .query(&query)
             .headers(self.headers().await?)
             .send()
             .await?;

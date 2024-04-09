@@ -69,7 +69,7 @@ async fn main() -> AnyErr<()> {
             number,
             average,
         } => {
-            let mut evals = user.evals().await?;
+            let mut evals = user.evals(None, None).await?;
             evals.sort_by(|a, b| {
                 b.earned()
                     .partial_cmp(&a.earned())
@@ -109,7 +109,7 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Absences { number } => {
-            let mut absences = user.absences().await?;
+            let mut absences = user.absences(None, None).await?;
             absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
 
             for absence in absences.iter().take(number.into()) {
@@ -117,10 +117,14 @@ async fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Exams { number } => {
-            let announced = user.announced(None).await?;
-            eprintln!("\ngot announced...\n");
-            println!("{announced}");
+        Commands::Tests { number } => {
+            let mut all_announced = user.all_announced(None).await?;
+            all_announced
+                .sort_by(|a, b| b.date().partial_cmp(&a.date()).expect("couldn't compare"));
+
+            for announced in all_announced.iter().take(number.into()) {
+                println!("{}", announced);
+            }
         }
 
         Commands::User {
