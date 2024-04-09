@@ -1,9 +1,6 @@
-use chrono::{Datelike, Local, NaiveDate};
+use chrono::{Datelike, Duration, Local, NaiveDate};
 use clap::Parser;
-use rsfilc::{
-    api::*, args::Commands, evals::Eval, messages::MessageKind, school_list::School, timetable,
-    AnyErr,
-};
+use rsfilc::{api::*, args::Commands, evals::Eval, school_list::School, timetable, AnyErr};
 use std::{fs::File, io::Write};
 
 #[tokio::main]
@@ -26,8 +23,19 @@ async fn main() -> AnyErr<()> {
         Commands::Tui {} => todo!("TUI is to be written (soon)"),
         Commands::Timetable { day } => {
             let day = if let Some(date) = day {
-                NaiveDate::parse_from_str(&date, "%Y-%m-%d")
-                    .expect("couldn't parse date got from user")
+                let date = date.replace(['/', '.'], "-");
+                if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+                    ndate
+                } else if date.starts_with('+') {
+                    Local::now()
+                        .checked_add_signed(Duration::days(
+                            date.parse::<i64>().expect("invalid day shifter"),
+                        ))
+                        .expect("invalid datetime")
+                        .date_naive()
+                } else {
+                    Local::now().date_naive()
+                }
             } else {
                 Local::now().date_naive()
             };
@@ -101,9 +109,11 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Absences { number } => {
-            let absences = user.absences().await?;
-            eprintln!("\ngot absences...\n");
-            println!("{absences}");
+            let mut absences = user.absences().await?;
+            absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
+            for absence in absences.iter().take(number.into()) {
+                println!("{}", absence);
+            }
         }
 
         Commands::Exams { number } => {
