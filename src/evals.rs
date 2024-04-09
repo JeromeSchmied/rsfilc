@@ -113,11 +113,6 @@ impl Eval {
         });
 
         let sum: u16 = evals.clone().fold(0, |sum, cur| {
-            eprintln!(
-                "sum: {sum}; szam: {}; szorzo: {}",
-                cur.szam_ertek.unwrap_or(0) as u16,
-                cur.multi_from_percent()
-            );
             sum + cur.szam_ertek.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
         });
 

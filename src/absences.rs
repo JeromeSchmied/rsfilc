@@ -51,7 +51,7 @@ impl Abs {
         .expect("invalid date-time")
         .into()
     }
-    fn verif(&self) -> bool {
+    pub fn verif(&self) -> bool {
         self.igazolas_allapota == "Igazolt"
     }
     fn subj(&self) -> String {
