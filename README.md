@@ -26,13 +26,13 @@
 
 -   [ ] felhasználó adatainak használhatóvá tétele (struktúrák)
 
-    -   [ ] token
+    -   [x] token
     -   [x] általános információk
     -   [x] jegyek
     -   [x] órarend
     -   [ ] üzenetek
-    -   [ ] előre bejelentett számonkérések
-    -   [ ] hiányzások
+    -   [x] előre bejelentett számonkérések
+    -   [x] hiányzások
 
 ## CLI
 
