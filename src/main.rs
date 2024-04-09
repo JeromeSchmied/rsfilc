@@ -123,7 +123,7 @@ async fn main() -> AnyErr<()> {
                 .sort_by(|a, b| b.date().partial_cmp(&a.date()).expect("couldn't compare"));
 
             for announced in all_announced.iter().take(number.into()) {
-                println!("{}", announced.to_string());
+                println!("{}", announced);
             }
         }
 
