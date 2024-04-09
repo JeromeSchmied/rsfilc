@@ -1,6 +1,6 @@
 //! messaging with teachers and staff
 
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -28,7 +28,7 @@ pub struct MsgOverview {
     // /// is read
     // is_elolvasva: bool,
     #[serde(flatten)]
-    extra: HashMap<String, Value>,
+    _extra: HashMap<String, Value>,
 }
 impl MsgOverview {
     /// Returns the date when this [`MessageOverview`] was sent.
@@ -58,21 +58,21 @@ impl MsgOverview {
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Msg {
-    /// id
-    azonosito: u32,
+    // /// id
+    // azonosito: u32,
 
-    /// is read
-    is_elolvasva: bool,
-    /// is deleted
-    is_torolt_elem: bool,
+    // /// is read
+    // is_elolvasva: bool,
+    // /// is deleted
+    // is_torolt_elem: bool,
 
-    /// kind
-    tipus: HashMap<String, Value>,
+    // /// kind
+    // tipus: HashMap<String, Value>,
     /// the message itself
     uzenet: HashMap<String, Value>,
 
     #[serde(flatten)]
-    extra: HashMap<String, Value>,
+    _extra: HashMap<String, Value>,
 }
 impl Msg {
     /// Returns the date and time when this [`Message`] was sent.
@@ -184,7 +184,7 @@ mod test {
 
     #[test]
     fn message_parsing() {
-        let message_json = r#"{
+        let msg_json = r#"{
 	"azonosito": 1000000,
 	"isElolvasva":true,
 	"isToroltElem":false,
@@ -245,13 +245,14 @@ mod test {
 	}
 }"#;
 
-        let message = serde_json::from_str::<Msg>(message_json);
-        if let Err(e) = &message {
+        let msg = serde_json::from_str::<Msg>(msg_json);
+        if let Err(e) = &msg {
             eprintln!("woohoo: {}", e);
         }
-        assert!(message.is_ok());
+        assert!(msg.is_ok());
 
-        let message = message.unwrap();
-        assert_eq!(message.azonosito, 1000000);
+        let msg = msg.unwrap();
+        assert_eq!(msg.sender(), "Dudás Attila");
+        assert_eq!(msg.sender_title(), "igazgató h.");
     }
 }

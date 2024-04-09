@@ -8,8 +8,8 @@ use std::{collections::HashMap, fmt};
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Eval {
-    /// the time it was saved to `Kréta`
-    rogzites_datuma: String,
+    // /// the time it was saved to `Kréta`
+    // rogzites_datuma: String,
     /// the time it was actually earned
     keszites_datuma: String,
 
@@ -28,9 +28,8 @@ pub struct Eval {
     /// name of the teacher who made the evaluation
     ertekelo_tanar_neve: Option<String>,
 
-    /// type, again?
-    jelleg: String,
-
+    // /// type, again?
+    // jelleg: String,
     /// with number (1,2,3,4,5)
     szam_ertek: Option<u8>,
     /// with text and number actually (Elégtelen(1), Elégséges(2), Közepes(3), Jó(4), Példás(5))

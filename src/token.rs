@@ -13,10 +13,10 @@ use std::collections::HashMap;
 pub struct Token {
     /// the bearer token
     pub access_token: String,
-    /// the token which can be used to refresh stuff
+    /// the token which can be used to refresh the bearer token
     pub refresh_token: String,
 
     /// not needed
     #[serde(flatten)]
-    extra: HashMap<String, serde_json::Value>,
+    _extra: HashMap<String, serde_json::Value>,
 }
