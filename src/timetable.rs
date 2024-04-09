@@ -57,11 +57,6 @@ impl Lesson {
                         .unwrap()
                 )
             );
-            // println!(
-            //     "{} ({})\n",
-            //     first_lesson.start().date_naive(),
-            //     first_lesson.start().weekday()
-            // );
             for lesson in lessons {
                 println!("{lesson}\n");
             }
