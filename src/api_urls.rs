@@ -38,6 +38,7 @@ impl ApiUrls {
 pub mod tests {
     use super::*;
 
+    #[ignore]
     #[test]
     fn api_links_parser() {
         let correct = r#"

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -22,12 +22,11 @@ pub struct Abs {
     keses_percben: Option<String>,
     /// whether it's already verified
     igazolas_allapota: String,
-    /// type of verification
-    igazolas_tipusa: HashMap<String, Value>,
-
+    // /// type of verification
+    // igazolas_tipusa: HashMap<String, Value>,
     /// not needed
     #[serde(flatten)]
-    extra: HashMap<String, serde_json::Value>,
+    _extra: HashMap<String, serde_json::Value>,
 }
 impl Abs {
     pub fn start(&self) -> DateTime<Local> {
@@ -98,12 +97,12 @@ mod tests {
     #[test]
     fn works() {
         let lesson_json = r#"{
-        "Uid": "21413485",
+        "Uid": "00000000",
         "Tantargy": {
-            "Uid": "368848",
+            "Uid": "000000",
             "Nev": "osztályfőnöki",
             "Kategoria": {
-                "Uid": "1242,egyeb",
+                "Uid": "0000,egyeb",
                 "Nev": "egyeb",
                 "Leiras": "Egyéb"
             },
@@ -115,7 +114,7 @@ mod tests {
             "Oraszam": 2
         },
         "Datum": "2023-08-31T22:00:00Z",
-        "RogzitoTanarNeve": "Vondervisztné Kapor Ágnes",
+        "RogzitoTanarNeve": "Teszt Lajos",
         "Tipus": {
             "Uid": "1500,hianyzas",
             "Nev": "hianyzas",
@@ -130,29 +129,24 @@ mod tests {
         "KeszitesDatuma": "2023-09-02T08:09:19Z",
         "IgazolasAllapota": "Igazolt",
         "IgazolasTipusa": {
-            "Uid": "6834,Kikero",
+            "Uid": "0000,Kikero",
             "Nev": "Kikero",
             "Leiras": "Kikérő"
         },
         "OsztalyCsoport": {
-            "Uid": "837087"
+            "Uid": "000000"
         }
     }"#;
 
-        let lesson = serde_json::from_str::<Abs>(lesson_json);
+        let abs = serde_json::from_str::<Abs>(lesson_json);
 
-        assert!(lesson.is_ok(), "{:?}", lesson);
-        let lesson = lesson.unwrap();
+        assert!(abs.is_ok(), "{:?}", abs);
+        let abs = abs.unwrap();
 
-        // assert_eq!(lesson.nev, "fizika");
-        // assert_eq!(lesson.terem_neve, Some("Fizika".to_string()));
-        // assert_eq!(lesson.tema, Some("Félvezetők".to_string()));
-        // assert_eq!(lesson.kezdet_idopont, "2024-03-18T08:50:00Z");
-        // assert_eq!(lesson.veg_idopont, "2024-03-18T09:35:00Z");
-        // assert_eq!(lesson.tanar_neve, Some("Teszt Katalin".to_string()));
-        // assert_eq!(lesson.helyettes_tanar_neve, None);
-        // assert!(!lesson.cancelled());
-        // assert!(!lesson.absent());
-        // assert_eq!(lesson.subject(), Some("fizika".to_string()));
+        assert_eq!(abs.subj(), "osztályfőnöki");
+        assert_eq!(abs.keses_percben, None);
+        assert_eq!(abs.rogzito_tanar_neve, "Teszt Lajos");
+        assert_eq!(abs.igazolas_allapota, "Igazolt");
+        assert!(abs.verif());
     }
 }
