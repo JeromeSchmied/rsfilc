@@ -103,7 +103,7 @@ impl Lesson {
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} óra ", self.nev)?;
+        write!(f, "{} ", self.nev)?;
         if let Some(room) = &self.terem_neve {
             writeln!(f, "a(z) {room} teremben")?;
         } else {
