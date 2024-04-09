@@ -52,7 +52,7 @@ pub enum Commands {
     },
 
     /// information about forecoming exams/tests
-    Exams {
+    Tests {
         /// number of entries to show
         #[arg(short, long, default_value_t = u16::MAX)]
         number: u16,

@@ -2,6 +2,7 @@
 
 use crate::{
     absences::Abs,
+    announced::Announced,
     evals::Eval,
     info::Info,
     messages::{MessageKind, Msg, MsgOverview},
@@ -453,7 +454,7 @@ impl User {
     }
 
     /// get announced test
-    pub async fn announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<String> {
+    pub async fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Announced>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {
@@ -471,9 +472,8 @@ impl User {
         let mut logf = File::create("announced.log")?;
         write!(logf, "{text}")?;
 
-        // let val = serde_json::from_str(&res.text().await?)?;
-        // Ok(val)
-        Ok(text)
+        let all_announced = serde_json::from_str(&text)?;
+        Ok(all_announced)
     }
 
     /// get information about being absent

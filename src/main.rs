@@ -117,10 +117,14 @@ async fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Exams { number } => {
-            let announced = user.announced(None).await?;
-            eprintln!("\ngot announced...\n");
-            println!("{announced}");
+        Commands::Tests { number } => {
+            let mut all_announced = user.all_announced(None).await?;
+            all_announced
+                .sort_by(|a, b| b.date().partial_cmp(&a.date()).expect("couldn't compare"));
+
+            for announced in all_announced.iter().take(number.into()) {
+                println!("{}", announced.to_string());
+            }
         }
 
         Commands::User {

@@ -1,6 +1,7 @@
 use chrono::{DateTime, Datelike, Local};
 
 pub mod absences;
+pub mod announced;
 pub mod api;
 mod api_urls;
 pub mod args;
