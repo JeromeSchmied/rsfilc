@@ -415,10 +415,22 @@ impl User {
     }
 
     /// get evaluations
-    pub async fn evals(&self) -> AnyErr<Vec<Eval>> {
+    pub async fn evals(
+        &self,
+        from: Option<DateTime<Local>>,
+        to: Option<DateTime<Local>>,
+    ) -> AnyErr<Vec<Eval>> {
+        let mut query = vec![];
+        if let Some(from) = from {
+            query.push(("datumTol", from.to_rfc3339()));
+        }
+        if let Some(to) = to {
+            query.push(("datumIg", to.to_rfc3339()));
+        }
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::EVALUATIONS)
+            .query(&query)
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -477,10 +489,22 @@ impl User {
     }
 
     /// get information about being absent
-    pub async fn absences(&self) -> AnyErr<Vec<Abs>> {
+    pub async fn absences(
+        &self,
+        from: Option<DateTime<Local>>,
+        to: Option<DateTime<Local>>,
+    ) -> AnyErr<Vec<Abs>> {
+        let mut query = vec![];
+        if let Some(from) = from {
+            query.push(("datumTol", from.to_rfc3339()));
+        }
+        if let Some(to) = to {
+            query.push(("datumIg", to.to_rfc3339()));
+        }
         let client = reqwest::Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::ABSENCES)
+            .query(&query)
             .headers(self.headers().await?)
             .send()
             .await?;
