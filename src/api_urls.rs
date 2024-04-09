@@ -1,5 +1,7 @@
 //! these URLs are for accessing main API I guess
 
+#![allow(unused)]
+
 use crate::AnyErr;
 use serde::Deserialize;
 
