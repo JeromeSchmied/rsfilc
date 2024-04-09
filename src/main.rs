@@ -68,13 +68,16 @@ async fn main() -> AnyErr<()> {
             kind,
             number,
             average,
+            reverse,
         } => {
             let mut evals = user.evals(None, None).await?;
-            evals.sort_by(|a, b| {
-                b.earned()
-                    .partial_cmp(&a.earned())
-                    .expect("couldn't compare")
-            });
+            if !reverse {
+                evals.sort_by(|a, b| {
+                    b.earned()
+                        .partial_cmp(&a.earned())
+                        .expect("couldn't compare")
+                });
+            }
             // eprintln!("\ngot evals...\n");
             if let Some(kind) = kind {
                 Eval::filter_evals_by_kind(&mut evals, &kind);
@@ -96,10 +99,12 @@ async fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Messages { number } => {
+        Commands::Messages { number, reverse } => {
             let mut msg_overviews = user.all_message_overviews().await?;
-            msg_overviews
-                .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+            if !reverse {
+                msg_overviews
+                    .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+            }
 
             for msg_overview in msg_overviews.iter().take(number.into()) {
                 let full_msg = user.full_message(msg_overview).await?;
@@ -108,7 +113,11 @@ async fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Absences { number, count } => {
+        Commands::Absences {
+            number,
+            count,
+            reverse,
+        } => {
             let mut absences = user.absences(None, None).await?;
             if count {
                 println!("Összes hiányzásod száma: {}", absences.len());
@@ -119,17 +128,22 @@ async fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
+            if !reverse {
+                absences
+                    .sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
+            }
 
             for absence in absences.iter().take(number.into()) {
                 println!("{}", absence);
             }
         }
 
-        Commands::Tests { number } => {
+        Commands::Tests { number, reverse } => {
             let mut all_announced = user.all_announced(None).await?;
-            all_announced
-                .sort_by(|a, b| b.date().partial_cmp(&a.date()).expect("couldn't compare"));
+            if !reverse {
+                all_announced
+                    .sort_by(|a, b| b.date().partial_cmp(&a.date()).expect("couldn't compare"));
+            }
 
             for announced in all_announced.iter().take(number.into()) {
                 println!("{}", announced);
