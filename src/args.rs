@@ -16,7 +16,7 @@ pub enum Commands {
 
     /// information about lessons, today by default
     Timetable {
-        /// which day to show
+        /// which day to show: +n (where n is day, and it's added to today) or YYYY/MM/DD
         #[arg(short, long)]
         day: Option<String>,
     },
@@ -29,12 +29,12 @@ pub enum Commands {
         /// filter the kind to show
         #[arg(short, long)]
         kind: Option<String>,
-        /// number of entries to show
-        #[arg(short, long, default_value_t = u16::MAX)]
-        number: u16,
         /// average
         #[arg(short, long, default_value_t = false)]
         average: bool,
+        /// number of entries to show
+        #[arg(short, long, default_value_t = u16::MAX)]
+        number: u16,
     },
 
     /// messages the user either recieved or sent
@@ -49,6 +49,9 @@ pub enum Commands {
         /// number of entries to show
         #[arg(short, long, default_value_t = u16::MAX)]
         number: u16,
+        /// count the number of absences
+        #[arg(short, long, default_value_t = false)]
+        count: bool,
     },
 
     /// information about forecoming exams/tests

@@ -1,11 +1,10 @@
 //! lessons the student has
 
-use chrono::{DateTime, Datelike, Local, Weekday};
+use crate::{day_of_week, pretty_date};
+use chrono::{DateTime, Datelike, Local};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
-
-use crate::{day_of_week, pretty_date};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]

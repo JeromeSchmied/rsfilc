@@ -108,8 +108,17 @@ async fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Absences { number } => {
+        Commands::Absences { number, count } => {
             let mut absences = user.absences(None, None).await?;
+            if count {
+                println!("Összes hiányzásod száma: {}", absences.len());
+                println!(
+                    "Ebből még igazolatlan: {}",
+                    absences.iter().filter(|item| !item.verif()).count()
+                );
+                return Ok(());
+            }
+
             absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
 
             for absence in absences.iter().take(number.into()) {
