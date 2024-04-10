@@ -27,6 +27,7 @@ use crate::api;
 pub mod admin_endpoints;
 pub mod endpoints;
 
+/// base url of school with `school_id`
 pub fn base(school_id: &str) -> String {
     format!("https://{school_id}.e-kreta.hu")
 }
@@ -78,6 +79,7 @@ impl User {
     }
 
     /// load user account from saved dir
+    ///
     /// ```toml
     /// [[user]]
     /// username = "70123456789"
@@ -122,7 +124,7 @@ impl User {
         Some(val)
     }
 
-    /// create a [`user`] from cli
+    /// create a [`User`] from cli
     pub fn create() -> Self {
         println!("please login");
         print!("username: ");
@@ -172,7 +174,7 @@ impl User {
 
         users
     }
-    /// save credentials
+    /// save user credentials
     fn save(&self) {
         if Self::load_all().contains(self) {
             return;
@@ -218,7 +220,7 @@ impl User {
 
         Some(user.clone())
     }
-    /// save to config.toml
+    /// save [`User`] as default to config.toml
     async fn save_to_conf(&self) {
         let conf_path = Self::config_path().expect("couldn't find config path");
         if !conf_path.exists() {
@@ -230,7 +232,7 @@ impl User {
         writeln!(conf_file, "[user]").unwrap();
         writeln!(conf_file, "name = \"{}\"", self.name().await).unwrap();
     }
-    /// load user configured in config.toml
+    /// load [`User`] configured in config.toml
     pub async fn load_conf() -> Option<Self> {
         let conf_path = Self::config_path().expect("couldn't find config path");
         if !conf_path.exists() {
@@ -332,7 +334,7 @@ impl User {
         Ok(token)
     }
 
-    /// get user info
+    /// get [`User`] info
     pub async fn info(&self) -> AnyErr<Info> {
         let client = reqwest::Client::new();
         let res = client
@@ -349,7 +351,7 @@ impl User {
         Ok(info)
     }
 
-    /// get messages of a kind
+    /// get [`MsgOverview`]s of a kind
     pub async fn message_overviews_of_kind(
         &self,
         message_kind: MessageKind,
