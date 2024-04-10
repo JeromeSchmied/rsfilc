@@ -8,7 +8,7 @@ use std::{collections::HashMap, fmt};
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct MsgOverview {
+pub struct MsgOview {
     /// id
     pub azonosito: u64,
     /// another id
@@ -30,7 +30,7 @@ pub struct MsgOverview {
     #[serde(flatten)]
     _extra: HashMap<String, Value>,
 }
-impl MsgOverview {
+impl MsgOview {
     /// Returns the date when this [`MessageOverview`] was sent.
     ///
     /// # Panics
@@ -162,7 +162,7 @@ mod test {
         "isElolvasva": true
     }"#;
 
-        let message = serde_json::from_str::<MsgOverview>(message_json);
+        let message = serde_json::from_str::<MsgOview>(message_json);
         if let Err(e) = &message {
             eprintln!("woohoo: {}", e);
         }

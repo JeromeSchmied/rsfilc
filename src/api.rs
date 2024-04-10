@@ -5,7 +5,7 @@ use crate::{
     announced::Announced,
     evals::Eval,
     info::Info,
-    messages::{Msg, MsgKind, MsgOverview},
+    messages::{Msg, MsgKind, MsgOview},
     timetable::Lesson,
     token::Token,
     AnyErr,
@@ -352,10 +352,7 @@ impl User {
     }
 
     /// get [`MsgOverview`]s of a kind
-    pub async fn message_overviews_of_kind(
-        &self,
-        message_kind: MsgKind,
-    ) -> AnyErr<Vec<MsgOverview>> {
+    pub async fn message_overviews_of_kind(&self, message_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
         let client = reqwest::Client::new();
         let res = client
             .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
@@ -372,7 +369,7 @@ impl User {
     }
 
     /// get all messages, of any kind
-    pub async fn all_message_overviews(&self) -> AnyErr<Vec<MsgOverview>> {
+    pub async fn all_message_overviews(&self) -> AnyErr<Vec<MsgOview>> {
         let mut messages = Vec::new();
 
         messages = [
@@ -395,7 +392,7 @@ impl User {
     }
 
     /// Get whole message from the id of a messagepreview
-    pub async fn full_message(&self, message_overview: &MsgOverview) -> AnyErr<Msg> {
+    pub async fn full_message(&self, message_overview: &MsgOview) -> AnyErr<Msg> {
         let client = reqwest::Client::new();
         let res = client
             .get(
