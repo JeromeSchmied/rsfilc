@@ -1,3 +1,5 @@
+//! endpoints
+
 /// nonce
 pub const NONCE: &str = "/nonce";
 /// what are these?

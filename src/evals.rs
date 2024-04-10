@@ -50,7 +50,8 @@ impl Eval {
     }
 
     /// Returns the subject of this [`Eval`].
-    pub fn subject(&self) -> Option<String> {
+    /// Eg. "magyar_nyelv_es_irodalom"
+    pub fn subject_id(&self) -> Option<String> {
         Some(
             self.tantargy
                 .as_ref()?
@@ -63,6 +64,7 @@ impl Eval {
     }
 
     /// Returns the subject's name of this [`Eval`].
+    /// Eg. "Magyar nyelv és irodalom"
     pub fn subject_name(&self) -> Option<String> {
         Some(
             self.tantargy
@@ -76,6 +78,7 @@ impl Eval {
     }
 
     /// Returns the kind of this [`Eval`].
+    /// Eg. "Memoriter"
     fn kind(&self) -> Option<String> {
         Some(self.r#mod.as_ref()?.get("Leiras")?.to_owned())
     }
@@ -102,7 +105,7 @@ impl Eval {
     /// Filter `evals` by `subject`
     pub fn filter_evals_by_subject(evals: &mut Vec<Eval>, subj: &str) {
         evals.retain(|eval| {
-            eval.subject()
+            eval.subject_id()
                 .is_some_and(|kd| kd.to_lowercase().contains(&subj.to_lowercase()))
                 || eval
                     .subject_name()
@@ -114,7 +117,7 @@ impl Eval {
     pub fn average(evals: &[Eval]) -> f32 {
         let evals = evals.iter().filter(|eval| {
             !eval
-                .type_name()
+                .type_id()
                 .is_some_and(|t| t.contains("felevi") || t.contains("evvegi"))
         });
 
@@ -130,12 +133,14 @@ impl Eval {
     }
 
     /// Returns the multiplication value from percent of this [`Eval`].
+    /// Eg. for 100% -> 1
     fn multi_from_percent(&self) -> u8 {
         (self.suly_szazalek_erteke.unwrap_or(100) / 100) as u8
     }
 
-    /// Returns the type name of this [`Eval`].
-    fn type_name(&self) -> Option<String> {
+    /// Returns the type id of this [`Eval`].
+    /// Eg. "evkozi_jegy_ertekeles"
+    fn type_id(&self) -> Option<String> {
         Some(self.tipus.as_ref()?.get("Nev")?.to_owned())
     }
 }
@@ -213,5 +218,24 @@ mod tests {
 
         let eval = serde_json::from_str::<Eval>(eval_json);
         assert!(eval.is_ok());
+
+        let eval = eval.unwrap();
+
+        assert_eq!(eval.tema, Some("Villon".to_string()));
+        assert_eq!(eval.ertekelo_tanar_neve, Some("Teszt Tamás".to_owned()));
+        assert_eq!(eval.szam_ertek, Some(5));
+        assert_eq!(eval.szoveges_ertek, "Jeles(5)");
+        assert_eq!(eval.suly_szazalek_erteke, Some(100));
+        assert_eq!(
+            eval.subject_id(),
+            Some("magyar_nyelv_es_irodalom".to_owned())
+        );
+        assert_eq!(
+            eval.subject_name(),
+            Some("Magyar nyelv és irodalom".to_owned())
+        );
+        assert_eq!(eval.kind(), Some("Memoriter".to_owned()));
+        assert_eq!(eval.multi_from_percent(), 1);
+        assert_eq!(eval.type_id(), Some("evkozi_jegy_ertekeles".to_owned()))
     }
 }
