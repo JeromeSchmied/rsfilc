@@ -6,10 +6,9 @@ use serde::Deserialize;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Info {
-    // ora neve
+    // name of the student
     pub nev: String,
 
-    /// not needed
     #[serde(flatten)]
     pub extra: HashMap<String, serde_json::Value>,
 }

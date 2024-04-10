@@ -1,10 +1,12 @@
+//! Announced tests
+
 use crate::pretty_date;
 use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
-/// Absence
+/// announced test
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Announced {
@@ -17,7 +19,7 @@ pub struct Announced {
     rogzito_tanar_neve: String,
 
     /// nth lesson of that day
-    orarendi_ora_oraszam: Option<u8>,
+    orarendi_ora_oraszama: Option<u8>,
 
     /// name of the subject
     tantargy_neve: String,
@@ -35,16 +37,35 @@ pub struct Announced {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Announced {
+    /// endpoint
+    pub const fn ep() -> &'static str {
+        "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
+    }
+    /// Returns the entry date of this [`Announced`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if data contains invalid date-time.
     pub fn entry_date(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.bejelentes_datuma)
             .expect("invalid date-time")
             .into()
     }
-    pub fn date(&self) -> DateTime<Local> {
+    /// Returns the day when this [`Announced`] will be written by the student.
+    ///
+    /// # Panics
+    ///
+    /// Panics if data contains invalid date-time.
+    pub fn day(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.datum)
             .expect("invalid date-time")
             .into()
     }
+    /// Returns the kind of this [`Announced`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if data doesn't contain `kind`.
     fn kind(&self) -> String {
         self.modja
             .get("Leiras")
@@ -59,7 +80,7 @@ impl fmt::Display for Announced {
         writeln!(f, "{}", self.tantargy_neve)?;
         writeln!(f, "{}", self.temaja)?;
         writeln!(f, "{}", self.kind())?;
-        writeln!(f, "Írás dátuma: {}", pretty_date(&self.date()))?;
+        writeln!(f, "Írás dátuma: {}", pretty_date(&self.day()))?;
         writeln!(f, "{}", self.rogzito_tanar_neve)?;
         writeln!(f, "Bejelentés dátuma: {}", pretty_date(&self.entry_date()))?;
 
@@ -109,5 +130,9 @@ mod tests {
         let abs = anc.unwrap();
 
         assert_eq!(abs.rogzito_tanar_neve, "Teszt Mónika");
+        assert_eq!(abs.orarendi_ora_oraszama, Some(6));
+        assert_eq!(abs.tantargy_neve, "matematika");
+        assert_eq!(abs.temaja, "Matematikai logika");
+        assert_eq!(abs.kind(), "Írásbeli röpdolgozat");
     }
 }

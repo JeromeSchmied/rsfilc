@@ -20,3 +20,9 @@ pub struct Token {
     #[serde(flatten)]
     _extra: HashMap<String, serde_json::Value>,
 }
+impl Token {
+    /// access [`Token`] endpoint
+    pub const fn ep() -> &'static str {
+        "/connect/token"
+    }
+}

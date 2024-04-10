@@ -3,9 +3,10 @@
 use crate::{
     absences::Abs,
     announced::Announced,
+    api,
     evals::Eval,
     info::Info,
-    messages::{MessageKind, Msg, MsgOverview},
+    messages::{Msg, MsgKind, MsgOview},
     timetable::Lesson,
     token::Token,
     AnyErr,
@@ -22,11 +23,10 @@ use std::{
     path::PathBuf,
 };
 
-use crate::api;
-
 pub mod admin_endpoints;
 pub mod endpoints;
 
+/// base url of school with `school_id`
 pub fn base(school_id: &str) -> String {
     format!("https://{school_id}.e-kreta.hu")
 }
@@ -66,6 +66,10 @@ impl User {
         self.info().await.expect("couldn't get user info").nev
     }
 
+    pub const fn ep() -> &'static str {
+        "/ellenorzo/V3/Sajat/TanuloAdatlap"
+    }
+
     /// create new instance of user and save it
     pub fn new(username: &str, password: &str, school_id: &str) -> Self {
         let user = Self {
@@ -78,6 +82,7 @@ impl User {
     }
 
     /// load user account from saved dir
+    ///
     /// ```toml
     /// [[user]]
     /// username = "70123456789"
@@ -122,7 +127,7 @@ impl User {
         Some(val)
     }
 
-    /// create a [`user`] from cli
+    /// create a [`User`] from cli
     pub fn create() -> Self {
         println!("please login");
         print!("username: ");
@@ -172,7 +177,7 @@ impl User {
 
         users
     }
-    /// save credentials
+    /// save user credentials
     fn save(&self) {
         if Self::load_all().contains(self) {
             return;
@@ -218,7 +223,7 @@ impl User {
 
         Some(user.clone())
     }
-    /// save to config.toml
+    /// save [`User`] as default to config.toml
     async fn save_to_conf(&self) {
         let conf_path = Self::config_path().expect("couldn't find config path");
         if !conf_path.exists() {
@@ -230,7 +235,7 @@ impl User {
         writeln!(conf_file, "[user]").unwrap();
         writeln!(conf_file, "name = \"{}\"", self.name().await).unwrap();
     }
-    /// load user configured in config.toml
+    /// load [`User`] configured in config.toml
     pub async fn load_conf() -> Option<Self> {
         let conf_path = Self::config_path().expect("couldn't find config path");
         if !conf_path.exists() {
@@ -318,7 +323,7 @@ impl User {
 
         let client = reqwest::Client::new();
         let res = client
-            .post([api::IDP, endpoints::TOKEN].concat())
+            .post([api::IDP, Token::ep()].concat())
             .headers(headers)
             .form(&data)
             .send()
@@ -332,11 +337,11 @@ impl User {
         Ok(token)
     }
 
-    /// get user info
+    /// get [`User`] info
     pub async fn info(&self) -> AnyErr<Info> {
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::STUDENT)
+            .get(base(&self.school_id) + User::ep())
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -349,14 +354,11 @@ impl User {
         Ok(info)
     }
 
-    /// get messages of a kind
-    pub async fn message_overviews_of_kind(
-        &self,
-        message_kind: MessageKind,
-    ) -> AnyErr<Vec<MsgOverview>> {
+    /// get all [`MsgOview`]s of a [`MsgKind`]
+    pub async fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
         let client = reqwest::Client::new();
         let res = client
-            .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
+            .get(api::ADMIN.to_owned() + &admin_endpoints::get_all_msgs(&msg_kind.val()))
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -370,37 +372,23 @@ impl User {
     }
 
     /// get all messages, of any kind
-    pub async fn all_message_overviews(&self) -> AnyErr<Vec<MsgOverview>> {
-        let mut messages = Vec::new();
+    pub async fn all_msg_oviews(&self) -> AnyErr<Vec<MsgOview>> {
+        let mut msgs = Vec::new();
 
-        messages = [
-            messages,
-            self.message_overviews_of_kind(MessageKind::Beerkezett)
-                .await?,
-        ]
-        .concat();
-        messages = [
-            messages,
-            self.message_overviews_of_kind(MessageKind::Elkuldott)
-                .await?,
-        ]
-        .concat();
-        messages = [
-            messages,
-            self.message_overviews_of_kind(MessageKind::Torolt).await?,
-        ]
-        .concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Recv).await?].concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Sent).await?].concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Del).await?].concat();
 
-        Ok(messages)
+        Ok(msgs)
     }
 
-    /// Get whole message from the id of a messagepreview
-    pub async fn full_message(&self, message_overview: &MsgOverview) -> AnyErr<Msg> {
+    /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
+    pub async fn full_msg(&self, msg_oview: &MsgOview) -> AnyErr<Msg> {
         let client = reqwest::Client::new();
         let res = client
             .get(
                 api::ADMIN.to_owned()
-                    + &api::admin_endpoints::get_message(&message_overview.azonosito.to_string()),
+                    + &api::admin_endpoints::get_msg(&msg_oview.azonosito.to_string()),
             )
             .headers(self.headers().await?)
             .send()
@@ -414,7 +402,7 @@ impl User {
         Ok(msg)
     }
 
-    /// get evaluations
+    /// get all [`Eval`]s with `from` `to` or all
     pub async fn evals(
         &self,
         from: Option<DateTime<Local>>,
@@ -429,7 +417,7 @@ impl User {
         }
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::EVALUATIONS)
+            .get(base(&self.school_id) + Eval::ep())
             .query(&query)
             .headers(self.headers().await?)
             .send()
@@ -443,7 +431,7 @@ impl User {
         Ok(evals)
     }
 
-    /// get timetable
+    /// get all [`Lesson`]s `from` `to` which makes up a timetable
     pub async fn timetable(
         &self,
         from: DateTime<Local>,
@@ -451,7 +439,7 @@ impl User {
     ) -> AnyErr<Vec<Lesson>> {
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::TIMETABLE)
+            .get(base(&self.school_id) + Lesson::ep())
             .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
             .headers(self.headers().await?)
             .send()
@@ -461,11 +449,11 @@ impl User {
         let mut logf = File::create("timetable.log")?;
         write!(logf, "{text}")?;
 
-        let val = serde_json::from_str(&text)?;
-        Ok(val)
+        let lessons = serde_json::from_str(&text)?;
+        Ok(lessons)
     }
 
-    /// get announced test
+    /// get [`Announced`] tests `from` or all
     pub async fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Announced>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
@@ -474,7 +462,7 @@ impl User {
         };
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::ANNOUNCED_TESTS)
+            .get(base(&self.school_id) + Announced::ep())
             .query(&query)
             .headers(self.headers().await?)
             .send()
@@ -488,7 +476,7 @@ impl User {
         Ok(all_announced)
     }
 
-    /// get information about being absent
+    /// get information about being [`Abs`]ent `from` `to` or all
     pub async fn absences(
         &self,
         from: Option<DateTime<Local>>,
@@ -503,7 +491,7 @@ impl User {
         }
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::ABSENCES)
+            .get(base(&self.school_id) + Abs::ep())
             .query(&query)
             .headers(self.headers().await?)
             .send()

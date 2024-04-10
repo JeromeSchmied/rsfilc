@@ -8,7 +8,7 @@ use std::{collections::HashMap, fmt};
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct MsgOverview {
+pub struct MsgOview {
     /// id
     pub azonosito: u64,
     /// another id
@@ -30,7 +30,7 @@ pub struct MsgOverview {
     #[serde(flatten)]
     _extra: HashMap<String, Value>,
 }
-impl MsgOverview {
+impl MsgOview {
     /// Returns the date when this [`MessageOverview`] was sent.
     ///
     /// # Panics
@@ -129,18 +129,22 @@ impl fmt::Display for Msg {
     }
 }
 
-/// kinds of message
-pub enum MessageKind {
-    Beerkezett,
-    Elkuldott,
-    Torolt,
+/// kinds of [`Msg`]
+pub enum MsgKind {
+    /// recieved
+    Recv,
+    /// sent
+    Sent,
+    /// deleted/trashed
+    Del,
 }
-impl MessageKind {
+impl MsgKind {
+    /// get value for this [`MsgKind`]
     pub fn val(&self) -> String {
         match self {
-            MessageKind::Beerkezett => "beerkezett".to_owned(),
-            MessageKind::Elkuldott => "elkuldott".to_owned(),
-            MessageKind::Torolt => "torolt".to_owned(),
+            MsgKind::Recv => "beerkezett".to_owned(),
+            MsgKind::Sent => "elkuldott".to_owned(),
+            MsgKind::Del => "torolt".to_owned(),
         }
     }
 }
@@ -162,7 +166,7 @@ mod test {
         "isElolvasva": true
     }"#;
 
-        let message = serde_json::from_str::<MsgOverview>(message_json);
+        let message = serde_json::from_str::<MsgOview>(message_json);
         if let Err(e) = &message {
             eprintln!("woohoo: {}", e);
         }

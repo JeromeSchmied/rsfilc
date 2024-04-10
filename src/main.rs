@@ -100,14 +100,14 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Messages { number, reverse } => {
-            let mut msg_overviews = user.all_message_overviews().await?;
+            let mut msg_overviews = user.all_msg_oviews().await?;
             if !reverse {
                 msg_overviews
                     .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
             }
 
             for msg_overview in msg_overviews.iter().take(number.into()) {
-                let full_msg = user.full_message(msg_overview).await?;
+                let full_msg = user.full_msg(msg_overview).await?;
                 // println!("{}", msg_overview);
                 println!("{}", full_msg);
             }
@@ -142,7 +142,7 @@ async fn main() -> AnyErr<()> {
             let mut all_announced = user.all_announced(None).await?;
             if !reverse {
                 all_announced
-                    .sort_by(|a, b| b.date().partial_cmp(&a.date()).expect("couldn't compare"));
+                    .sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
             }
 
             for announced in all_announced.iter().take(number.into()) {

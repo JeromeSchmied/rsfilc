@@ -1,3 +1,5 @@
+//! RsFilc: `Kréta` API and client
+
 use chrono::{DateTime, Datelike, Local, Timelike};
 
 pub mod absences;
@@ -15,6 +17,7 @@ pub mod token;
 /// Result from `T` and `Box<dyn Error>`
 pub type AnyErr<T> = Result<T, Box<dyn std::error::Error>>;
 
+/// format date so it looks pretty with hungarian text
 pub fn pretty_date(date: &DateTime<Local>) -> String {
     let this_year = date.year() == Local::now().year();
 

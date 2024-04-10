@@ -6,6 +6,7 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
+/// a lesson
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Lesson {
@@ -41,6 +42,10 @@ pub struct Lesson {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Lesson {
+    /// endpoint
+    pub const fn ep() -> &'static str {
+        "/ellenorzo/V3/Sajat/OrarendElemek"
+    }
     /// print all lessons of a day
     pub fn print_day(lessons: &[Lesson]) {
         if let Some(first_lesson) = lessons.first() {
@@ -61,7 +66,7 @@ impl Lesson {
             }
         }
     }
-    /// Returns whether this [`Lesson`] has been cancelled.
+    /// Returns whether this [`Lesson`] has been / will be cancelled.
     pub fn cancelled(&self) -> bool {
         self.allapot
             .as_ref()

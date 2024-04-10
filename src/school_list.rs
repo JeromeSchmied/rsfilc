@@ -4,6 +4,7 @@ use crate::AnyErr;
 use serde::Deserialize;
 use std::fmt;
 
+/// a school
 #[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct School {
