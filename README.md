@@ -1,61 +1,62 @@
-# [RsFilc](https://codeberg.org/jark/rsfilc): Kréta kliens [Rust](https://rust-lang.org)ban
+# [RsFilc](https://codeberg.org/jark/rsfilc): `Kréta` client in [Rust](https://rust-lang.org)
+> `Kréta` is an awful hungarian electronic school administration system
 
-## Letöltés
+## Installation
 
 -   [Rust](https://rustup.rs)
 -   `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
 
-## Használat
+## Usage
 
 `rsfilc --help`
 
 ## API
 
--   [x] Kréta API Url-ek lekérése (nem tudom mire jók)
--   [x] iskolák lekérése [ReFilc API](https://api.refilc.hu/v1/public/school-list)-ból
+-   [x] Kréta API URL fetching (no clue what they do)
+-   [x] school fetching from [ReFilc API](https://api.refilc.hu/v1/public/school-list)
 
--   [x] felhasználó adatainak lekérése (json)
-
-    -   [x] token
-    -   [x] általános információk
-    -   [x] jegyek
-    -   [x] órarend
-    -   [x] üzenetek
-    -   [x] előre bejelentett számonkérések
-    -   [x] hiányzások
-
--   [ ] felhasználó adatainak használhatóvá tétele (struktúrák)
+-   [x] user info fetch (json)
 
     -   [x] token
-    -   [x] általános információk
-    -   [x] jegyek
-    -   [x] órarend
-    -   [ ] üzenetek
-    -   [x] előre bejelentett számonkérések
-    -   [x] hiányzások
+    -   [x] basic information
+    -   [x] evaluations/grades
+    -   [x] timetable
+    -   [x] messages
+    -   [x] announced test
+    -   [x] absences
+
+-   [x] usable user info (in `structs`)
+
+    -   [x] token
+    -   [x] basic information
+    -   [x] evaluations/grades
+    -   [x] timetable
+    -   [x] messages
+    -   [x] announced test
+    -   [x] absences
 
 ## CLI
 
--   [ ] API alapvető használata
--   [ ] kért adatok alapvető megjelenítése
--   [x] több fiókos rendszer
--   [ ] kb minden cache-elése a valódi élmény érdekében
--   [ ] ...
+-   [x] basic usage of API
+-   [x] filtering what to show
+-   [x] multi-user feature
+-   [ ] somehow rendering `html` that messages return
+-   [ ] caching everything so that life remains enjoyable
 
 ## TUI
 
--   [ ] külön oldalak
+-   [ ] multiple pages
 
-    -   [ ] jegyek
-    -   [ ] órarend
+    -   [ ] evaluations
+    -   [ ] timetable
     -   [ ] ...
 
--   [ ] adatok szép megjelenítése
-    -   [ ] órarendnek táblázat
-    -   [ ] pl jegyeknek diagram
+-   [ ] beautifully displaying data
+    -   [ ] timetable in nice table
+    -   [ ] plotting evaluations
     -   [ ] ...
 
-## Elismerések
+## Acknowledgements
 
-Az API alapvetően [ez alapján a dokumentáció](https://github.com/bczsalba/ekreta-docs-v3) alapján valósult meg.
-Kódinspiráció a [ReFilc](https://github.com/refilc/naplo)ből.
+-   The API is written according to [this great documentation](https://github.com/bczsalba/ekreta-docs-v3).
+-   Code ideas from [ReFilc](https://github.com/refilc/naplo).
