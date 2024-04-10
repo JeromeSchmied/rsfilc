@@ -4,15 +4,16 @@ use chrono::{DateTime, Datelike, Local, Timelike};
 
 pub mod absences;
 pub mod announced;
-pub mod api;
 mod api_urls;
 pub mod args;
+pub mod endpoints;
 pub mod evals;
 pub mod info;
 pub mod messages;
 pub mod school_list;
 pub mod timetable;
 pub mod token;
+pub mod user;
 
 /// Result from `T` and `Box<dyn Error>`
 pub type AnyErr<T> = Result<T, Box<dyn std::error::Error>>;
