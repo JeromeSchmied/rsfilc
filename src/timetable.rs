@@ -66,7 +66,7 @@ impl Lesson {
             }
         }
     }
-    /// Returns whether this [`Lesson`] has been cancelled.
+    /// Returns whether this [`Lesson`] has been / will be cancelled.
     pub fn cancelled(&self) -> bool {
         self.allapot
             .as_ref()
