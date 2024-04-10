@@ -100,7 +100,7 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Messages { number, reverse } => {
-            let mut msg_overviews = user.all_message_overviews().await?;
+            let mut msg_overviews = user.all_msg_oviews().await?;
             if !reverse {
                 msg_overviews
                     .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));

@@ -351,11 +351,11 @@ impl User {
         Ok(info)
     }
 
-    /// get [`MsgOverview`]s of a kind
-    pub async fn message_overviews_of_kind(&self, message_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
+    /// get all [`MsgOview`]s of a [`MsgKind`]
+    pub async fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
         let client = reqwest::Client::new();
         let res = client
-            .get(api::ADMIN.to_owned() + &admin_endpoints::get_message(&message_kind.val()))
+            .get(api::ADMIN.to_owned() + &admin_endpoints::get_msg(&msg_kind.val()))
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -369,35 +369,23 @@ impl User {
     }
 
     /// get all messages, of any kind
-    pub async fn all_message_overviews(&self) -> AnyErr<Vec<MsgOview>> {
-        let mut messages = Vec::new();
+    pub async fn all_msg_oviews(&self) -> AnyErr<Vec<MsgOview>> {
+        let mut msgs = Vec::new();
 
-        messages = [
-            messages,
-            self.message_overviews_of_kind(MsgKind::Beerkezett).await?,
-        ]
-        .concat();
-        messages = [
-            messages,
-            self.message_overviews_of_kind(MsgKind::Elkuldott).await?,
-        ]
-        .concat();
-        messages = [
-            messages,
-            self.message_overviews_of_kind(MsgKind::Torolt).await?,
-        ]
-        .concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Recv).await?].concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Sent).await?].concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Del).await?].concat();
 
-        Ok(messages)
+        Ok(msgs)
     }
 
-    /// Get whole message from the id of a messagepreview
-    pub async fn full_message(&self, message_overview: &MsgOview) -> AnyErr<Msg> {
+    /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
+    pub async fn full_msg(&self, msg_oview: &MsgOview) -> AnyErr<Msg> {
         let client = reqwest::Client::new();
         let res = client
             .get(
                 api::ADMIN.to_owned()
-                    + &api::admin_endpoints::get_message(&message_overview.azonosito.to_string()),
+                    + &api::admin_endpoints::get_msg(&msg_oview.azonosito.to_string()),
             )
             .headers(self.headers().await?)
             .send()
@@ -411,7 +399,7 @@ impl User {
         Ok(msg)
     }
 
-    /// get evaluations
+    /// get all [`Eval`]s with `from` `to` or all
     pub async fn evals(
         &self,
         from: Option<DateTime<Local>>,
@@ -440,7 +428,7 @@ impl User {
         Ok(evals)
     }
 
-    /// get timetable
+    /// get all [`Lesson`]s `from` `to` which makes up a timetable
     pub async fn timetable(
         &self,
         from: DateTime<Local>,
@@ -458,11 +446,11 @@ impl User {
         let mut logf = File::create("timetable.log")?;
         write!(logf, "{text}")?;
 
-        let val = serde_json::from_str(&text)?;
-        Ok(val)
+        let lessons = serde_json::from_str(&text)?;
+        Ok(lessons)
     }
 
-    /// get announced test
+    /// get [`Announced`] tests `from` or all
     pub async fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Announced>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
@@ -485,7 +473,7 @@ impl User {
         Ok(all_announced)
     }
 
-    /// get information about being absent
+    /// get information about being [`Abs`]ent `from` `to` or all
     pub async fn absences(
         &self,
         from: Option<DateTime<Local>>,

@@ -2,7 +2,7 @@ pub const SEND_MESSAGE: &str = "/api/v1/kommunikacio/uzenetek";
 pub fn get_all_messages(endpoint: &str) -> String {
     format!("/api/v1/kommunikacio/postaladaelemek/{endpoint}")
 }
-pub fn get_message(id: &str) -> String {
+pub fn get_msg(id: &str) -> String {
     format!("/api/v1/kommunikacio/postaladaelemek/{id}")
 }
 pub const RECIPIENT_CATEGORIES: &str = "/api/v1/adatszotarak/cimzetttipusok";

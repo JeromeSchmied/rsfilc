@@ -129,18 +129,22 @@ impl fmt::Display for Msg {
     }
 }
 
-/// kinds of message
+/// kinds of [`Msg`]
 pub enum MsgKind {
-    Beerkezett,
-    Elkuldott,
-    Torolt,
+    /// recieved
+    Recv,
+    /// sent
+    Sent,
+    /// deleted/trashed
+    Del,
 }
 impl MsgKind {
+    /// get value for this [`MsgKind`]
     pub fn val(&self) -> String {
         match self {
-            MsgKind::Beerkezett => "beerkezett".to_owned(),
-            MsgKind::Elkuldott => "elkuldott".to_owned(),
-            MsgKind::Torolt => "torolt".to_owned(),
+            MsgKind::Recv => "beerkezett".to_owned(),
+            MsgKind::Sent => "elkuldott".to_owned(),
+            MsgKind::Del => "torolt".to_owned(),
         }
     }
 }
