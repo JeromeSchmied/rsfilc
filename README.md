@@ -34,6 +34,7 @@
     -   [x] messages
     -   [x] announced test
     -   [x] absences
+    -   [ ] ...
 
 ## CLI
 

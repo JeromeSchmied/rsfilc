@@ -24,7 +24,7 @@
     -   [x] előre bejelentett számonkérések
     -   [x] hiányzások
 
--   [ ] felhasználó adatainak használhatóvá tétele (struktúrák)
+-   [x] felhasználó adatainak használhatóvá tétele (struktúrák)
 
     -   [x] token
     -   [x] általános információk
@@ -33,6 +33,7 @@
     -   [x] üzenetek
     -   [x] előre bejelentett számonkérések
     -   [x] hiányzások
+    -   [ ] ...
 
 ## CLI
 
