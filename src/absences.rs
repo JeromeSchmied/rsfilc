@@ -1,11 +1,12 @@
+//! Absences
+
+use crate::pretty_date;
 use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
-use crate::pretty_date;
-
-/// Absence
+/// Absence info
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Abs {
@@ -29,6 +30,13 @@ pub struct Abs {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Abs {
+    /// Returns the starting date of this [`Abs`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if
+    /// - data doesn't contain `starting date`.
+    /// - which is invalid.
     pub fn start(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(
             self.ora
@@ -40,6 +48,13 @@ impl Abs {
         .expect("invalid date-time")
         .into()
     }
+    /// Returns the end date of this [`Abs`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if
+    /// - data doesn't contain `end date`.
+    /// - which is invalid.
     pub fn end(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(
             self.ora
@@ -51,9 +66,15 @@ impl Abs {
         .expect("invalid date-time")
         .into()
     }
+    /// Returns whether the [`Abs`] has been verified.
     pub fn verif(&self) -> bool {
         self.igazolas_allapota == "Igazolt"
     }
+    /// Returns the subject of the lesson which was missed in this [`Abs`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if data doesn't contain `subject`.
     fn subj(&self) -> String {
         self.tantargy
             .get("Nev")
