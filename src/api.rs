@@ -5,7 +5,7 @@ use crate::{
     announced::Announced,
     evals::Eval,
     info::Info,
-    messages::{MessageKind, Msg, MsgOverview},
+    messages::{Msg, MsgKind, MsgOverview},
     timetable::Lesson,
     token::Token,
     AnyErr,
@@ -354,7 +354,7 @@ impl User {
     /// get [`MsgOverview`]s of a kind
     pub async fn message_overviews_of_kind(
         &self,
-        message_kind: MessageKind,
+        message_kind: MsgKind,
     ) -> AnyErr<Vec<MsgOverview>> {
         let client = reqwest::Client::new();
         let res = client
@@ -377,19 +377,17 @@ impl User {
 
         messages = [
             messages,
-            self.message_overviews_of_kind(MessageKind::Beerkezett)
-                .await?,
+            self.message_overviews_of_kind(MsgKind::Beerkezett).await?,
         ]
         .concat();
         messages = [
             messages,
-            self.message_overviews_of_kind(MessageKind::Elkuldott)
-                .await?,
+            self.message_overviews_of_kind(MsgKind::Elkuldott).await?,
         ]
         .concat();
         messages = [
             messages,
-            self.message_overviews_of_kind(MessageKind::Torolt).await?,
+            self.message_overviews_of_kind(MsgKind::Torolt).await?,
         ]
         .concat();
 

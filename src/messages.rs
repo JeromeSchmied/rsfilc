@@ -130,17 +130,17 @@ impl fmt::Display for Msg {
 }
 
 /// kinds of message
-pub enum MessageKind {
+pub enum MsgKind {
     Beerkezett,
     Elkuldott,
     Torolt,
 }
-impl MessageKind {
+impl MsgKind {
     pub fn val(&self) -> String {
         match self {
-            MessageKind::Beerkezett => "beerkezett".to_owned(),
-            MessageKind::Elkuldott => "elkuldott".to_owned(),
-            MessageKind::Torolt => "torolt".to_owned(),
+            MsgKind::Beerkezett => "beerkezett".to_owned(),
+            MsgKind::Elkuldott => "elkuldott".to_owned(),
+            MsgKind::Torolt => "torolt".to_owned(),
         }
     }
 }
