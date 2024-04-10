@@ -40,7 +40,6 @@ impl ApiUrls {
 pub mod tests {
     use super::*;
 
-    #[ignore]
     #[test]
     fn api_links_parser() {
         let correct = r#"
@@ -69,6 +68,8 @@ pub mod tests {
             String::from("https://kretaglobalmobileapi2.ekreta.hu")
         );
     }
+
+    #[ignore]
     #[tokio::test]
     async fn api_url_get() {
         let apiurls = ApiUrls::api_urls().await;

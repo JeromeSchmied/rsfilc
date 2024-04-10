@@ -142,7 +142,7 @@ async fn main() -> AnyErr<()> {
             let mut all_announced = user.all_announced(None).await?;
             if !reverse {
                 all_announced
-                    .sort_by(|a, b| b.date().partial_cmp(&a.date()).expect("couldn't compare"));
+                    .sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
             }
 
             for announced in all_announced.iter().take(number.into()) {
