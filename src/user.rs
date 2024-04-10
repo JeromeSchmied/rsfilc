@@ -1,9 +1,7 @@
-//! `Kréta` API
-
 use crate::{
     absences::Abs,
     announced::Announced,
-    api,
+    endpoints::{self, *},
     evals::Eval,
     info::Info,
     messages::{Msg, MsgKind, MsgOview},
@@ -22,25 +20,6 @@ use std::{
     io::{self, Write},
     path::PathBuf,
 };
-
-pub mod admin_endpoints;
-pub mod endpoints;
-
-/// base url of school with `school_id`
-pub fn base(school_id: &str) -> String {
-    format!("https://{school_id}.e-kreta.hu")
-}
-
-/// kreta idp base Url
-const IDP: &str = "https://idp.e-kreta.hu";
-/// kreta admin base Url
-const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
-/// kreta files base Url
-const FILES: &str = "https://files.e-kreta.hu";
-/// just a random `USER_AGENT`
-const USER_AGENT: &str = "hu.ekreta.student/9.1.1/Linux/0";
-/// client id, just like as if it was official
-const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
 /// Kréta, app user
 #[derive(Clone, PartialEq)]
@@ -248,13 +227,13 @@ impl User {
     }
 
     /// get headers which are necessary for making certain requests
-    pub async fn headers(&self) -> AnyErr<HeaderMap> {
+    async fn headers(&self) -> AnyErr<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
             format!("Bearer {}", self.token().await?.access_token).parse()?,
         );
-        headers.insert("User-Agent", api::USER_AGENT.parse().unwrap());
+        headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
         Ok(headers)
     }
 
@@ -272,12 +251,12 @@ impl User {
     ///         &grant_type=password \
     ///         &client_id=kreta-ellenorzo-mobile-android"
     /// ```
-    pub async fn token(&self) -> AnyErr<Token> {
+    async fn token(&self) -> AnyErr<Token> {
         // Define the key as bytes
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
 
         // Get nonce
-        let nonce = reqwest::get([api::IDP, endpoints::NONCE].concat())
+        let nonce = reqwest::get([endpoints::IDP, endpoints::NONCE].concat())
             .await?
             .text()
             .await?;
@@ -309,7 +288,7 @@ impl User {
                 .parse()
                 .unwrap(),
         );
-        headers.insert("User-Agent", api::USER_AGENT.parse().unwrap());
+        headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Key", generated.parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Version", "v2".parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
@@ -319,11 +298,11 @@ impl User {
         data.insert("password", &self.password);
         data.insert("institute_code", &self.school_id);
         data.insert("grant_type", "password");
-        data.insert("client_id", api::CLIENT_ID);
+        data.insert("client_id", endpoints::CLIENT_ID);
 
         let client = reqwest::Client::new();
         let res = client
-            .post([api::IDP, Token::ep()].concat())
+            .post([endpoints::IDP, Token::ep()].concat())
             .headers(headers)
             .form(&data)
             .send()
@@ -358,7 +337,7 @@ impl User {
     pub async fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
         let client = reqwest::Client::new();
         let res = client
-            .get(api::ADMIN.to_owned() + &admin_endpoints::get_all_msgs(&msg_kind.val()))
+            .get(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val()))
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -387,8 +366,7 @@ impl User {
         let client = reqwest::Client::new();
         let res = client
             .get(
-                api::ADMIN.to_owned()
-                    + &api::admin_endpoints::get_msg(&msg_oview.azonosito.to_string()),
+                endpoints::ADMIN.to_owned() + &endpoints::get_msg(&msg_oview.azonosito.to_string()),
             )
             .headers(self.headers().await?)
             .send()

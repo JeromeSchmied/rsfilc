@@ -1,6 +1,6 @@
 use chrono::{Datelike, Duration, Local, NaiveDate};
 use clap::Parser;
-use rsfilc::{api::*, args::Commands, evals::Eval, school_list::School, timetable, AnyErr};
+use rsfilc::{args::Commands, evals::Eval, school_list::School, timetable, user::User, AnyErr};
 use std::{fs::File, io::Write};
 
 #[tokio::main]
