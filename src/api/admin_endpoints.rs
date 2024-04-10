@@ -1,7 +1,11 @@
+//! admin endpoints of `Kréta`
+
 pub const SEND_MESSAGE: &str = "/api/v1/kommunikacio/uzenetek";
-pub fn get_all_messages(endpoint: &str) -> String {
-    format!("/api/v1/kommunikacio/postaladaelemek/{endpoint}")
+/// get all messages with `kind`
+pub fn get_all_msgs(kind: &str) -> String {
+    format!("/api/v1/kommunikacio/postaladaelemek/{kind}")
 }
+/// get detailed information about message with `id`
 pub fn get_msg(id: &str) -> String {
     format!("/api/v1/kommunikacio/postaladaelemek/{id}")
 }

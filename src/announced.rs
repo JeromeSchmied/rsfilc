@@ -37,6 +37,10 @@ pub struct Announced {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Announced {
+    /// endpoint
+    pub const fn ep() -> &'static str {
+        "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
+    }
     /// Returns the entry date of this [`Announced`].
     ///
     /// # Panics

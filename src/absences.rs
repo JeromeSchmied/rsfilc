@@ -30,6 +30,10 @@ pub struct Abs {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Abs {
+    /// endpoint
+    pub const fn ep() -> &'static str {
+        "/ellenorzo/V3/Sajat/Mulasztasok"
+    }
     /// Returns the starting date of this [`Abs`].
     ///
     /// # Panics

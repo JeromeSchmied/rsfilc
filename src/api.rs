@@ -3,6 +3,7 @@
 use crate::{
     absences::Abs,
     announced::Announced,
+    api,
     evals::Eval,
     info::Info,
     messages::{Msg, MsgKind, MsgOview},
@@ -21,8 +22,6 @@ use std::{
     io::{self, Write},
     path::PathBuf,
 };
-
-use crate::api;
 
 pub mod admin_endpoints;
 pub mod endpoints;
@@ -65,6 +64,10 @@ impl User {
     /// get name of user
     async fn name(&self) -> String {
         self.info().await.expect("couldn't get user info").nev
+    }
+
+    pub const fn ep() -> &'static str {
+        "/ellenorzo/V3/Sajat/TanuloAdatlap"
     }
 
     /// create new instance of user and save it
@@ -320,7 +323,7 @@ impl User {
 
         let client = reqwest::Client::new();
         let res = client
-            .post([api::IDP, endpoints::TOKEN].concat())
+            .post([api::IDP, Token::ep()].concat())
             .headers(headers)
             .form(&data)
             .send()
@@ -338,7 +341,7 @@ impl User {
     pub async fn info(&self) -> AnyErr<Info> {
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::STUDENT)
+            .get(base(&self.school_id) + User::ep())
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -355,7 +358,7 @@ impl User {
     pub async fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
         let client = reqwest::Client::new();
         let res = client
-            .get(api::ADMIN.to_owned() + &admin_endpoints::get_msg(&msg_kind.val()))
+            .get(api::ADMIN.to_owned() + &admin_endpoints::get_all_msgs(&msg_kind.val()))
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -414,7 +417,7 @@ impl User {
         }
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::EVALUATIONS)
+            .get(base(&self.school_id) + Eval::ep())
             .query(&query)
             .headers(self.headers().await?)
             .send()
@@ -436,7 +439,7 @@ impl User {
     ) -> AnyErr<Vec<Lesson>> {
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::TIMETABLE)
+            .get(base(&self.school_id) + Lesson::ep())
             .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
             .headers(self.headers().await?)
             .send()
@@ -459,7 +462,7 @@ impl User {
         };
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::ANNOUNCED_TESTS)
+            .get(base(&self.school_id) + Announced::ep())
             .query(&query)
             .headers(self.headers().await?)
             .send()
@@ -488,7 +491,7 @@ impl User {
         }
         let client = reqwest::Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::ABSENCES)
+            .get(base(&self.school_id) + Abs::ep())
             .query(&query)
             .headers(self.headers().await?)
             .send()

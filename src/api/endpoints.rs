@@ -1,14 +1,16 @@
-pub const TOKEN: &str = "/connect/token";
+/// nonce
 pub const NONCE: &str = "/nonce";
+/// what are these?
 pub const NOTES: &str = "/ellenorzo/V3/Sajat/Feljegyzesek";
+/// what are these?
 pub const EVENTS: &str = "/ellenorzo/V3/Sajat/FaliujsagElemek";
-pub const STUDENT: &str = "/ellenorzo/V3/Sajat/TanuloAdatlap";
-pub const EVALUATIONS: &str = "/ellenorzo/V3/Sajat/Ertekelesek";
-pub const ABSENCES: &str = "/ellenorzo/V3/Sajat/Mulasztasok";
+/// classes
 pub const GROUPS: &str = "/ellenorzo/V3/Sajat/OsztalyCsoportok";
+/// class averages
 pub const CLASS_AVERAGES: &str = "/V3/Sajat/Ertekelesek/Atlagok/OsztalyAtlagok";
-pub const TIMETABLE: &str = "/ellenorzo/V3/Sajat/OrarendElemek";
-pub const ANNOUNCED_TESTS: &str = "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek";
+/// homeworks
 pub const HOMEWORKS: &str = "/ellenorzo/V3/Sajat/HaziFeladatok";
+/// homeworks that are done
 pub const HOMEWORK_DONE: &str = "/ellenorzo/V3/Sajat/HaziFeladatok/Megoldva";
-pub const CAPABILITIES: &str = "/ellenorzo/V3/Sajat/Intezmenyek";
+/// all poor institutes using `Kréta`
+pub const INSTITUTES: &str = "/ellenorzo/V3/Sajat/Intezmenyek";
