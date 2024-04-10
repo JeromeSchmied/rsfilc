@@ -107,7 +107,7 @@ async fn main() -> AnyErr<()> {
             }
 
             for msg_overview in msg_overviews.iter().take(number.into()) {
-                let full_msg = user.full_message(msg_overview).await?;
+                let full_msg = user.full_msg(msg_overview).await?;
                 // println!("{}", msg_overview);
                 println!("{}", full_msg);
             }
