@@ -172,6 +172,11 @@ impl User {
             .open(cred_path)
             .expect("couldn't save user credentials");
 
+        // don't save if some value is missing
+        if self.username.is_empty() || self.password.is_empty() || self.school_id.is_empty() {
+            return;
+        }
+
         writeln!(cred_file, "[[user]]").unwrap();
         writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
         writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
