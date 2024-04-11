@@ -487,4 +487,21 @@ impl User {
         let abss = serde_json::from_str(&text)?;
         Ok(abss)
     }
+
+    /// get groups the [`User`] is a member of
+    pub async fn groups(&self) -> AnyErr<String> {
+        let client = reqwest::Client::new();
+        let res = client
+            .get(base(&self.school_id) + endpoints::CLASSES)
+            .headers(self.headers().await?)
+            .send()
+            .await?;
+
+        let text = res.text().await?;
+        let mut logf = File::create("groups.log")?;
+        write!(logf, "{text}")?;
+
+        // let all_announced = serde_json::from_str(&text)?;
+        Ok(text)
+    }
 }
