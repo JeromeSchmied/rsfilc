@@ -1,9 +1,11 @@
 use crate::{
     absences::Abs,
     announced::Announced,
+    config_path, cred_path,
     endpoints::{self, *},
     evals::Eval,
     info::Info,
+    log_path,
     messages::{Msg, MsgKind, MsgOview},
     timetable::Lesson,
     token::Token,
@@ -18,7 +20,6 @@ use std::{
     collections::HashMap,
     fs::{self, File, OpenOptions},
     io::{self, Write},
-    path::PathBuf,
 };
 
 /// Kréta, app user
@@ -32,19 +33,12 @@ pub struct User {
     school_id: String,
 }
 impl User {
-    /// get path for saved user credentials
-    fn cred_path() -> Option<PathBuf> {
-        Some(dirs::config_dir()?.join("rsfilc").join("credentials.toml"))
-    }
-    /// get path for config
-    fn config_path() -> Option<PathBuf> {
-        Some(dirs::config_dir()?.join("rsfilc").join("config.toml"))
-    }
-    /// get name of user
+    /// get name of [`User`]
     async fn name(&self) -> String {
         self.info().await.expect("couldn't get user info").nev
     }
 
+    /// endpoint
     pub const fn ep() -> &'static str {
         "/ellenorzo/V3/Sajat/TanuloAdatlap"
     }
@@ -139,7 +133,7 @@ impl User {
     ///
     /// Panics if cred path does not exist.
     pub fn load_all() -> Vec<Self> {
-        let cred_path = Self::cred_path().expect("couldn't find config dir");
+        let cred_path = cred_path().expect("couldn't find config dir");
 
         if !cred_path.exists() {
             return vec![];
@@ -161,7 +155,7 @@ impl User {
         if Self::load_all().contains(self) {
             return;
         }
-        let cred_path = Self::cred_path().expect("couldn't find config dir");
+        let cred_path = cred_path().expect("couldn't find config dir");
         if !cred_path.exists() {
             fs::create_dir_all(cred_path.parent().expect("couldn't get config dir"))
                 .expect("couldn't create config dir");
@@ -209,7 +203,7 @@ impl User {
     }
     /// save [`User`] as default to config.toml
     async fn save_to_conf(&self) {
-        let conf_path = Self::config_path().expect("couldn't find config path");
+        let conf_path = config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             fs::create_dir_all(conf_path.parent().expect("couldn't get config dir"))
                 .expect("couldn't create config dir");
@@ -221,7 +215,7 @@ impl User {
     }
     /// load [`User`] configured in config.toml
     pub async fn load_conf() -> Option<Self> {
-        let conf_path = Self::config_path().expect("couldn't find config path");
+        let conf_path = config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             return None;
         }
@@ -314,7 +308,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create("token.log")?;
+        let mut logf = File::create(log_path("token.log"))?;
         write!(logf, "{text}")?;
 
         let token = serde_json::from_str(&text)?;
@@ -331,7 +325,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create("info.log")?;
+        let mut logf = File::create(log_path("info.log"))?;
         write!(logf, "{text}")?;
 
         let info = serde_json::from_str(&text)?;
@@ -348,7 +342,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create("messages.log")?;
+        let mut logf = File::create(log_path("messages.log"))?;
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
@@ -378,7 +372,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create("full_message.log")?;
+        let mut logf = File::create(log_path("full_message.log"))?;
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
@@ -407,7 +401,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create("evals.log")?;
+        let mut logf = File::create(log_path("evals.log"))?;
         write!(logf, "{text}")?;
 
         let evals = serde_json::from_str(&text)?;
@@ -429,7 +423,7 @@ impl User {
             .await?;
         let text = res.text().await?;
 
-        let mut logf = File::create("timetable.log")?;
+        let mut logf = File::create(log_path("timetable.log"))?;
         write!(logf, "{text}")?;
 
         let lessons = serde_json::from_str(&text)?;
@@ -452,7 +446,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create("announced.log")?;
+        let mut logf = File::create(log_path("announced.log"))?;
         write!(logf, "{text}")?;
 
         let all_announced = serde_json::from_str(&text)?;
@@ -481,7 +475,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create("absences.log")?;
+        let mut logf = File::create(log_path("absences.log"))?;
         write!(logf, "{text}")?;
 
         let abss = serde_json::from_str(&text)?;
@@ -498,7 +492,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create("groups.log")?;
+        let mut logf = File::create(log_path("groups.log"))?;
         write!(logf, "{text}")?;
 
         // let all_announced = serde_json::from_str(&text)?;

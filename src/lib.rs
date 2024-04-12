@@ -1,6 +1,7 @@
 //! RsFilc: `Kréta` API and client
 
 use chrono::{DateTime, Datelike, Local, Timelike};
+use std::{fs, path::PathBuf};
 
 pub mod absences;
 pub mod announced;
@@ -17,6 +18,27 @@ pub mod user;
 
 /// Result from `T` and `Box<dyn Error>`
 pub type AnyErr<T> = Result<T, Box<dyn std::error::Error>>;
+
+/// get path for saved user credentials
+pub fn cred_path() -> Option<PathBuf> {
+    Some(dirs::config_dir()?.join("rsfilc").join("credentials.toml"))
+}
+/// get path for config
+pub fn config_path() -> Option<PathBuf> {
+    Some(dirs::config_dir()?.join("rsfilc").join("config.toml"))
+}
+/// get path for cache dir
+pub fn cache_path() -> Option<PathBuf> {
+    let cache_path = dirs::cache_dir()?.join("rsfilc");
+    if !cache_path.exists() {
+        fs::create_dir_all(cache_path).expect("couldn't create cache dir");
+    }
+    Some(dirs::cache_dir()?.join("rsfilc"))
+}
+/// get log path for `fname`
+pub fn log_path(fname: &str) -> PathBuf {
+    cache_path().expect("couldn't find cache path").join(fname)
+}
 
 /// format date so it looks pretty with hungarian text
 pub fn pretty_date(date: &DateTime<Local>) -> String {
