@@ -88,30 +88,85 @@ impl Msg {
             .into()
     }
 
-    fn msg_kv(&self, v: &str) -> String {
+    /// Get `value` for `k`ey.
+    ///
+    /// # Panics
+    ///
+    /// Panics if data doesn't contain `k`ey.
+    fn msg_kv(&self, k: &str) -> String {
         self.uzenet
-            .get(v)
+            .get(k)
             .expect("couldn't find key")
             .to_string()
             .trim_matches('"')
             .to_string()
     }
 
+    /// Returns the `subject` of this [`Msg`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if data doesn't contain `subject`.
     pub fn subj(&self) -> String {
         self.msg_kv("targy")
-        // self.uzenet
-        //     .get("targy")
-        //     .expect("couldn't find subject")
-        //     .to_string()
     }
+    /// Returns the `text` of this [`Msg`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if data doesn't contain `text`.
     pub fn text(&self) -> String {
         self.msg_kv("szoveg")
     }
+    /// Returns the `sender` of this [`Msg`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if data doesn't contain `sender`.
     pub fn sender(&self) -> String {
         self.msg_kv("feladoNev")
     }
+    /// Returns the `sender_title` of this [`Msg`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if data doesn't contain `sender_title`.
     pub fn sender_title(&self) -> String {
         self.msg_kv("feladoTitulus")
+    }
+
+    /// ˝render˝ html to console
+    fn render_html(html: &str) -> String {
+        let html = html.replace('\\', "");
+
+        let mut text = String::new();
+        let mut is_attr = false;
+        let mut attr = String::new();
+
+        for ch in html.chars() {
+            if ch == '<' {
+                is_attr = true;
+            } else if ch == '>' {
+                is_attr = false;
+
+                if attr.contains('/') {
+                    text.push('\n');
+                }
+                // if !attr.is_empty() {
+                //     let attr = attr.trim();
+                // }
+            }
+
+            if is_attr {
+                attr.push(ch);
+            } else {
+                attr.clear();
+
+                text.push(ch);
+            }
+        }
+
+        text.replace('>', "").replace("\n\n\n", "\n")
     }
 }
 impl fmt::Display for Msg {
@@ -119,8 +174,8 @@ impl fmt::Display for Msg {
         writeln!(f, "Kiküldve: {}", self.time_sent().format("%Y/%m/%d %H:%M"))?;
         writeln!(f, "Feladó: {} {}", self.sender(), self.sender_title())?;
         writeln!(f, "Tárgy: {}", self.subj())?;
-        writeln!(f, "Üzenet: {}", self.text())?;
-        writeln!(f)?;
+        writeln!(f, "\n{}", Self::render_html(&self.text()))?;
+        writeln!(f, "---------------------------------\n")?;
         // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
         // if !self.is_elolvasva {
         //     writeln!(f, "Olvasatlan")?;

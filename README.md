@@ -34,14 +34,13 @@
     -   [x] messages
     -   [x] announced test
     -   [x] absences
-    -   [ ] ...
 
 ## CLI
 
 -   [x] basic usage of API
 -   [x] filtering what to show
 -   [x] multi-user feature
--   [ ] somehow rendering `html` that messages return
+-   [x] somehow rendering `html` that messages return
 -   [ ] caching everything so that life remains enjoyable
 
 ## TUI

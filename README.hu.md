@@ -33,7 +33,6 @@
     -   [x] üzenetek
     -   [x] előre bejelentett számonkérések
     -   [x] hiányzások
-    -   [ ] ...
 
 ## CLI
 
@@ -41,7 +40,7 @@
 -   [x] kért adatok alapvető megjelenítése
 -   [x] több fiókos rendszer
 -   [ ] kb minden cache-elése a valódi élmény érdekében
--   [ ] üzenetek (`html`) elfogadható megjelenítése
+-   [x] üzenetek (`html`) elfogadható megjelenítése
 -   [ ] ...
 
 ## TUI
