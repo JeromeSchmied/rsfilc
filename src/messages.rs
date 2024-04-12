@@ -134,14 +134,48 @@ impl Msg {
     pub fn sender_title(&self) -> String {
         self.msg_kv("feladoTitulus")
     }
+
+    /// ˝render˝ html to console
+    fn render_html(html: &str) -> String {
+        let html = html.replace('\\', "");
+
+        let mut text = String::new();
+        let mut is_attr = false;
+        let mut attr = String::new();
+
+        for ch in html.chars() {
+            if ch == '<' {
+                is_attr = true;
+            } else if ch == '>' {
+                is_attr = false;
+
+                if attr.contains('/') {
+                    text.push('\n');
+                }
+                // if !attr.is_empty() {
+                //     let attr = attr.trim();
+                // }
+            }
+
+            if is_attr {
+                attr.push(ch);
+            } else {
+                attr.clear();
+
+                text.push(ch);
+            }
+        }
+
+        text.replace('>', "").replace("\n\n\n", "\n")
+    }
 }
 impl fmt::Display for Msg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Kiküldve: {}", self.time_sent().format("%Y/%m/%d %H:%M"))?;
         writeln!(f, "Feladó: {} {}", self.sender(), self.sender_title())?;
         writeln!(f, "Tárgy: {}", self.subj())?;
-        writeln!(f, "Üzenet: {}", self.text())?;
-        writeln!(f)?;
+        writeln!(f, "\n{}", Self::render_html(&self.text()))?;
+        writeln!(f, "---------------------------------\n")?;
         // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
         // if !self.is_elolvasva {
         //     writeln!(f, "Olvasatlan")?;
