@@ -2,6 +2,8 @@
 
 > `Kréta` is an awful hungarian electronic school administration system
 
+> [Magyar leírás](README.hu.md)
+
 ## Installation
 
 -   [Rust](https://rustup.rs)

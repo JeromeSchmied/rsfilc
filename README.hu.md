@@ -1,5 +1,7 @@
 # [RsFilc](https://codeberg.org/jark/rsfilc): Kréta kliens [Rust](https://rust-lang.org)ban
 
+> [English README](README.md)
+
 ## Letöltés
 
 -   [Rust](https://rustup.rs)
