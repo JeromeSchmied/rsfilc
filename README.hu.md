@@ -5,6 +5,63 @@
 -   [Rust](https://rustup.rs)
 -   `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
 
+### autókitöltés:
+
+   <details>
+   <summary>Bash</summary>
+
+> Add a `~/.bashrc` <ins>**végére**</ins> :
+>
+> ```sh
+> eval "$(rsfilc completions bash)"
+> ```
+
+   </details>
+
+   <details>
+   <summary>Zsh</summary>
+
+> Add a `~/.zshrc` <ins>**végére**</ins> :
+>
+> ```sh
+> eval "$(rsfilc completions zsh)"
+> ```
+
+   </details>
+
+   <details>
+   <summary>Fish</summary>
+
+> Add a `~/.config/fish/config.fish` <ins>**végére**</ins>:
+>
+> ```fish
+> rsfilc completions fish | source
+> ```
+
+   </details>
+
+   <details>
+   <summary>PowerShell</summary>
+
+> Add a <ins>**végére**</ins> a beállításaidnak (így találod `echo $profile` PowerShell-ben):
+>
+> ```powershell
+> Invoke-Expression (& { (rsfilc completions powershell | Out-String) })
+> ```
+
+   </details>
+
+   <details>
+   <summary>Elvish</summary>
+
+> Add a `~/.elvish/rc.elv` <ins>**végére**</ins>:
+>
+> ```sh
+> eval (rsfilc completions elvish | slurp)
+> ```
+
+   </details>
+
 ## Használat
 
 `rsfilc --help`
@@ -65,3 +122,4 @@
 
 Az API alapvetően [ez alapján a dokumentáció](https://github.com/bczsalba/ekreta-docs-v3) alapján valósult meg.
 Kódinspiráció a [ReFilc](https://github.com/refilc/naplo)ből.
+Autókitöltés leírás innen: [zoxide](https://github.com/ajeetdsouza/zoxide)
