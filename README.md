@@ -41,7 +41,12 @@
 -   [x] filtering what to show
 -   [x] multi-user feature
 -   [x] somehow rendering `html` that messages return
+-   [ ] helpful crashes
+-   [ ] render `html` messages with `w3m` or `lynx` if possible
+-   [x] shell completions: [bash, zsh, fish, elvish, powershell]
 -   [ ] caching everything so that life remains enjoyable
+-   [ ] encoding passwords
+-   [ ] changing passwords
 
 ## TUI
 

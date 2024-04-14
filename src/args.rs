@@ -14,6 +14,13 @@ pub enum Commands {
     /// starts the Text User Interface
     Tui {},
 
+    /// generate shell completions
+    Completions {
+        /// the shell to generate the completions for
+        #[arg(value_enum)]
+        shell: clap_complete::Shell,
+    },
+
     /// information about lessons, today by default
     Timetable {
         /// which day to show: +n (where n is day, and it's added to today) or YYYY/MM/DD
@@ -95,4 +102,12 @@ pub enum Commands {
         #[arg(short, long)]
         search: Option<String>,
     },
+}
+impl Commands {
+    pub fn user_needed(&self) -> bool {
+        !matches!(
+            self,
+            Commands::Tui {} | Commands::Completions { shell: _ } | Commands::Schools { search: _ }
+        )
+    }
 }

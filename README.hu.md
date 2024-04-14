@@ -39,8 +39,13 @@
 -   [x] API alapvető használata
 -   [x] kért adatok alapvető megjelenítése
 -   [x] több fiókos rendszer
+-   [ ] segítőkész hibaüüzenetek
 -   [ ] kb minden cache-elése a valódi élmény érdekében
 -   [x] üzenetek (`html`) elfogadható megjelenítése
+-   [ ] üzenetek (`html`) megjelenítése `w3m`-mel vagy `lynx`-el ha lehetséges
+-   [ ] shell autókitöltések: [bash, zsh, fish, elvish, powershell]
+-   [ ] jelszavak titkosítása mentéshez
+-   [ ] jelszavak módosítása
 -   [ ] ...
 
 ## TUI
