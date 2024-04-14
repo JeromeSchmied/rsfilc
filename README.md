@@ -1,13 +1,22 @@
 # [RsFilc](https://codeberg.org/jark/rsfilc): `Kréta` client in [Rust](https://rust-lang.org)
 
-> `Kréta` is an awful hungarian electronic school administration system
+> `Kréta` is an awful Hungarian electronic school administration system
 
 > [Magyar leírás](README.hu.md)
 
 ## Installation
 
 -   [Rust](https://rustup.rs)
--   `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
+-   `cargo install --locked rsfilc`
+
+    > for latest, beta builds: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
+
+### Dependencies
+
+#### optional
+
+-   [w3m](https://w3m.sourceforge.net/): for enjoyable (html) message previews
+-   [lynx](https://lynx.browser.org/): for enjoyable (html) message previews
 
 ### Shell completions:
 
@@ -109,7 +118,7 @@
 -   [x] multi-user feature
 -   [x] somehow rendering `html` that messages return
 -   [ ] helpful crashes
--   [ ] render `html` messages with `w3m` or `lynx` if possible
+-   [x] render `html` messages with `w3m` or `lynx` if possible
 -   [x] shell completions: [bash, zsh, fish, elvish, powershell]
 -   [ ] caching everything so that life remains enjoyable
 -   [ ] encoding passwords

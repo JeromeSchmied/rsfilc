@@ -5,7 +5,15 @@
 ## Letöltés
 
 -   [Rust](https://rustup.rs)
--   `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
+-   `cargo install --locked rsfilc`
+    > legújabb, béta: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
+
+### segédprogramok
+
+#### opcionális
+
+-   [w3m](https://w3m.sourceforge.net/): for enjoyable (html) message previews
+-   [lynx](https://lynx.browser.org/): for enjoyable (html) message previews
 
 ### autókitöltés:
 
@@ -101,7 +109,7 @@
 -   [ ] segítőkész hibaüüzenetek
 -   [ ] kb minden cache-elése a valódi élmény érdekében
 -   [x] üzenetek (`html`) elfogadható megjelenítése
--   [ ] üzenetek (`html`) megjelenítése `w3m`-mel vagy `lynx`-el ha lehetséges
+-   [x] üzenetek (`html`) megjelenítése `w3m`-mel vagy `lynx`-el ha lehetséges
 -   [ ] shell autókitöltések: [bash, zsh, fish, elvish, powershell]
 -   [ ] jelszavak titkosítása mentéshez
 -   [ ] jelszavak módosítása
