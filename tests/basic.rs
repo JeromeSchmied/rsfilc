@@ -1,11 +1,7 @@
 use rsfilc::{self, user::User};
 
-#[tokio::main]
-async fn main() -> rsfilc::AnyErr<()> {
-    let user = User::create();
-    for eval in user.evals(None, None).await? {
-        println!("{}", eval);
-    }
-
-    Ok(())
+#[tokio::test]
+async fn new_user() {
+    // let user = User::create();
+    let user = User::new("un", "pw", "id");
 }
