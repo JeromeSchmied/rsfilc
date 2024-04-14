@@ -1,5 +1,5 @@
 use chrono::{Datelike, Duration, Local, NaiveDate};
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use rsfilc::{
     args::{Args, Commands},
     evals::Eval,
@@ -14,20 +14,31 @@ use std::{fs::File, io::Write};
 async fn main() -> AnyErr<()> {
     let cli_args = Args::parse();
 
-    let users = User::load_all();
-
-    let user = if let Some(default_user) = User::load_conf().await {
-        default_user
-    } else if let Some(loaded_user) = users.first() {
-        loaded_user.clone()
+    let user = if cli_args.command.user_needed() {
+        let users = User::load_all();
+        if let Some(default_user) = User::load_conf().await {
+            default_user
+        } else if let Some(loaded_user) = users.first() {
+            loaded_user.clone()
+        } else {
+            User::create()
+        }
     } else {
-        User::create()
+        // dummy user
+
+        User::new("", "", "")
     };
-    user.greet().await;
-    // let user = User::new(username, password, school_id);
 
     match cli_args.command {
         Commands::Tui {} => todo!("TUI is to be written (soon)"),
+        Commands::Completions { shell } => {
+            clap_complete::generate(
+                shell,
+                &mut Args::command(),
+                "rsfilc",
+                &mut std::io::stdout(),
+            );
+        }
         Commands::Timetable { day } => {
             let day = if let Some(date) = day {
                 let date = date.replace(['/', '.'], "-");
@@ -176,7 +187,7 @@ async fn main() -> AnyErr<()> {
                 User::create();
             } else if list {
                 println!("\nFelhasználók:\n");
-                for current_user in users {
+                for current_user in User::load_all() {
                     println!("{}\n", current_user.info().await?);
                 }
             } else {
