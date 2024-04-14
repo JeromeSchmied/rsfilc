@@ -3,7 +3,14 @@
 use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::HashMap, fmt};
+use std::{
+    collections::HashMap,
+    fmt,
+    io::{Read, Write},
+    process::{Child, Command, Stdio},
+};
+
+use crate::AnyErr;
 
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
@@ -135,8 +142,37 @@ impl Msg {
         self.msg_kv("feladoTitulus")
     }
 
-    /// ˝render˝ html to console
-    fn render_html(html: &str) -> String {
+    /// render html with [`Rendr`]
+    fn render_with_external(html: &str, pref: Option<Rendr>) -> Option<String> {
+        let pref = if let Some(pr) = pref { pr } else { Rendr::W3m };
+
+        let proc = if let Ok(pref_proc) = pref.child() {
+            eprintln!("rendering with {}", pref);
+            pref_proc
+        } else if let Ok(other_proc) = pref.other().child() {
+            eprintln!("rendering with {}", pref.other());
+            other_proc
+        } else {
+            eprintln!("couldn't spawn lynx nor w3m, falling back to very-very-basic-html-renderer-I-wrote-in-22-lines ;)");
+            return None;
+        };
+
+        if let Err(why) = proc.stdin.unwrap().write_all(html.as_bytes()) {
+            eprintln!("couldn't write to {} stdin: {why}", Rendr::both_name());
+            return None;
+        };
+
+        let mut ext_dump = String::new();
+        if let Err(why) = proc.stdout.unwrap().read_to_string(&mut ext_dump) {
+            eprintln!("couldn't read {} stdout: {why}", Rendr::both_name());
+            return None;
+        }
+
+        Some(ext_dump.replace("\\\"", ""))
+    }
+
+    /// Very-Very Basic Html Renderer Written In 22 Lines Of Code: ˝render˝ html to console
+    fn vvbhrwi22loc(html: &str) -> String {
         let html = html.replace('\\', "");
 
         let mut text = String::new();
@@ -168,6 +204,15 @@ impl Msg {
 
         text.replace('>', "").replace("\n\n\n", "\n")
     }
+    fn render_html(html: &str) -> String {
+        let render_pref = None;
+
+        if let Some(ext) = Self::render_with_external(html, render_pref) {
+            ext
+        } else {
+            Self::vvbhrwi22loc(html)
+        }
+    }
 }
 impl fmt::Display for Msg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -180,6 +225,73 @@ impl fmt::Display for Msg {
         // if !self.is_elolvasva {
         //     writeln!(f, "Olvasatlan")?;
         // }
+        Ok(())
+    }
+}
+
+/// supported external programs that can render html
+enum Rendr {
+    W3m,
+    Lynx,
+}
+impl Rendr {
+    fn child(&self) -> AnyErr<Child> {
+        match self {
+            Rendr::W3m => {
+                let mut w3m_cmd = Command::new("w3m");
+                Ok(w3m_cmd
+                    .args([
+                        "-I",
+                        "utf-8",
+                        "-T",
+                        "text/html",
+                        "-o",
+                        "display_link=true",
+                        "-o",
+                        "display_link_number=true",
+                        "-dump",
+                    ])
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .spawn()?)
+            }
+            Rendr::Lynx => {
+                let mut lynx_cmd = Command::new("lynx");
+                Ok(lynx_cmd
+                    .args([
+                        "-stdin",
+                        "-dump",
+                        "-assume_charset",
+                        "utf-8",
+                        "--display_charset",
+                        "utf-8",
+                    ])
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .spawn()?)
+            }
+        }
+    }
+    fn other(&self) -> Self {
+        match self {
+            Self::W3m => Self::Lynx,
+            Self::Lynx => Self::W3m,
+        }
+    }
+    fn both_name() -> &'static str {
+        "w3m/lynx"
+    }
+}
+impl fmt::Display for Rendr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "{}",
+            match self {
+                Rendr::W3m => "w3m",
+                Rendr::Lynx => "lynx",
+            }
+        )?;
         Ok(())
     }
 }
