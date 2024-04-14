@@ -3,6 +3,7 @@ use clap::{CommandFactory, Parser};
 use rsfilc::{
     args::{Args, Commands},
     evals::Eval,
+    log_path,
     school_list::School,
     timetable,
     user::User,
@@ -103,7 +104,7 @@ async fn main() -> AnyErr<()> {
             if let Some(subject) = subject {
                 Eval::filter_evals_by_subject(&mut evals, &subject);
             }
-            let mut logf = File::create("evals_filtered.log")?;
+            let mut logf = File::create(log_path("evals_filtered.log"))?;
             write!(logf, "{:?}", evals)?;
 
             if average {
