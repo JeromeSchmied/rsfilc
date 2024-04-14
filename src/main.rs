@@ -25,9 +25,7 @@ async fn main() -> AnyErr<()> {
             User::create()
         }
     } else {
-        // dummy user
-
-        User::new("", "", "")
+        User::new("", "", "") // dummy user
     };
 
     match cli_args.command {
