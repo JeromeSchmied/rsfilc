@@ -12,7 +12,7 @@ use crate::{
     AnyErr,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local, NaiveTime, Timelike, Utc};
 use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
 use sha2::Sha512;
@@ -313,6 +313,19 @@ impl User {
 
         let token = serde_json::from_str(&text)?;
         Ok(token)
+    }
+    pub async fn current_lesson(&self) -> Option<Lesson> {
+        let now = Local::now();
+        let day_start = now.with_hour(0)?.with_hour(0)?;
+
+        let todays_lessons = self.timetable(day_start, now).await.ok()?;
+
+        let current = self.timetable(now, now).await.ok()?;
+        eprintln!("current lesson: {:?}", current);
+
+        // if
+
+        todo!()
     }
 
     /// get [`User`] info
