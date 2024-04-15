@@ -308,7 +308,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create(log_path("token.log"))?;
+        let mut logf = File::create(log_path("token"))?;
         write!(logf, "{text}")?;
 
         let token = serde_json::from_str(&text)?;
@@ -325,7 +325,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create(log_path("info.log"))?;
+        let mut logf = File::create(log_path("info"))?;
         write!(logf, "{text}")?;
 
         let info = serde_json::from_str(&text)?;
@@ -342,7 +342,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create(log_path("messages.log"))?;
+        let mut logf = File::create(log_path("messages"))?;
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
@@ -372,7 +372,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create(log_path("full_message.log"))?;
+        let mut logf = File::create(log_path("full_message"))?;
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
@@ -401,7 +401,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create(log_path("evals.log"))?;
+        let mut logf = File::create(log_path("evals"))?;
         write!(logf, "{text}")?;
 
         let evals = serde_json::from_str(&text)?;
@@ -423,7 +423,7 @@ impl User {
             .await?;
         let text = res.text().await?;
 
-        let mut logf = File::create(log_path("timetable.log"))?;
+        let mut logf = File::create(log_path("timetable"))?;
         write!(logf, "{text}")?;
 
         let lessons = serde_json::from_str(&text)?;
@@ -446,7 +446,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create(log_path("announced.log"))?;
+        let mut logf = File::create(log_path("announced"))?;
         write!(logf, "{text}")?;
 
         let all_announced = serde_json::from_str(&text)?;
@@ -475,7 +475,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create(log_path("absences.log"))?;
+        let mut logf = File::create(log_path("absences"))?;
         write!(logf, "{text}")?;
 
         let abss = serde_json::from_str(&text)?;
@@ -492,7 +492,7 @@ impl User {
             .await?;
 
         let text = res.text().await?;
-        let mut logf = File::create(log_path("groups.log"))?;
+        let mut logf = File::create(log_path("groups"))?;
         write!(logf, "{text}")?;
 
         // let all_announced = serde_json::from_str(&text)?;
