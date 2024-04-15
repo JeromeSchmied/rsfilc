@@ -50,7 +50,7 @@ impl Lesson {
     pub fn print_day(lessons: &[Lesson]) {
         if let Some(first_lesson) = lessons.first() {
             println!(
-                "{} ({})\n",
+                "    {} ({})\n",
                 pretty_date(&first_lesson.start()),
                 day_of_week(
                     first_lesson
