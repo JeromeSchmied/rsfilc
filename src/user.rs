@@ -90,6 +90,7 @@ impl User {
 
         let val = content
             .lines()
+            .filter(|line| !line.starts_with('#'))
             .find(|line| line.contains(k))?
             .split('=')
             .last()?
