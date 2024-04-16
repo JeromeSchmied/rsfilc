@@ -35,17 +35,47 @@ pub fn cache_path() -> Option<PathBuf> {
     }
     Some(dirs::cache_dir()?.join("rsfilc"))
 }
-/// get log path for `fname`
-pub fn log_path(fname: &str) -> PathBuf {
-    cache_path().expect("couldn't find cache path").join(fname)
+/// get log path for `kind`: `kind`.log
+pub fn log_path(kind: &str) -> PathBuf {
+    cache_path()
+        .expect("couldn't find cache path")
+        .join([kind, ".log"].concat())
 }
 
 /// format date so it looks pretty with hungarian text
 pub fn pretty_date(date: &DateTime<Local>) -> String {
     let this_year = date.year() == Local::now().year();
+    let day_diff = date.num_days_from_ce() - Local::now().num_days_from_ce();
 
     if !this_year {
         format!("{}", date.format("%Y/%m/%d"))
+    } else if day_diff == -1 {
+        format!(
+            "tegnap{}",
+            date.format(if date.hour() == 0 && date.minute() == 0 {
+                ""
+            } else {
+                " %H:%M"
+            })
+        )
+    } else if day_diff == 1 {
+        format!(
+            "holnap{}",
+            date.format(if date.hour() == 0 && date.minute() == 0 {
+                ""
+            } else {
+                " %H:%M"
+            })
+        )
+    } else if day_diff == 0 {
+        format!(
+            "ma{}",
+            date.format(if date.hour() == 0 && date.minute() == 0 {
+                ""
+            } else {
+                " %H:%M"
+            })
+        )
     } else {
         format!(
             "{} {}",
@@ -87,5 +117,23 @@ pub fn day_of_week(d: u8) -> String {
         6 => "szombat".to_string(),
         7 => "vasárnap".to_string(),
         _ => unreachable!("invalid day of week"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cache_path_exists() {
+        assert!(cache_path().is_some());
+    }
+    #[test]
+    fn config_path_exists() {
+        assert!(config_path().is_some());
+    }
+    #[test]
+    fn cred_path_exists() {
+        assert!(cred_path().is_some());
     }
 }

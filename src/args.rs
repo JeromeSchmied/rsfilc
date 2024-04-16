@@ -26,6 +26,10 @@ pub enum Commands {
         /// which day to show: +n (where n is day, and it's added to today) or YYYY/MM/DD
         #[arg(short, long)]
         day: Option<String>,
+
+        /// show current lesson if any
+        #[arg(short, long, default_value_t = false)]
+        current: bool,
     },
 
     /// evaluations/grades the user recieved
