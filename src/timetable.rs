@@ -100,8 +100,8 @@ impl Lesson {
             .expect("couldn't parse veg_idopont")
             .into()
     }
-    /// Returns the subject of this [`Lesson`].
-    pub fn subject(&self) -> Option<String> {
+    /// Returns the subject id of this [`Lesson`].
+    pub fn subject_id(&self) -> Option<String> {
         Some(
             self.tantargy
                 .as_ref()?
@@ -112,13 +112,17 @@ impl Lesson {
                 .to_string(),
         )
     }
+    /// Returns the subject id of this [`Lesson`].
+    pub fn subject(&self) -> String {
+        self.nev.clone()
+    }
     // pub fn parse_time(time: &str) ->
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ", self.nev)?;
         if let Some(room) = &self.terem_neve {
-            writeln!(f, "a(z) {} teremben", room.replace("terem", ""))?;
+            writeln!(f, "a(z) {} teremben", room.replace("terem", "").trim())?;
         } else {
             writeln!(f)?;
         }
@@ -232,6 +236,6 @@ mod tests {
         assert_eq!(lesson.helyettes_tanar_neve, None);
         assert!(!lesson.cancelled());
         assert!(!lesson.absent());
-        assert_eq!(lesson.subject(), Some("fizika".to_string()));
+        assert_eq!(lesson.subject_id(), Some("fizika".to_string()));
     }
 }

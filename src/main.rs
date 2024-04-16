@@ -1,4 +1,4 @@
-use chrono::{Datelike, Duration, Local, NaiveDate};
+use chrono::{Datelike, Duration, Local, NaiveDate, Timelike};
 use clap::{CommandFactory, Parser};
 use rsfilc::{
     args::{Args, Commands},
@@ -42,7 +42,11 @@ async fn main() -> AnyErr<()> {
             if current {
                 if let Some(current_lessons) = user.current_lesson().await {
                     for current_lesson in current_lessons {
-                        println!("{}", current_lesson);
+                        println!(
+                            "{}, {}m",
+                            current_lesson.subject(),
+                            current_lesson.end().minute() - Local::now().minute()
+                        );
                     }
                 }
                 return Ok(());
