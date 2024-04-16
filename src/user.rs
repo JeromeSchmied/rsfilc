@@ -314,18 +314,17 @@ impl User {
         let token = serde_json::from_str(&text)?;
         Ok(token)
     }
-    pub async fn current_lesson(&self) -> Option<Lesson> {
+
+    /// Returns the current [`Lesson`](s) of this [`User`] if any.
+    pub async fn current_lesson(&self) -> Option<Vec<Lesson>> {
         let now = Local::now();
-        let day_start = now.with_hour(0)?.with_hour(0)?;
-
-        let todays_lessons = self.timetable(day_start, now).await.ok()?;
-
         let current = self.timetable(now, now).await.ok()?;
-        eprintln!("current lesson: {:?}", current);
 
-        // if
-
-        todo!()
+        if current.is_empty() {
+            None
+        } else {
+            Some(current)
+        }
     }
 
     /// get [`User`] info

@@ -38,7 +38,15 @@ async fn main() -> AnyErr<()> {
                 &mut std::io::stdout(),
             );
         }
-        Commands::Timetable { day } => {
+        Commands::Timetable { day, current } => {
+            if current {
+                if let Some(current_lessons) = user.current_lesson().await {
+                    for current_lesson in current_lessons {
+                        println!("{}", current_lesson);
+                    }
+                }
+                return Ok(());
+            }
             let day = if let Some(date) = day {
                 let date = date.replace(['/', '.'], "-");
                 if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
@@ -78,8 +86,6 @@ async fn main() -> AnyErr<()> {
             // eprintln!("\ngot timetable...\n");
             lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
             timetable::Lesson::print_day(&lessons);
-
-            user.current_lesson().await;
         }
 
         Commands::Evals {
