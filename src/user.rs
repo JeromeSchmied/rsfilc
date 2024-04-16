@@ -439,7 +439,8 @@ impl User {
         let mut logf = File::create(log_path("timetable"))?;
         write!(logf, "{text}")?;
 
-        let lessons = serde_json::from_str(&text)?;
+        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&text)?;
+        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
         Ok(lessons)
     }
 

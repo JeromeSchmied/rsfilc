@@ -5,7 +5,7 @@ use rsfilc::{
     evals::Eval,
     log_path,
     school_list::School,
-    timetable,
+    timetable::Lesson,
     user::User,
     AnyErr,
 };
@@ -28,6 +28,8 @@ async fn main() -> AnyErr<()> {
         User::new("", "", "") // dummy user
     };
 
+    let now = Local::now();
+
     match cli_args.command {
         Commands::Tui {} => todo!("TUI is to be written (soon)"),
         Commands::Completions { shell } => {
@@ -45,7 +47,7 @@ async fn main() -> AnyErr<()> {
                         println!(
                             "{}, {}m",
                             current_lesson.subject(),
-                            (current_lesson.end() - Local::now()).num_minutes()
+                            (current_lesson.end() - now).num_minutes()
                         );
                     }
                 }
@@ -56,17 +58,16 @@ async fn main() -> AnyErr<()> {
                 if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
                     ndate
                 } else if date.starts_with('+') {
-                    Local::now()
-                        .checked_add_signed(Duration::days(
-                            date.parse::<i64>().expect("invalid day shifter"),
-                        ))
-                        .expect("invalid datetime")
-                        .date_naive()
+                    now.checked_add_signed(Duration::days(
+                        date.parse::<i64>().expect("invalid day shifter"),
+                    ))
+                    .expect("invalid datetime")
+                    .date_naive()
                 } else {
-                    Local::now().date_naive()
+                    now.date_naive()
                 }
             } else {
-                Local::now().date_naive()
+                now.date_naive()
             };
             let from = day
                 .and_hms_opt(0, 0, 0)
@@ -75,10 +76,10 @@ async fn main() -> AnyErr<()> {
                 .unwrap();
             let to = day
                 .and_hms_opt(23, 59, 59)
-                .expect("couldn't make from")
+                .expect("couldn't make to")
                 .and_local_timezone(Local)
                 .unwrap();
-            let mut lessons = user.timetable(from, to).await?;
+            let lessons = user.timetable(from, to).await?;
             if lessons.is_empty() {
                 println!(
                     "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
@@ -87,9 +88,7 @@ async fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            // eprintln!("\ngot timetable...\n");
-            lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
-            timetable::Lesson::print_day(&lessons);
+            Lesson::print_day(&lessons);
         }
 
         Commands::Evals {
