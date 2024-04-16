@@ -1,7 +1,7 @@
 //! lessons the student has
 
 use crate::{day_of_week, pretty_date};
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Datelike, Duration, Local, NaiveDate};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -115,6 +115,32 @@ impl Lesson {
     /// Returns the subject id of this [`Lesson`].
     pub fn subject(&self) -> String {
         self.nev.clone()
+    }
+    /// Parse the day got as `argument`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if
+    /// - day shifter contains invalid number.
+    /// - any datetime is invalid.
+    pub fn parse_day(day: &Option<String>) -> NaiveDate {
+        if let Some(date) = day {
+            let date = date.replace(['/', '.'], "-");
+            if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+                ndate
+            } else if date.starts_with('+') {
+                Local::now()
+                    .checked_add_signed(Duration::days(
+                        date.parse::<i64>().expect("invalid day shifter"),
+                    ))
+                    .expect("invalid datetime")
+                    .date_naive()
+            } else {
+                Local::now().date_naive()
+            }
+        } else {
+            Local::now().date_naive()
+        }
     }
     // pub fn parse_time(time: &str) ->
 }

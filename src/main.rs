@@ -1,4 +1,4 @@
-use chrono::{Datelike, Duration, Local, NaiveDate};
+use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use rsfilc::{
     args::{Args, Commands},
@@ -53,22 +53,10 @@ async fn main() -> AnyErr<()> {
                 }
                 return Ok(());
             }
-            let day = if let Some(date) = day {
-                let date = date.replace(['/', '.'], "-");
-                if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
-                    ndate
-                } else if date.starts_with('+') {
-                    now.checked_add_signed(Duration::days(
-                        date.parse::<i64>().expect("invalid day shifter"),
-                    ))
-                    .expect("invalid datetime")
-                    .date_naive()
-                } else {
-                    now.date_naive()
-                }
-            } else {
-                now.date_naive()
-            };
+
+            // parse day
+            let day = Lesson::parse_day(&day);
+
             let from = day
                 .and_hms_opt(0, 0, 0)
                 .expect("couldn't make from")
