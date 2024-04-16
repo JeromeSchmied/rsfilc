@@ -45,7 +45,7 @@ async fn main() -> AnyErr<()> {
                         println!(
                             "{}, {}m",
                             current_lesson.subject(),
-                            current_lesson.end().minute() - Local::now().minute()
+                            (current_lesson.end() - Local::now()).num_minutes()
                         );
                     }
                 }
