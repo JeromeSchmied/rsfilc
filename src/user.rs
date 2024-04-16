@@ -12,7 +12,7 @@ use crate::{
     AnyErr,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Local, NaiveTime, Timelike, Utc};
+use chrono::{DateTime, Local, Utc};
 use hmac::{Hmac, Mac};
 use reqwest::header::HeaderMap;
 use sha2::Sha512;
