@@ -147,10 +147,10 @@ impl Msg {
         let pref = if let Some(pr) = pref { pr } else { Rendr::W3m };
 
         let proc = if let Ok(pref_proc) = pref.child() {
-            eprintln!("rendering with {}", pref);
+            // eprintln!("rendering with {}", pref);
             pref_proc
         } else if let Ok(other_proc) = pref.other().child() {
-            eprintln!("rendering with {}", pref.other());
+            // eprintln!("rendering with {}", pref.other());
             other_proc
         } else {
             eprintln!("couldn't spawn lynx nor w3m, falling back to very-very-basic-html-renderer-I-wrote-in-22-lines ;)");
