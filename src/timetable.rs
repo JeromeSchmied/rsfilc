@@ -142,9 +142,9 @@ impl Lesson {
             Local::now().date_naive()
         }
     }
-    pub fn nth_of_day(lessons: &[Lesson]) -> Option<Lesson> {
-        todo!()
-    }
+    // pub fn nth_of_day(lessons: &[Lesson]) -> Option<Lesson> {
+    //     todo!()
+    // }
     // pub fn parse_time(time: &str) ->
 }
 impl fmt::Display for Lesson {

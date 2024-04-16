@@ -39,7 +39,7 @@ pub fn get_all_msgs(kind: &str) -> String {
     format!("/api/v1/kommunikacio/postaladaelemek/{kind}")
 }
 /// get detailed information about message with `id`
-pub fn get_msg(id: &str) -> String {
+pub fn get_msg(id: u64) -> String {
     format!("/api/v1/kommunikacio/postaladaelemek/{id}")
 }
 /// recipient categories
@@ -51,7 +51,7 @@ pub const RECIPIENTS_TEACHER: &str = "/api/v1/kreta/alkalmazottak/tanar";
 /// upload attachment
 pub const UPLOAD_ATTACHMENT: &str = "/ideiglenesfajlok";
 /// download attachment
-pub fn download_attachment(id: &str) -> String {
+pub fn download_attachment(id: u64) -> String {
     format!("/v1/dokumentumok/uzenetek/{id}")
 }
 /// trash message

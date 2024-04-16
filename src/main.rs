@@ -126,6 +126,7 @@ async fn main() -> AnyErr<()> {
                 let full_msg = user.full_msg(msg_overview).await?;
                 // println!("{}", msg_overview);
                 println!("{}", full_msg);
+                user.download_attachments(&full_msg).await;
             }
         }
 

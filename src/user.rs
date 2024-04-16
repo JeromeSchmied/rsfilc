@@ -377,9 +377,7 @@ impl User {
     pub async fn full_msg(&self, msg_oview: &MsgOview) -> AnyErr<Msg> {
         let client = reqwest::Client::new();
         let res = client
-            .get(
-                endpoints::ADMIN.to_owned() + &endpoints::get_msg(&msg_oview.azonosito.to_string()),
-            )
+            .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.azonosito))
             .headers(self.headers().await?)
             .send()
             .await?;
@@ -465,6 +463,26 @@ impl User {
 
         let all_announced = serde_json::from_str(&text)?;
         Ok(all_announced)
+    }
+
+    pub async fn download_attachments(&self, msg: &Msg) -> AnyErr<()> {
+        // let download_dir = dirs::download_dir().expect("couldn't find Downloads");
+        for am in msg.attachments() {
+            eprintln!("downloading {}", am.file_name);
+
+            let client = reqwest::Client::new();
+            let res = client
+                .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
+                .headers(self.headers().await?)
+                .send()
+                .await?;
+            eprintln!("{}", endpoints::download_attachment(am.id));
+            let text = res.text().await?;
+            let mut f = File::create(am.file_name).expect("wronk filepath!");
+            f.write_all(text.as_bytes()).expect("wronk attachment!");
+            eprintln!("{}", text);
+        }
+        Ok(())
     }
 
     /// get information about being [`Abs`]ent `from` `to` or all
