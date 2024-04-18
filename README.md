@@ -98,6 +98,7 @@
     -   [x] evaluations/grades
     -   [x] timetable
     -   [x] messages
+		-   [x] attachments
     -   [x] announced test
     -   [x] absences
 
@@ -108,6 +109,7 @@
     -   [x] evaluations/grades
     -   [x] timetable
     -   [x] messages
+		-   [x] attachments
     -   [x] announced test
     -   [x] absences
 
@@ -117,9 +119,10 @@
 -   [x] filtering what to show
 -   [x] multi-user feature
 -   [x] somehow rendering `html` that messages return
--   [ ] helpful crashes
 -   [x] render `html` messages with `w3m` or `lynx` if possible
 -   [x] shell completions: [bash, zsh, fish, elvish, powershell]
+-   [ ] logger: `fern` maybe
+-   [ ] helpful crashes
 -   [ ] caching everything so that life remains enjoyable
 -   [ ] encoding passwords
 -   [ ] changing passwords

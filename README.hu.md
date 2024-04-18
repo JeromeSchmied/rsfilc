@@ -88,6 +88,7 @@
     -   [x] jegyek
     -   [x] órarend
     -   [x] üzenetek
+		-   [x] csatolmányok
     -   [x] előre bejelentett számonkérések
     -   [x] hiányzások
 
@@ -98,6 +99,7 @@
     -   [x] jegyek
     -   [x] órarend
     -   [x] üzenetek
+		-   [x] csatolmányok
     -   [x] előre bejelentett számonkérések
     -   [x] hiányzások
 
@@ -106,11 +108,12 @@
 -   [x] API alapvető használata
 -   [x] kért adatok alapvető megjelenítése
 -   [x] több fiókos rendszer
--   [ ] segítőkész hibaüüzenetek
--   [ ] kb minden cache-elése a valódi élmény érdekében
 -   [x] üzenetek (`html`) elfogadható megjelenítése
 -   [x] üzenetek (`html`) megjelenítése `w3m`-mel vagy `lynx`-el ha lehetséges
--   [ ] shell autókitöltések: [bash, zsh, fish, elvish, powershell]
+-   [x] shell autókitöltések: [bash, zsh, fish, elvish, powershell]
+-   [ ] hibajelentések: esetleg `fern`
+-   [ ] segítőkész hibaüüzenetek
+-   [ ] kb minden cache-elése a valódi élmény érdekében
 -   [ ] jelszavak titkosítása mentéshez
 -   [ ] jelszavak módosítása
 -   [ ] ...
