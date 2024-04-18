@@ -12,14 +12,17 @@ use crate::{
     AnyErr,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Local, NaiveTime, Timelike, Utc};
+use chrono::{DateTime, Local, Utc};
 use hmac::{Hmac, Mac};
-use reqwest::header::HeaderMap;
+use reqwest::{
+    blocking::{self, Client},
+    header::HeaderMap,
+};
 use sha2::Sha512;
 use std::{
     collections::HashMap,
-    fs::{self, File, OpenOptions},
-    io::{self, Write},
+    fs::{self, copy, File, OpenOptions},
+    io::{self, Cursor, Write},
 };
 
 /// Kréta, app user
@@ -34,8 +37,8 @@ pub struct User {
 }
 impl User {
     /// get name of [`User`]
-    async fn name(&self) -> String {
-        self.info().await.expect("couldn't get user info").nev
+    fn name(&self) -> String {
+        self.info().expect("couldn't get user info").nev
     }
 
     /// endpoint
@@ -90,6 +93,7 @@ impl User {
 
         let val = content
             .lines()
+            .filter(|line| !line.starts_with('#'))
             .find(|line| line.contains(k))?
             .split('=')
             .last()?
@@ -177,18 +181,17 @@ impl User {
         writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
     }
     /// greet user
-    pub async fn greet(&self) {
-        if let Ok(info) = self.info().await {
+    pub fn greet(&self) {
+        if let Ok(info) = self.info() {
             println!("Hello {}!\n\n", info.nev);
         }
     }
     /// load [`User`] with [`User::username`] and save it to [`User::config_path`]
-    pub async fn load_user(username: &str) -> Option<Self> {
+    pub fn load_user(username: &str) -> Option<Self> {
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
                 .name()
-                .await
                 .to_lowercase()
                 .contains(&username.to_lowercase())
             {
@@ -197,12 +200,12 @@ impl User {
         }
         let user = matching_users.first()?;
 
-        user.save_to_conf().await;
+        user.save_to_conf();
 
         Some(user.clone())
     }
     /// save [`User`] as default to config.toml
-    async fn save_to_conf(&self) {
+    fn save_to_conf(&self) {
         let conf_path = config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             fs::create_dir_all(conf_path.parent().expect("couldn't get config dir"))
@@ -211,10 +214,10 @@ impl User {
         let mut conf_file = File::create(conf_path).expect("couldn't create config file");
 
         writeln!(conf_file, "[user]").unwrap();
-        writeln!(conf_file, "name = \"{}\"", self.name().await).unwrap();
+        writeln!(conf_file, "name = \"{}\"", self.name()).unwrap();
     }
     /// load [`User`] configured in config.toml
-    pub async fn load_conf() -> Option<Self> {
+    pub fn load_conf() -> Option<Self> {
         let conf_path = config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             return None;
@@ -222,15 +225,15 @@ impl User {
         let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
         let username = Self::get_val(&config_content, "name")?;
 
-        Self::load_user(&username).await
+        Self::load_user(&username)
     }
 
     /// get headers which are necessary for making certain requests
-    async fn headers(&self) -> AnyErr<HeaderMap> {
+    fn headers(&self) -> AnyErr<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
-            format!("Bearer {}", self.token().await?.access_token).parse()?,
+            format!("Bearer {}", self.token()?.access_token).parse()?,
         );
         headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
         Ok(headers)
@@ -250,15 +253,12 @@ impl User {
     ///         &grant_type=password \
     ///         &client_id=kreta-ellenorzo-mobile-android"
     /// ```
-    async fn token(&self) -> AnyErr<Token> {
+    fn token(&self) -> AnyErr<Token> {
         // Define the key as bytes
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
 
         // Get nonce
-        let nonce = reqwest::get([endpoints::IDP, endpoints::NONCE].concat())
-            .await?
-            .text()
-            .await?;
+        let nonce = blocking::get([endpoints::IDP, endpoints::NONCE].concat())?.text()?;
 
         // Define the message as bytes
         let message = format!(
@@ -299,15 +299,14 @@ impl User {
         data.insert("grant_type", "password");
         data.insert("client_id", endpoints::CLIENT_ID);
 
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let res = client
             .post([endpoints::IDP, Token::ep()].concat())
             .headers(headers)
             .form(&data)
-            .send()
-            .await?;
+            .send()?;
 
-        let text = res.text().await?;
+        let text = res.text()?;
         let mut logf = File::create(log_path("token"))?;
         write!(logf, "{text}")?;
 
@@ -316,9 +315,9 @@ impl User {
     }
 
     /// Returns the current [`Lesson`](s) of this [`User`] if any.
-    pub async fn current_lesson(&self) -> Option<Vec<Lesson>> {
+    pub fn current_lesson(&self) -> Option<Vec<Lesson>> {
         let now = Local::now();
-        let current = self.timetable(now, now).await.ok()?;
+        let current = self.timetable(now, now).ok()?;
 
         if current.is_empty() {
             None
@@ -328,15 +327,13 @@ impl User {
     }
 
     /// get [`User`] info
-    pub async fn info(&self) -> AnyErr<Info> {
-        let client = reqwest::Client::new();
+    pub fn info(&self) -> AnyErr<Info> {
+        let client = Client::new();
         let res = client
             .get(base(&self.school_id) + User::ep())
-            .headers(self.headers().await?)
-            .send()
-            .await?;
-
-        let text = res.text().await?;
+            .headers(self.headers()?)
+            .send()?;
+        let text = res.text()?;
         let mut logf = File::create(log_path("info"))?;
         write!(logf, "{text}")?;
 
@@ -345,15 +342,14 @@ impl User {
     }
 
     /// get all [`MsgOview`]s of a [`MsgKind`]
-    pub async fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
-        let client = reqwest::Client::new();
+    pub fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
+        let client = Client::new();
         let res = client
             .get(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val()))
-            .headers(self.headers().await?)
-            .send()
-            .await?;
+            .headers(self.headers()?)
+            .send()?;
 
-        let text = res.text().await?;
+        let text = res.text()?;
         let mut logf = File::create(log_path("messages"))?;
         write!(logf, "{text}")?;
 
@@ -362,28 +358,25 @@ impl User {
     }
 
     /// get all messages, of any kind
-    pub async fn all_msg_oviews(&self) -> AnyErr<Vec<MsgOview>> {
+    pub fn all_msg_oviews(&self) -> AnyErr<Vec<MsgOview>> {
         let mut msgs = Vec::new();
 
-        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Recv).await?].concat();
-        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Sent).await?].concat();
-        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Del).await?].concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Recv)?].concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Sent)?].concat();
+        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Del)?].concat();
 
         Ok(msgs)
     }
 
     /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
-    pub async fn full_msg(&self, msg_oview: &MsgOview) -> AnyErr<Msg> {
-        let client = reqwest::Client::new();
+    pub fn full_msg(&self, msg_oview: &MsgOview) -> AnyErr<Msg> {
+        let client = Client::new();
         let res = client
-            .get(
-                endpoints::ADMIN.to_owned() + &endpoints::get_msg(&msg_oview.azonosito.to_string()),
-            )
-            .headers(self.headers().await?)
-            .send()
-            .await?;
+            .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.azonosito))
+            .headers(self.headers()?)
+            .send()?;
 
-        let text = res.text().await?;
+        let text = res.text()?;
         let mut logf = File::create(log_path("full_message"))?;
         write!(logf, "{text}")?;
 
@@ -392,7 +385,7 @@ impl User {
     }
 
     /// get all [`Eval`]s with `from` `to` or all
-    pub async fn evals(
+    pub fn evals(
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
@@ -404,15 +397,14 @@ impl User {
         if let Some(to) = to {
             query.push(("datumIg", to.to_rfc3339()));
         }
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let res = client
             .get(base(&self.school_id) + Eval::ep())
             .query(&query)
-            .headers(self.headers().await?)
-            .send()
-            .await?;
+            .headers(self.headers()?)
+            .send()?;
 
-        let text = res.text().await?;
+        let text = res.text()?;
         let mut logf = File::create(log_path("evals"))?;
         write!(logf, "{text}")?;
 
@@ -421,43 +413,38 @@ impl User {
     }
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
-    pub async fn timetable(
-        &self,
-        from: DateTime<Local>,
-        to: DateTime<Local>,
-    ) -> AnyErr<Vec<Lesson>> {
-        let client = reqwest::Client::new();
+    pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> AnyErr<Vec<Lesson>> {
+        let client = Client::new();
         let res = client
             .get(base(&self.school_id) + Lesson::ep())
             .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
-            .headers(self.headers().await?)
-            .send()
-            .await?;
-        let text = res.text().await?;
+            .headers(self.headers()?)
+            .send()?;
+        let text = res.text()?;
 
         let mut logf = File::create(log_path("timetable"))?;
         write!(logf, "{text}")?;
 
-        let lessons = serde_json::from_str(&text)?;
+        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&text)?;
+        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
         Ok(lessons)
     }
 
     /// get [`Announced`] tests `from` or all
-    pub async fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Announced>> {
+    pub fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Announced>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {
             vec![]
         };
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let res = client
             .get(base(&self.school_id) + Announced::ep())
             .query(&query)
-            .headers(self.headers().await?)
-            .send()
-            .await?;
+            .headers(self.headers()?)
+            .send()?;
 
-        let text = res.text().await?;
+        let text = res.text()?;
         let mut logf = File::create(log_path("announced"))?;
         write!(logf, "{text}")?;
 
@@ -465,8 +452,33 @@ impl User {
         Ok(all_announced)
     }
 
+    pub fn download_attachments(&self, msg: &Msg) -> AnyErr<()> {
+        // let download_dir = dirs::download_dir().expect("couldn't find Downloads");
+        for am in msg.attachments() {
+            eprintln!("downloading {}", am.file_name);
+
+            let client = Client::new();
+            let res = client
+                .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
+                .headers(self.headers()?)
+                .send()?;
+            eprintln!("{}", endpoints::download_attachment(am.id));
+            // let text = res.text()?;
+            let mut f = File::create(am.file_name).expect("wronk filepath!");
+            let mut content = Cursor::new(res.bytes()?);
+            // f.write_all(&content)?;
+            // copy(&mut content, &mut f);
+
+            // let bytes = res.bytes()?;
+            // f.write_all(&bytes).expect("wronk attachment!");
+
+            // println!("{}", text);
+        }
+        Ok(())
+    }
+
     /// get information about being [`Abs`]ent `from` `to` or all
-    pub async fn absences(
+    pub fn absences(
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
@@ -478,15 +490,14 @@ impl User {
         if let Some(to) = to {
             query.push(("datumIg", to.to_rfc3339()));
         }
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let res = client
             .get(base(&self.school_id) + Abs::ep())
             .query(&query)
-            .headers(self.headers().await?)
-            .send()
-            .await?;
+            .headers(self.headers()?)
+            .send()?;
 
-        let text = res.text().await?;
+        let text = res.text()?;
         let mut logf = File::create(log_path("absences"))?;
         write!(logf, "{text}")?;
 
@@ -495,15 +506,14 @@ impl User {
     }
 
     /// get groups the [`User`] is a member of
-    pub async fn groups(&self) -> AnyErr<String> {
-        let client = reqwest::Client::new();
+    pub fn groups(&self) -> AnyErr<String> {
+        let client = Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::CLASSES)
-            .headers(self.headers().await?)
-            .send()
-            .await?;
+            .headers(self.headers()?)
+            .send()?;
 
-        let text = res.text().await?;
+        let text = res.text()?;
         let mut logf = File::create(log_path("groups"))?;
         write!(logf, "{text}")?;
 

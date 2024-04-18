@@ -1,7 +1,7 @@
 //! lessons the student has
 
 use crate::{day_of_week, pretty_date};
-use chrono::{DateTime, Datelike, Local};
+use chrono::{DateTime, Datelike, Duration, Local, NaiveDate};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -100,8 +100,8 @@ impl Lesson {
             .expect("couldn't parse veg_idopont")
             .into()
     }
-    /// Returns the subject of this [`Lesson`].
-    pub fn subject(&self) -> Option<String> {
+    /// Returns the subject id of this [`Lesson`].
+    pub fn subject_id(&self) -> Option<String> {
         Some(
             self.tantargy
                 .as_ref()?
@@ -112,13 +112,46 @@ impl Lesson {
                 .to_string(),
         )
     }
+    /// Returns the subject id of this [`Lesson`].
+    pub fn subject(&self) -> String {
+        self.nev.clone()
+    }
+    /// Parse the day got as `argument`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if
+    /// - day shifter contains invalid number.
+    /// - any datetime is invalid.
+    pub fn parse_day(day: &Option<String>) -> NaiveDate {
+        if let Some(date) = day {
+            let date = date.replace(['/', '.'], "-");
+            if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+                ndate
+            } else if date.starts_with('+') {
+                Local::now()
+                    .checked_add_signed(Duration::days(
+                        date.parse::<i64>().expect("invalid day shifter"),
+                    ))
+                    .expect("invalid datetime")
+                    .date_naive()
+            } else {
+                Local::now().date_naive()
+            }
+        } else {
+            Local::now().date_naive()
+        }
+    }
+    // pub fn nth_of_day(lessons: &[Lesson]) -> Option<Lesson> {
+    //     todo!()
+    // }
     // pub fn parse_time(time: &str) ->
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} ", self.nev)?;
         if let Some(room) = &self.terem_neve {
-            writeln!(f, "a(z) {} teremben", room.replace("terem", ""))?;
+            writeln!(f, "a(z) {} teremben", room.replace("terem", "").trim())?;
         } else {
             writeln!(f)?;
         }
@@ -232,6 +265,6 @@ mod tests {
         assert_eq!(lesson.helyettes_tanar_neve, None);
         assert!(!lesson.cancelled());
         assert!(!lesson.absent());
-        assert_eq!(lesson.subject(), Some("fizika".to_string()));
+        assert_eq!(lesson.subject_id(), Some("fizika".to_string()));
     }
 }

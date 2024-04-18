@@ -14,10 +14,10 @@ pub struct School {
 }
 impl School {
     /// get school list from refilc api
-    pub async fn get_from_refilc() -> AnyErr<Vec<School>> {
-        let res = reqwest::get("https://api.refilc.hu/v1/public/school-list").await?;
+    pub fn get_from_refilc() -> AnyErr<Vec<School>> {
+        let res = reqwest::blocking::get("https://api.refilc.hu/v1/public/school-list")?;
 
-        Ok(serde_json::from_str(&res.text().await?)?)
+        Ok(serde_json::from_str(&res.text()?)?)
     }
     /// search for school
     pub fn search(find_school: &str, schools: &[School]) -> Vec<School> {
@@ -34,7 +34,7 @@ impl School {
         matching_schools
     }
 
-    // pub async fn get_kreta() -> Result<String, AnyErr> {
+    // pub  fn get_kreta() -> Result<String, AnyErr> {
     //     // curl "https://kretaglobalmobileapi2.ekreta.hu/api/v3/Institute" -H "apiKey: 7856d350-1fda-45f5-822d-e1a2f3f1acf0"
 
     //     let client = reqwest::Client::new();

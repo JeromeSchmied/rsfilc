@@ -1,23 +1,22 @@
-use chrono::{Datelike, Duration, Local, NaiveDate};
+use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use rsfilc::{
     args::{Args, Commands},
     evals::Eval,
     log_path,
     school_list::School,
-    timetable,
+    timetable::Lesson,
     user::User,
     AnyErr,
 };
 use std::{fs::File, io::Write};
 
-#[tokio::main]
-async fn main() -> AnyErr<()> {
+fn main() -> AnyErr<()> {
     let cli_args = Args::parse();
 
     let user = if cli_args.command.user_needed() {
         let users = User::load_all();
-        if let Some(default_user) = User::load_conf().await {
+        if let Some(default_user) = User::load_conf() {
             default_user
         } else if let Some(loaded_user) = users.first() {
             loaded_user.clone()
@@ -27,6 +26,8 @@ async fn main() -> AnyErr<()> {
     } else {
         User::new("", "", "") // dummy user
     };
+
+    let now = Local::now();
 
     match cli_args.command {
         Commands::Tui {} => todo!("TUI is to be written (soon)"),
@@ -40,30 +41,21 @@ async fn main() -> AnyErr<()> {
         }
         Commands::Timetable { day, current } => {
             if current {
-                if let Some(current_lessons) = user.current_lesson().await {
+                if let Some(current_lessons) = user.current_lesson() {
                     for current_lesson in current_lessons {
-                        println!("{}", current_lesson);
+                        println!(
+                            "{}, {}m",
+                            current_lesson.subject(),
+                            (current_lesson.end() - now).num_minutes()
+                        );
                     }
                 }
                 return Ok(());
             }
-            let day = if let Some(date) = day {
-                let date = date.replace(['/', '.'], "-");
-                if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
-                    ndate
-                } else if date.starts_with('+') {
-                    Local::now()
-                        .checked_add_signed(Duration::days(
-                            date.parse::<i64>().expect("invalid day shifter"),
-                        ))
-                        .expect("invalid datetime")
-                        .date_naive()
-                } else {
-                    Local::now().date_naive()
-                }
-            } else {
-                Local::now().date_naive()
-            };
+
+            // parse day
+            let day = Lesson::parse_day(&day);
+
             let from = day
                 .and_hms_opt(0, 0, 0)
                 .expect("couldn't make from")
@@ -71,10 +63,10 @@ async fn main() -> AnyErr<()> {
                 .unwrap();
             let to = day
                 .and_hms_opt(23, 59, 59)
-                .expect("couldn't make from")
+                .expect("couldn't make to")
                 .and_local_timezone(Local)
                 .unwrap();
-            let mut lessons = user.timetable(from, to).await?;
+            let lessons = user.timetable(from, to)?;
             if lessons.is_empty() {
                 println!(
                     "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
@@ -83,9 +75,7 @@ async fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            // eprintln!("\ngot timetable...\n");
-            lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
-            timetable::Lesson::print_day(&lessons);
+            Lesson::print_day(&lessons);
         }
 
         Commands::Evals {
@@ -95,7 +85,7 @@ async fn main() -> AnyErr<()> {
             average,
             reverse,
         } => {
-            let mut evals = user.evals(None, None).await?;
+            let mut evals = user.evals(None, None)?;
             if !reverse {
                 evals.sort_by(|a, b| {
                     b.earned()
@@ -125,16 +115,17 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Messages { number, reverse } => {
-            let mut msg_overviews = user.all_msg_oviews().await?;
+            let mut msg_overviews = user.all_msg_oviews()?;
             if !reverse {
                 msg_overviews
                     .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
             }
 
             for msg_overview in msg_overviews.iter().take(number.into()) {
-                let full_msg = user.full_msg(msg_overview).await?;
+                let full_msg = user.full_msg(msg_overview)?;
                 // println!("{}", msg_overview);
-                println!("{}", full_msg);
+                // println!("{}", full_msg);
+                user.download_attachments(&full_msg);
             }
         }
 
@@ -143,7 +134,7 @@ async fn main() -> AnyErr<()> {
             count,
             reverse,
         } => {
-            let mut absences = user.absences(None, None).await?;
+            let mut absences = user.absences(None, None)?;
             if count {
                 println!("Összes hiányzásod száma: {}", absences.len());
                 println!(
@@ -164,7 +155,7 @@ async fn main() -> AnyErr<()> {
         }
 
         Commands::Tests { number, reverse } => {
-            let mut all_announced = user.all_announced(None).await?;
+            let mut all_announced = user.all_announced(None)?;
             if !reverse {
                 all_announced
                     .sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
@@ -182,9 +173,9 @@ async fn main() -> AnyErr<()> {
             list,
         } => {
             if let Some(switch_to) = switch {
-                let switched_to = User::load_user(&switch_to).await.unwrap();
+                let switched_to = User::load_user(&switch_to).unwrap();
                 println!("switched to {switch_to}");
-                switched_to.greet().await;
+                switched_to.greet();
 
                 return Ok(());
             }
@@ -195,15 +186,15 @@ async fn main() -> AnyErr<()> {
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
-                    println!("{}\n", current_user.info().await?);
+                    println!("{}\n", current_user.info()?);
                 }
             } else {
-                println!("{}", user.info().await?);
+                println!("{}", user.info()?);
             }
         }
 
         Commands::Schools { search } => {
-            let schools = School::get_from_refilc().await?;
+            let schools = School::get_from_refilc()?;
             eprintln!("\ngot schools...\n");
             if let Some(school_name) = search {
                 let found = School::search(&school_name, &schools);
@@ -218,11 +209,11 @@ async fn main() -> AnyErr<()> {
         }
     }
 
-    // let apiurls = ApiUrls::api_urls().await?;
+    // let apiurls = ApiUrls::api_urls()?;
     // eprintln!("\ngot api urls...\n");
     // println!("{:#?}", apiurls);
 
-    // let access_token = user.token().await?;
+    // let access_token = user.token()?;
     // eprintln!("\ngot access_token...\n");
     // println!("{:?}", access_token);
 

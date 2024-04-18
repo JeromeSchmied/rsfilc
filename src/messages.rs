@@ -61,9 +61,20 @@ impl MsgOview {
 //     }
 // }
 
+/// attachment
+#[derive(Debug, Deserialize, Clone, PartialEq)]
+pub struct Attachment {
+    /// filename
+    #[serde(rename(deserialize = "fajlNev"))]
+    pub file_name: String,
+    /// id
+    #[serde(rename(deserialize = "azonosito"))]
+    pub id: u64,
+}
+
 /// the message itself
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
+// #[serde(rename_all = "camelCase")]
 pub struct Msg {
     // /// id
     // azonosito: u32,
@@ -78,6 +89,9 @@ pub struct Msg {
     /// the message itself
     uzenet: HashMap<String, Value>,
 
+    // /// attachments
+    // // csatolmanyok: Vec<HashMap<String, Value>>,
+    // csatolmanyok: Option<Vec<Attachment>>,
     #[serde(flatten)]
     _extra: HashMap<String, Value>,
 }
@@ -141,16 +155,19 @@ impl Msg {
     pub fn sender_title(&self) -> String {
         self.msg_kv("feladoTitulus")
     }
+    pub fn attachments(&self) -> Vec<Attachment> {
+        serde_json::from_str(&self.msg_kv("csatolmanyok")).expect("couldn't find attachments")
+    }
 
     /// render html with [`Rendr`]
     fn render_with_external(html: &str, pref: Option<Rendr>) -> Option<String> {
         let pref = if let Some(pr) = pref { pr } else { Rendr::W3m };
 
         let proc = if let Ok(pref_proc) = pref.child() {
-            eprintln!("rendering with {}", pref);
+            // eprintln!("rendering with {}", pref);
             pref_proc
         } else if let Ok(other_proc) = pref.other().child() {
-            eprintln!("rendering with {}", pref.other());
+            // eprintln!("rendering with {}", pref.other());
             other_proc
         } else {
             eprintln!("couldn't spawn lynx nor w3m, falling back to very-very-basic-html-renderer-I-wrote-in-22-lines ;)");
@@ -216,9 +233,12 @@ impl Msg {
 }
 impl fmt::Display for Msg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Tárgy: {}", self.subj())?;
+        for am in &self.attachments() {
+            writeln!(f, "Csatolmány: \"{}\", {}", am.file_name, am.id)?;
+        }
         writeln!(f, "Kiküldve: {}", self.time_sent().format("%Y/%m/%d %H:%M"))?;
         writeln!(f, "Feladó: {} {}", self.sender(), self.sender_title())?;
-        writeln!(f, "Tárgy: {}", self.subj())?;
         writeln!(f, "\n{}", Self::render_html(&self.text()))?;
         writeln!(f, "---------------------------------\n")?;
         // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
@@ -423,6 +443,13 @@ mod test {
         assert!(msg.is_ok());
 
         let msg = msg.unwrap();
+        assert_eq!(
+            msg.attachments(),
+            vec![Attachment {
+                file_name: "xxxxxxx.xxx".to_string(),
+                id: 1000000
+            }]
+        );
         assert_eq!(msg.sender(), "Dudás Attila");
         assert_eq!(msg.sender_title(), "igazgató h.");
     }
