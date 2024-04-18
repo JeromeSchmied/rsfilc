@@ -21,8 +21,8 @@ use reqwest::{
 use sha2::Sha512;
 use std::{
     collections::HashMap,
-    fs::{self, copy, File, OpenOptions},
-    io::{self, Cursor, Write},
+    fs::{self, File, OpenOptions},
+    io::{self, Write},
 };
 
 /// Kréta, app user
@@ -452,27 +452,21 @@ impl User {
         Ok(all_announced)
     }
 
+    /// Download all [`Attachment`]s of this [`Msg`].
     pub fn download_attachments(&self, msg: &Msg) -> AnyErr<()> {
         // let download_dir = dirs::download_dir().expect("couldn't find Downloads");
         for am in msg.attachments() {
             eprintln!("downloading {}", am.file_name);
+            let mut f = File::create(am.file_name)?;
 
             let client = Client::new();
-            let res = client
+            client
                 .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
                 .headers(self.headers()?)
-                .send()?;
+                .send()?
+                .copy_to(&mut f)?;
+
             eprintln!("{}", endpoints::download_attachment(am.id));
-            // let text = res.text()?;
-            let mut f = File::create(am.file_name).expect("wronk filepath!");
-            let mut content = Cursor::new(res.bytes()?);
-            // f.write_all(&content)?;
-            // copy(&mut content, &mut f);
-
-            // let bytes = res.bytes()?;
-            // f.write_all(&bytes).expect("wronk attachment!");
-
-            // println!("{}", text);
         }
         Ok(())
     }

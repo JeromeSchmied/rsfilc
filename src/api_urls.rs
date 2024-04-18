@@ -29,7 +29,7 @@ impl ApiUrls {
         "https://kretamobile.blob.core.windows.net/configuration/ConfigurationDescriptor.json"
             .to_string()
     }
-    pub fn api_urls() -> AnyErr<ApiUrls> {
+    pub fn get() -> AnyErr<ApiUrls> {
         let res = reqwest::blocking::get(ApiUrls::api_url())?;
 
         Ok(serde_json::from_str(&res.text()?)?)
@@ -70,9 +70,8 @@ pub mod tests {
     }
 
     #[ignore]
-    #[tokio::test]
     fn api_url_get() {
-        let apiurls = ApiUrls::api_urls().await;
+        let apiurls = ApiUrls::get();
         assert!(apiurls.is_ok());
     }
 }

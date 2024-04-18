@@ -124,8 +124,8 @@ fn main() -> AnyErr<()> {
             for msg_overview in msg_overviews.iter().take(number.into()) {
                 let full_msg = user.full_msg(msg_overview)?;
                 // println!("{}", msg_overview);
-                // println!("{}", full_msg);
-                user.download_attachments(&full_msg);
+                println!("{}", full_msg);
+                user.download_attachments(&full_msg)?;
             }
         }
 
