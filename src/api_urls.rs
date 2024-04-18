@@ -70,9 +70,8 @@ pub mod tests {
     }
 
     #[ignore]
-    #[tokio::test]
     fn api_url_get() {
-        let apiurls = ApiUrls::api_urls().await;
+        let apiurls = ApiUrls::api_urls();
         assert!(apiurls.is_ok());
     }
 }
