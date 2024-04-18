@@ -452,11 +452,12 @@ impl User {
         Ok(all_announced)
     }
 
+    /// Download all [`Attachment`]s of this [`Msg`].
     pub fn download_attachments(&self, msg: &Msg) -> AnyErr<()> {
         // let download_dir = dirs::download_dir().expect("couldn't find Downloads");
         for am in msg.attachments() {
             eprintln!("downloading {}", am.file_name);
-            let mut f = File::create(am.file_name).expect("wronk filepath!");
+            let mut f = File::create(am.file_name)?;
 
             let client = Client::new();
             client
