@@ -256,7 +256,7 @@ impl User {
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
 
         // Get nonce
-        let nonce = reqwest::get([endpoints::IDP, endpoints::NONCE].concat())
+        let nonce = reqwest::blocking::get([endpoints::IDP, endpoints::NONCE].concat())
             .await?
             .text()
             .await?;
