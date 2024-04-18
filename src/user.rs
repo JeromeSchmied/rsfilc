@@ -21,8 +21,8 @@ use reqwest::{
 use sha2::Sha512;
 use std::{
     collections::HashMap,
-    fs::{self, copy, File, OpenOptions},
-    io::{self, Cursor, Write},
+    fs::{self, File, OpenOptions},
+    io::{self, Write},
 };
 
 /// Kréta, app user
