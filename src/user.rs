@@ -18,8 +18,8 @@ use reqwest::header::HeaderMap;
 use sha2::Sha512;
 use std::{
     collections::HashMap,
-    fs::{self, File, OpenOptions},
-    io::{self, Write},
+    fs::{self, copy, File, OpenOptions},
+    io::{self, Cursor, Write},
 };
 
 /// Kréta, app user
@@ -477,10 +477,16 @@ impl User {
                 .send()
                 .await?;
             eprintln!("{}", endpoints::download_attachment(am.id));
-            let text = res.text().await?;
+            // let text = res.text().await?;
             let mut f = File::create(am.file_name).expect("wronk filepath!");
-            f.write_all(text.as_bytes()).expect("wronk attachment!");
-            eprintln!("{}", text);
+            let mut content = Cursor::new(res.bytes().await?);
+            // f.write_all(&content)?;
+            // copy(&mut content, &mut f);
+
+            // let bytes = res.bytes().await?;
+            // f.write_all(&bytes).expect("wronk attachment!");
+
+            // println!("{}", text);
         }
         Ok(())
     }

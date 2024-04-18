@@ -42,19 +42,22 @@ pub fn get_all_msgs(kind: &str) -> String {
 pub fn get_msg(id: u64) -> String {
     format!("/api/v1/kommunikacio/postaladaelemek/{id}")
 }
+
+/// trash message
+pub const TRASH_MESSAGE: &str = "/api/v1/kommunikacio/postaladaelemek/kuka";
+/// delete message
+pub const DELETE_MESSAGE: &str = "/api/v1/kommunikacio/postaladaelemek/torles";
+
 /// recipient categories
 pub const RECIPIENT_CATEGORIES: &str = "/api/v1/adatszotarak/cimzetttipusok";
 /// available recipient categories
 pub const AVAILABLE_CATEGORIES: &str = "/api/v1/kommunikacio/cimezhetotipusok";
 /// teacher recipients
 pub const RECIPIENTS_TEACHER: &str = "/api/v1/kreta/alkalmazottak/tanar";
+
 /// upload attachment
 pub const UPLOAD_ATTACHMENT: &str = "/ideiglenesfajlok";
 /// download attachment
 pub fn download_attachment(id: u64) -> String {
-    format!("/v1/dokumentumok/uzenetek/{id}")
+    format!("/api/v1/dokumentumok/uzenetek/{id}")
 }
-/// trash message
-pub const TRASH_MESSAGE: &str = "/api/v1/kommunikacio/postaladaelemek/kuka";
-/// delete message
-pub const DELETE_MESSAGE: &str = "/api/v1/kommunikacio/postaladaelemek/torles";
