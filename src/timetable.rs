@@ -128,7 +128,14 @@ impl Lesson {
             let date = date.replace(['/', '.'], "-");
             if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
                 ndate
-            } else if date.starts_with('+') {
+            } else if date.starts_with('+') || date.ends_with('-') {
+                let day_shift = if date.starts_with('+') {
+                    date.parse::<i64>().expect("invalid +day shifter")
+                } else {
+                    let date = &date[0..date.len()];
+                    eprintln!("date: {}", date);
+                    date.parse::<i64>().expect("invalid day- shifter")
+                };
                 Local::now()
                     .checked_add_signed(Duration::days(
                         date.parse::<i64>().expect("invalid day shifter"),

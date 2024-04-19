@@ -173,7 +173,7 @@ fn main() -> AnyErr<()> {
             list,
         } => {
             if let Some(switch_to) = switch {
-                let switched_to = User::load_user(&switch_to).unwrap();
+                let switched_to = User::load(&switch_to).unwrap();
                 println!("switched to {switch_to}");
                 switched_to.greet();
 

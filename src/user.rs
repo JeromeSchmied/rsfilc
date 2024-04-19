@@ -85,7 +85,7 @@ impl User {
         user
     }
 
-    /// Load every saved [`User`] from [`User::cred_path()`]
+    /// Load every saved [`User`] from [`cred_path()`]
     ///
     /// # Panics
     ///
@@ -143,12 +143,12 @@ impl User {
             println!("Hello {}!\n\n", info.nev);
         }
     }
-    /// load [`User`] with [`User::username`] and save it to [`User::config_path`]
-    pub fn load_user(username: &str) -> Option<Self> {
+    /// load [`User`] with [`User::username`] and save it to [`config_path()`]
+    pub fn load(username: &str) -> Option<Self> {
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
-                .name()
+                .username
                 .to_lowercase()
                 .contains(&username.to_lowercase())
             {
@@ -170,8 +170,18 @@ impl User {
         }
         let mut conf_file = File::create(conf_path).expect("couldn't create config file");
 
-        writeln!(conf_file, "[user]").unwrap();
-        writeln!(conf_file, "name = \"{}\"", self.name()).unwrap();
+        writeln!(
+            conf_file,
+            "{}",
+            toml::to_string(&Config {
+                default_username: self.username.clone()
+            })
+            .expect("couldn't deserialize user")
+        )
+        .expect("couldn't save user");
+
+        // writeln!(conf_file, "[user]").unwrap();
+        // writeln!(conf_file, "name = \"{}\"", self.name()).unwrap();
     }
     /// load [`User`] configured in config.toml
     pub fn load_conf() -> Option<Self> {
@@ -182,7 +192,7 @@ impl User {
         let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
         let config = toml::from_str::<Config>(&config_content).expect("couldn't deser config");
 
-        Self::load_user(&config.default_username)
+        Self::load(&config.default_username)
     }
 
     /// get headers which are necessary for making certain requests
