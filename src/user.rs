@@ -175,21 +175,14 @@ impl User {
     }
     /// load [`User`] configured in config.toml
     pub fn load_conf() -> Option<Self> {
-        let conf_path = config_path().expect("couldn't find config path");
+        let conf_path = config_path()?;
         if !conf_path.exists() {
             return None;
         }
         let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
-        // let username = Self::get_val(&config_content, "name")?;
-        let username = config_content
-            .lines()
-            .nth(2)?
-            .split_whitespace()
-            .last()?
-            .trim_matches('"');
-        // let username =
+        let config = toml::from_str::<Config>(&config_content).expect("coudln't deser config");
 
-        Self::load_user(username)
+        Self::load_user(&config.default_username)
     }
 
     /// get headers which are necessary for making certain requests
