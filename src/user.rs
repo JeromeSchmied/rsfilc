@@ -18,6 +18,7 @@ use reqwest::{
     blocking::{self, Client},
     header::HeaderMap,
 };
+use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::{
     collections::HashMap,
@@ -26,7 +27,7 @@ use std::{
 };
 
 /// Kréta, app user
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
     username: String,
@@ -46,15 +47,13 @@ impl User {
         "/ellenorzo/V3/Sajat/TanuloAdatlap"
     }
 
-    /// create new instance of user and save it
+    /// create new instance of [`User`]
     pub fn new(username: &str, password: &str, school_id: &str) -> Self {
-        let user = Self {
+        Self {
             username: username.to_string(),
             password: password.to_string(),
             school_id: school_id.to_string(),
-        };
-        user.save();
-        user
+        }
     }
 
     /// load user account from saved dir
@@ -104,9 +103,9 @@ impl User {
         Some(val)
     }
 
-    /// create a [`User`] from cli
+    /// create a [`User`] from cli and save it!
     pub fn create() -> Self {
-        println!("please login");
+        println!("please log in");
         print!("username: ");
         io::stdout().flush().unwrap();
         let mut username = String::new();
@@ -128,7 +127,9 @@ impl User {
             .read_line(&mut school_id)
             .expect("couldn't read school_id");
 
-        Self::new(username.trim(), password.trim(), school_id.trim())
+        let user = Self::new(username.trim(), password.trim(), school_id.trim());
+        user.save();
+        user
     }
 
     /// Load every saved [`User`] from [`User::cred_path`]
@@ -143,19 +144,22 @@ impl User {
             return vec![];
         }
 
-        let content = fs::read_to_string(cred_path).expect("couldn't read credentials from file");
+        let content = fs::read_to_string(cred_path).expect("couldn't read credentials.toml");
+        let users = toml::from_str(&content).expect("couldn't read user credentials from file");
+        eprintln!("{:?}", users);
 
-        let mut users = Vec::new();
-        for user_s in content.split("[[user]]") {
-            if let Some(parsed_user) = Self::parse(user_s) {
-                users.push(parsed_user);
-            }
-        }
+        // let mut users = Vec::new();
+        // for user_s in content.split("[[user]]") {
+        //     if let Some(parsed_user) = Self::parse(user_s) {
+        //         users.push(parsed_user);
+        //     }
+        // }
 
         users
     }
-    /// save user credentials
+    /// save [`User`] credentials if not empty
     fn save(&self) {
+        eprintln!("saving user...");
         if Self::load_all().contains(self) {
             return;
         }
@@ -174,11 +178,21 @@ impl User {
         if self.username.is_empty() || self.password.is_empty() || self.school_id.is_empty() {
             return;
         }
+        eprintln!(
+            "gonna save:\n\"{}\"",
+            toml::to_string(&vec![self]).expect("couldn't serialize user")
+        );
+        write!(
+            cred_file,
+            "{}",
+            toml::to_string(&vec![self]).expect("couldn't serialize user")
+        )
+        .expect("couldn't save user");
 
-        writeln!(cred_file, "[[user]]").unwrap();
-        writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
-        writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
-        writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
+        // writeln!(cred_file, "[[user]]").unwrap();
+        // writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
+        // writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
+        // writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
     }
     /// greet user
     pub fn greet(&self) {
@@ -513,5 +527,92 @@ impl User {
 
         // let all_announced = serde_json::from_str(&text)?;
         Ok(text)
+    }
+}
+
+/// Vec of [`User`]s
+#[derive(PartialEq, Debug, Serialize, Deserialize)]
+struct Users {
+    users: Vec<User>,
+}
+impl From<Vec<User>> for Users {
+    fn from(users: Vec<User>) -> Self {
+        Users { users }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deser_user() {
+        let user = toml::from_str(
+            r#"
+            username = "Test Paul"
+            password = "2000.01.01"
+            school_id = "klik0000001"
+            "#,
+        );
+        assert_eq!(
+            Ok(User::new("Test Paul", "2000.01.01", "klik0000001")),
+            user
+        );
+    }
+
+    #[test]
+    fn ser_user() {
+        let user = User::new("Test Paul", "2000.01.01", "klik0000001");
+
+        let user_toml = r#"username = "Test Paul"
+password = "2000.01.01"
+school_id = "klik0000001"
+"#;
+
+        assert_eq!(Ok(user_toml.to_owned()), toml::to_string(&user));
+    }
+
+    #[test]
+    fn ser_users() {
+        let users: Users = vec![
+            User::new("Test Paul", "2000.01.01", "klik0000001"),
+            User::new("Test Paulina", "2000.01.02", "klik0000002"),
+        ]
+        .into();
+
+        let user_toml = r#"[[users]]
+username = "Test Paul"
+password = "2000.01.01"
+school_id = "klik0000001"
+
+[[users]]
+username = "Test Paulina"
+password = "2000.01.02"
+school_id = "klik0000002"
+"#;
+
+        assert_eq!(Ok(user_toml.to_owned()), toml::to_string(&users));
+    }
+
+    #[test]
+    fn deser_users() {
+        let users: Users = vec![
+            User::new("Test Paul", "2000.01.01", "klik0000001"),
+            User::new("Test Paulina", "2000.01.02", "klik0000002"),
+        ]
+        .into();
+
+        let user_toml = r#"[[users]]
+username = "Test Paul"
+password = "2000.01.01"
+school_id = "klik0000001"
+
+[[users]]
+username = "Test Paulina"
+password = "2000.01.02"
+school_id = "klik0000002"
+"#;
+
+        assert_eq!(toml::to_string(&users), Ok(user_toml.to_owned()));
     }
 }
