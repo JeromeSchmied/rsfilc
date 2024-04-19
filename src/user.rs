@@ -85,7 +85,7 @@ impl User {
         user
     }
 
-    /// Load every saved [`User`] from [`User::cred_path`]
+    /// Load every saved [`User`] from [`User::cred_path()`]
     ///
     /// # Panics
     ///
@@ -98,6 +98,11 @@ impl User {
         }
 
         let content = fs::read_to_string(cred_path).expect("couldn't read credentials.toml");
+        // migth not be necessary
+        if content.is_empty() {
+            return vec![];
+        }
+
         let users: Users =
             toml::from_str(&content).expect("couldn't read user credentials from file");
         eprintln!("{:?}", users);
@@ -106,7 +111,7 @@ impl User {
     }
     /// save [`User`] credentials if not empty
     fn save(&self) {
-        eprintln!("saving user...");
+        // eprintln!("saving user...");
         if Self::load_all().contains(self) {
             return;
         }
@@ -131,11 +136,6 @@ impl User {
             toml::to_string(&Users::from(vec![self.clone()])).expect("couldn't serialize user")
         )
         .expect("couldn't save user");
-
-        // writeln!(cred_file, "[[user]]").unwrap();
-        // writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
-        // writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
-        // writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
     }
     /// greet user
     pub fn greet(&self) {
@@ -480,7 +480,7 @@ impl User {
     }
 }
 
-/// Vec of [`User`]s
+/// Vec of [`User`]s, needed for deser
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
 struct Users {
     users: Vec<User>,
@@ -494,6 +494,13 @@ impl From<Users> for Vec<User> {
     fn from(val: Users) -> Self {
         val.users
     }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+/// [`User`] preferences/config
+struct Config {
+    /// the default [`User`]s name to load
+    default_username: String,
 }
 
 #[cfg(test)]
@@ -569,5 +576,24 @@ school_id = "klik0000002"
 "#;
 
         assert_eq!(toml::to_string(&users), Ok(user_toml.to_owned()));
+    }
+
+    #[test]
+    fn config_ser() {
+        let config = Config {
+            default_username: "Me Me Me!".to_owned(),
+        };
+        let config_toml = r#"default_username = "Me Me Me!"
+"#;
+        assert_eq!(Ok(config_toml.to_owned()), toml::to_string(&config));
+    }
+    #[test]
+    fn config_deser() {
+        let config_toml = r#"default_username = "Me Me Me!"
+"#;
+        let config = Config {
+            default_username: "Me Me Me!".to_owned(),
+        };
+        assert_eq!(toml::from_str(config_toml), Ok(config));
     }
 }
