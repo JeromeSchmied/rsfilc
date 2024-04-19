@@ -38,7 +38,7 @@ pub struct User {
 }
 impl User {
     /// get name of [`User`]
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         self.info().expect("couldn't get user info").nev
     }
 
@@ -137,13 +137,8 @@ impl User {
         )
         .expect("couldn't save user");
     }
-    /// greet user
-    pub fn greet(&self) {
-        if let Ok(info) = self.info() {
-            println!("Hello {}!\n\n", info.nev);
-        }
-    }
-    /// load [`User`] with [`User::username`] and save it to [`config_path()`]
+
+    /// load [`User`] with [`User::username`] or [`User::name()`] and save it to [`config_path()`]
     pub fn load(username: &str) -> Option<Self> {
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
@@ -151,6 +146,10 @@ impl User {
                 .username
                 .to_lowercase()
                 .contains(&username.to_lowercase())
+                || user
+                    .name()
+                    .to_lowercase()
+                    .contains(&username.to_lowercase())
             {
                 matching_users.push(user);
             }
@@ -179,9 +178,6 @@ impl User {
             .expect("couldn't deserialize user")
         )
         .expect("couldn't save user");
-
-        // writeln!(conf_file, "[user]").unwrap();
-        // writeln!(conf_file, "name = \"{}\"", self.name()).unwrap();
     }
     /// load [`User`] configured in config.toml
     pub fn load_conf() -> Option<Self> {

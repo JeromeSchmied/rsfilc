@@ -173,9 +173,9 @@ fn main() -> AnyErr<()> {
             list,
         } => {
             if let Some(switch_to) = switch {
-                let switched_to = User::load(&switch_to).unwrap();
+                let switched_to = User::load(&switch_to).expect("couldn't load user");
                 println!("switched to {switch_to}");
-                switched_to.greet();
+                println!("Hello {}!", switched_to.name());
 
                 return Ok(());
             }
