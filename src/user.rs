@@ -56,53 +56,6 @@ impl User {
         }
     }
 
-    /// load user account from saved dir
-    ///
-    /// ```toml
-    /// [[user]]
-    /// username = "70123456789"
-    /// password = "2000-01-01"
-    /// school_id = "klik012345678"
-    ///
-    /// [[user]]
-    /// username = "70000000000"
-    /// password = "2002-01-01"
-    /// school_id = "klik000000000"
-    /// ```
-    pub fn parse(content: &str) -> Option<Self> {
-        let username = Self::get_val(content, "username");
-        let password = Self::get_val(content, "password");
-        let school_id = Self::get_val(content, "school_id");
-        match (username, password, school_id) {
-            (Some(un), Some(pw), Some(si)) => Some(User {
-                username: un,
-                password: pw,
-                school_id: si,
-            }),
-            _ => None,
-        }
-    }
-
-    /// get value for key from content (eg. toml file)
-    fn get_val(content: &str, key: &str) -> Option<String> {
-        let k = &format!("{key} = ");
-        if !content.contains(k) {
-            return None;
-        }
-
-        let val = content
-            .lines()
-            .filter(|line| !line.starts_with('#'))
-            .find(|line| line.contains(k))?
-            .split('=')
-            .last()?
-            .trim()
-            .trim_matches(|c| c == '"' || c == '\'')
-            .to_string();
-
-        Some(val)
-    }
-
     /// create a [`User`] from cli and save it!
     pub fn create() -> Self {
         println!("please log in");
@@ -138,24 +91,18 @@ impl User {
     ///
     /// Panics if cred path does not exist.
     pub fn load_all() -> Vec<Self> {
-        let cred_path = cred_path().expect("couldn't find config dir");
+        let cred_path = cred_path().expect("couldn't find credential path");
 
         if !cred_path.exists() {
             return vec![];
         }
 
         let content = fs::read_to_string(cred_path).expect("couldn't read credentials.toml");
-        let users = toml::from_str(&content).expect("couldn't read user credentials from file");
+        let users: Users =
+            toml::from_str(&content).expect("couldn't read user credentials from file");
         eprintln!("{:?}", users);
 
-        // let mut users = Vec::new();
-        // for user_s in content.split("[[user]]") {
-        //     if let Some(parsed_user) = Self::parse(user_s) {
-        //         users.push(parsed_user);
-        //     }
-        // }
-
-        users
+        users.into()
     }
     /// save [`User`] credentials if not empty
     fn save(&self) {
@@ -174,18 +121,14 @@ impl User {
             .open(cred_path)
             .expect("couldn't save user credentials");
 
-        // don't save if some value is missing
+        // don't save if a value is missing
         if self.username.is_empty() || self.password.is_empty() || self.school_id.is_empty() {
             return;
         }
-        eprintln!(
-            "gonna save:\n\"{}\"",
-            toml::to_string(&vec![self]).expect("couldn't serialize user")
-        );
         write!(
             cred_file,
             "{}",
-            toml::to_string(&vec![self]).expect("couldn't serialize user")
+            toml::to_string(&Users::from(vec![self.clone()])).expect("couldn't serialize user")
         )
         .expect("couldn't save user");
 
@@ -237,9 +180,16 @@ impl User {
             return None;
         }
         let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
-        let username = Self::get_val(&config_content, "name")?;
+        // let username = Self::get_val(&config_content, "name")?;
+        let username = config_content
+            .lines()
+            .nth(2)?
+            .split_whitespace()
+            .last()?
+            .trim_matches('"');
+        // let username =
 
-        Self::load_user(&username)
+        Self::load_user(username)
     }
 
     /// get headers which are necessary for making certain requests
@@ -538,6 +488,11 @@ struct Users {
 impl From<Vec<User>> for Users {
     fn from(users: Vec<User>) -> Self {
         Users { users }
+    }
+}
+impl From<Users> for Vec<User> {
+    fn from(val: Users) -> Self {
+        val.users
     }
 }
 
