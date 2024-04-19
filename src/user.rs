@@ -105,7 +105,7 @@ impl User {
 
         let users: Users =
             toml::from_str(&content).expect("couldn't read user credentials from file");
-        eprintln!("{:?}", users);
+        // eprintln!("{:?}", users);
 
         users.into()
     }
@@ -180,7 +180,7 @@ impl User {
             return None;
         }
         let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
-        let config = toml::from_str::<Config>(&config_content).expect("coudln't deser config");
+        let config = toml::from_str::<Config>(&config_content).expect("couldn't deser config");
 
         Self::load_user(&config.default_username)
     }

@@ -111,7 +111,15 @@ impl Commands {
     pub fn user_needed(&self) -> bool {
         !matches!(
             self,
-            Commands::Tui {} | Commands::Completions { shell: _ } | Commands::Schools { search: _ }
+            Commands::Tui {}
+                | Commands::Completions { shell: _ }
+                | Commands::Schools { search: _ }
+                | Commands::User {
+                    delete: _,
+                    create: _,
+                    switch: _,
+                    list: _
+                }
         )
     }
 }
