@@ -461,7 +461,8 @@ impl User {
         let mut logf = File::create(log_path("absences"))?;
         write!(logf, "{text}")?;
 
-        let abss = serde_json::from_str(&text)?;
+        let mut abss: Vec<Abs> = serde_json::from_str(&text)?;
+        abss.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
         Ok(abss)
     }
 

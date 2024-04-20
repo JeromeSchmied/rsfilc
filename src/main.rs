@@ -131,7 +131,7 @@ fn main() -> AnyErr<()> {
             count,
             reverse,
         } => {
-            let mut absences = user.absences(None, None)?;
+            let absences = user.absences(None, None)?;
             if count {
                 println!("Összes hiányzásod száma: {}", absences.len());
                 println!(
@@ -142,12 +142,13 @@ fn main() -> AnyErr<()> {
             }
 
             if !reverse {
-                absences
-                    .sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
-            }
-
-            for absence in absences.iter().take(number) {
-                println!("{}", absence);
+                for absence in absences.iter().take(number) {
+                    println!("{}", absence);
+                }
+            } else {
+                for absence in absences.iter().rev().take(number) {
+                    println!("{}", absence);
+                }
             }
         }
 
