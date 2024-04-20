@@ -317,15 +317,18 @@ impl User {
         Ok(msg)
     }
 
-    /// get all messages, of any kind
+    /// get all [`MsgOview`]s, of any [`MsgKind`]
     pub fn all_msg_oviews(&self) -> AnyErr<Vec<MsgOview>> {
-        let mut msgs = Vec::new();
+        let mut msg_oviews = [
+            self.msg_oviews_of_kind(MsgKind::Recv)?,
+            self.msg_oviews_of_kind(MsgKind::Sent)?,
+            self.msg_oviews_of_kind(MsgKind::Del)?,
+        ]
+        .concat();
 
-        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Recv)?].concat();
-        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Sent)?].concat();
-        msgs = [msgs, self.msg_oviews_of_kind(MsgKind::Del)?].concat();
+        msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
 
-        Ok(msgs)
+        Ok(msg_oviews)
     }
 
     /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
@@ -368,7 +371,13 @@ impl User {
         let mut logf = File::create(log_path("evals"))?;
         write!(logf, "{text}")?;
 
-        let evals = serde_json::from_str(&text)?;
+        let mut evals = serde_json::from_str::<Vec<Eval>>(&text)?;
+
+        evals.sort_by(|a, b| {
+            b.earned()
+                .partial_cmp(&a.earned())
+                .expect("couldn't compare")
+        });
         Ok(evals)
     }
 
@@ -408,7 +417,8 @@ impl User {
         let mut logf = File::create(log_path("announced"))?;
         write!(logf, "{text}")?;
 
-        let all_announced = serde_json::from_str(&text)?;
+        let mut all_announced: Vec<Announced> = serde_json::from_str(&text)?;
+        all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
         Ok(all_announced)
     }
 
@@ -455,7 +465,8 @@ impl User {
         let mut logf = File::create(log_path("absences"))?;
         write!(logf, "{text}")?;
 
-        let abss = serde_json::from_str(&text)?;
+        let mut abss: Vec<Abs> = serde_json::from_str(&text)?;
+        abss.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
         Ok(abss)
     }
 
