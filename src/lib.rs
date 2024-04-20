@@ -1,7 +1,10 @@
 //! RsFilc: `Kréta` API and client
 
 use chrono::{DateTime, Datelike, Local, Timelike};
-use std::{fs, path::PathBuf};
+use std::{
+    fs::{self, File},
+    path::PathBuf,
+};
 
 pub mod absences;
 pub mod announced;
@@ -36,10 +39,12 @@ pub fn cache_path() -> Option<PathBuf> {
     Some(dirs::cache_dir()?.join("rsfilc"))
 }
 /// get log path for `kind`: `kind`.log
-pub fn log_path(kind: &str) -> PathBuf {
-    cache_path()
-        .expect("couldn't find cache path")
-        .join([kind, ".log"].concat())
+pub fn log_file(kind: &str) -> AnyErr<File> {
+    Ok(File::create(
+        cache_path()
+            .expect("couldn't find cache path")
+            .join([kind, ".log"].concat()),
+    )?)
 }
 
 /// format date so it looks pretty with hungarian text

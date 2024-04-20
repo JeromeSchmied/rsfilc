@@ -5,7 +5,7 @@ use crate::{
     endpoints::{self, *},
     evals::Eval,
     info::Info,
-    log_path,
+    log_file,
     messages::{Msg, MsgKind, MsgOview},
     timetable::Lesson,
     token::Token,
@@ -270,7 +270,7 @@ impl User {
             .send()?;
 
         let text = res.text()?;
-        let mut logf = File::create(log_path("token"))?;
+        let mut logf = log_file("token")?;
         write!(logf, "{text}")?;
 
         let token = serde_json::from_str(&text)?;
@@ -294,7 +294,7 @@ impl User {
             .headers(self.headers()?)
             .send()?;
         let text = res.text()?;
-        let mut logf = File::create(log_path("info"))?;
+        let mut logf = log_file("info")?;
         write!(logf, "{text}")?;
 
         let info = serde_json::from_str(&text)?;
@@ -310,7 +310,7 @@ impl User {
             .send()?;
 
         let text = res.text()?;
-        let mut logf = File::create(log_path("messages"))?;
+        let mut logf = log_file("messages")?;
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
@@ -340,7 +340,7 @@ impl User {
             .send()?;
 
         let text = res.text()?;
-        let mut logf = File::create(log_path("full_message"))?;
+        let mut logf = log_file("full_message")?;
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
@@ -368,7 +368,7 @@ impl User {
             .send()?;
 
         let text = res.text()?;
-        let mut logf = File::create(log_path("evals"))?;
+        let mut logf = log_file("evals")?;
         write!(logf, "{text}")?;
 
         let mut evals = serde_json::from_str::<Vec<Eval>>(&text)?;
@@ -391,7 +391,7 @@ impl User {
             .send()?;
         let text = res.text()?;
 
-        let mut logf = File::create(log_path("timetable"))?;
+        let mut logf = log_file("timetable")?;
         write!(logf, "{text}")?;
 
         let mut lessons = serde_json::from_str::<Vec<Lesson>>(&text)?;
@@ -414,7 +414,7 @@ impl User {
             .send()?;
 
         let text = res.text()?;
-        let mut logf = File::create(log_path("announced"))?;
+        let mut logf = log_file("announced")?;
         write!(logf, "{text}")?;
 
         let mut all_announced: Vec<Announced> = serde_json::from_str(&text)?;
@@ -462,7 +462,7 @@ impl User {
             .send()?;
 
         let text = res.text()?;
-        let mut logf = File::create(log_path("absences"))?;
+        let mut logf = log_file("absences")?;
         write!(logf, "{text}")?;
 
         let mut abss: Vec<Abs> = serde_json::from_str(&text)?;
@@ -479,7 +479,7 @@ impl User {
             .send()?;
 
         let text = res.text()?;
-        let mut logf = File::create(log_path("groups"))?;
+        let mut logf = log_file("groups")?;
         write!(logf, "{text}")?;
 
         // let all_announced = serde_json::from_str(&text)?;

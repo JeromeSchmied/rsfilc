@@ -3,15 +3,22 @@ use clap::{CommandFactory, Parser};
 use rsfilc::{
     args::{Args, Commands},
     evals::Eval,
-    log_path,
+    log_file,
     school_list::School,
     timetable::Lesson,
     user::User,
     AnyErr,
 };
+use simplelog::{LevelFilter, WriteLogger};
 use std::{fs::File, io::Write};
 
 fn main() -> AnyErr<()> {
+    WriteLogger::new(
+        LevelFilter::Info,
+        simplelog::Config::default(),
+        log_file("rsfilc")?,
+    );
+
     let cli_args = Args::parse();
 
     let user = if cli_args.command.user_needed() {
@@ -92,7 +99,7 @@ fn main() -> AnyErr<()> {
                 Eval::filter_evals_by_subject(&mut evals, &subject);
             }
 
-            let mut logf = File::create(log_path("evals_filtered"))?;
+            let mut logf = File::create(log_file("evals_filtered"))?;
             write!(logf, "{:?}", evals)?;
 
             if average {
