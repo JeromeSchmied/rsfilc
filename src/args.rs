@@ -44,8 +44,8 @@ pub enum Commands {
         #[arg(short, long, default_value_t = false)]
         average: bool,
         /// number of entries to show
-        #[arg(short, long, default_value_t = u16::MAX)]
-        number: u16,
+        #[arg(short, long, default_value_t = usize::MAX)]
+        number: usize,
         /// reverse direction of entries
         #[arg(short, long, default_value_t = false)]
         reverse: bool,
@@ -54,8 +54,8 @@ pub enum Commands {
     /// messages the user either recieved or sent
     Messages {
         /// number of entries to show
-        #[arg(short, long, default_value_t = u16::MAX)]
-        number: u16,
+        #[arg(short, long, default_value_t = usize::MAX)]
+        number: usize,
         /// reverse direction of entries
         #[arg(short, long, default_value_t = false)]
         reverse: bool,
@@ -64,8 +64,8 @@ pub enum Commands {
     /// information about lessons the user missed
     Absences {
         /// number of entries to show
-        #[arg(short, long, default_value_t = u16::MAX)]
-        number: u16,
+        #[arg(short, long, default_value_t = usize::MAX)]
+        number: usize,
         /// reverse direction of entries
         #[arg(short, long, default_value_t = false)]
         reverse: bool,
@@ -77,8 +77,8 @@ pub enum Commands {
     /// information about forecoming exams/tests
     Tests {
         /// number of entries to show
-        #[arg(short, long, default_value_t = u16::MAX)]
-        number: u16,
+        #[arg(short, long, default_value_t = usize::MAX)]
+        number: usize,
         /// reverse direction of entries
         #[arg(short, long, default_value_t = false)]
         reverse: bool,

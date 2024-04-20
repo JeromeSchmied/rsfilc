@@ -84,13 +84,6 @@ fn main() -> AnyErr<()> {
             reverse,
         } => {
             let mut evals = user.evals(None, None)?;
-            if !reverse {
-                evals.sort_by(|a, b| {
-                    b.earned()
-                        .partial_cmp(&a.earned())
-                        .expect("couldn't compare")
-                });
-            }
             // eprintln!("\ngot evals...\n");
             if let Some(kind) = kind {
                 Eval::filter_evals_by_kind(&mut evals, &kind);
@@ -107,8 +100,14 @@ fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            for eval in evals.iter().take(number.into()) {
-                println!("{}", eval);
+            if !reverse {
+                for eval in evals.iter().take(number) {
+                    println!("{eval}");
+                }
+            } else {
+                for eval in evals.iter().rev().take(number) {
+                    println!("{eval}");
+                }
             }
         }
 
@@ -119,7 +118,7 @@ fn main() -> AnyErr<()> {
                     .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
             }
 
-            for msg_overview in msg_overviews.iter().take(number.into()) {
+            for msg_overview in msg_overviews.iter().take(number) {
                 let full_msg = user.full_msg(msg_overview)?;
                 // println!("{}", msg_overview);
                 println!("{}", full_msg);
@@ -147,7 +146,7 @@ fn main() -> AnyErr<()> {
                     .sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
             }
 
-            for absence in absences.iter().take(number.into()) {
+            for absence in absences.iter().take(number) {
                 println!("{}", absence);
             }
         }
@@ -159,7 +158,7 @@ fn main() -> AnyErr<()> {
                     .sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
             }
 
-            for announced in all_announced.iter().take(number.into()) {
+            for announced in all_announced.iter().take(number) {
                 println!("{}", announced);
             }
         }

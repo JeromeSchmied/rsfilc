@@ -368,7 +368,13 @@ impl User {
         let mut logf = File::create(log_path("evals"))?;
         write!(logf, "{text}")?;
 
-        let evals = serde_json::from_str(&text)?;
+        let mut evals = serde_json::from_str::<Vec<Eval>>(&text)?;
+
+        evals.sort_by(|a, b| {
+            b.earned()
+                .partial_cmp(&a.earned())
+                .expect("couldn't compare")
+        });
         Ok(evals)
     }
 
