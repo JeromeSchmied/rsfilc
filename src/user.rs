@@ -18,6 +18,7 @@ use reqwest::{
     blocking::{self, Client},
     header::HeaderMap,
 };
+use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::{
     collections::HashMap,
@@ -26,7 +27,7 @@ use std::{
 };
 
 /// Kréta, app user
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
     username: String,
@@ -37,7 +38,7 @@ pub struct User {
 }
 impl User {
     /// get name of [`User`]
-    fn name(&self) -> String {
+    pub fn name(&self) -> String {
         self.info().expect("couldn't get user info").nev
     }
 
@@ -46,67 +47,18 @@ impl User {
         "/ellenorzo/V3/Sajat/TanuloAdatlap"
     }
 
-    /// create new instance of user and save it
+    /// create new instance of [`User`]
     pub fn new(username: &str, password: &str, school_id: &str) -> Self {
-        let user = Self {
+        Self {
             username: username.to_string(),
             password: password.to_string(),
             school_id: school_id.to_string(),
-        };
-        user.save();
-        user
-    }
-
-    /// load user account from saved dir
-    ///
-    /// ```toml
-    /// [[user]]
-    /// username = "70123456789"
-    /// password = "2000-01-01"
-    /// school_id = "klik012345678"
-    ///
-    /// [[user]]
-    /// username = "70000000000"
-    /// password = "2002-01-01"
-    /// school_id = "klik000000000"
-    /// ```
-    pub fn parse(content: &str) -> Option<Self> {
-        let username = Self::get_val(content, "username");
-        let password = Self::get_val(content, "password");
-        let school_id = Self::get_val(content, "school_id");
-        match (username, password, school_id) {
-            (Some(un), Some(pw), Some(si)) => Some(User {
-                username: un,
-                password: pw,
-                school_id: si,
-            }),
-            _ => None,
         }
     }
 
-    /// get value for key from content (eg. toml file)
-    fn get_val(content: &str, key: &str) -> Option<String> {
-        let k = &format!("{key} = ");
-        if !content.contains(k) {
-            return None;
-        }
-
-        let val = content
-            .lines()
-            .filter(|line| !line.starts_with('#'))
-            .find(|line| line.contains(k))?
-            .split('=')
-            .last()?
-            .trim()
-            .trim_matches(|c| c == '"' || c == '\'')
-            .to_string();
-
-        Some(val)
-    }
-
-    /// create a [`User`] from cli
+    /// create a [`User`] from cli and save it!
     pub fn create() -> Self {
-        println!("please login");
+        println!("please log in");
         print!("username: ");
         io::stdout().flush().unwrap();
         let mut username = String::new();
@@ -128,34 +80,38 @@ impl User {
             .read_line(&mut school_id)
             .expect("couldn't read school_id");
 
-        Self::new(username.trim(), password.trim(), school_id.trim())
+        let user = Self::new(username.trim(), password.trim(), school_id.trim());
+        user.save();
+        user
     }
 
-    /// Load every saved [`User`] from [`User::cred_path`]
+    /// Load every saved [`User`] from [`cred_path()`]
     ///
     /// # Panics
     ///
     /// Panics if cred path does not exist.
     pub fn load_all() -> Vec<Self> {
-        let cred_path = cred_path().expect("couldn't find config dir");
+        let cred_path = cred_path().expect("couldn't find credential path");
 
         if !cred_path.exists() {
             return vec![];
         }
 
-        let content = fs::read_to_string(cred_path).expect("couldn't read credentials from file");
-
-        let mut users = Vec::new();
-        for user_s in content.split("[[user]]") {
-            if let Some(parsed_user) = Self::parse(user_s) {
-                users.push(parsed_user);
-            }
+        let content = fs::read_to_string(cred_path).expect("couldn't read credentials.toml");
+        // migth not be necessary
+        if content.is_empty() {
+            return vec![];
         }
 
-        users
+        let users: Users =
+            toml::from_str(&content).expect("couldn't read user credentials from file");
+        // eprintln!("{:?}", users);
+
+        users.into()
     }
-    /// save user credentials
+    /// save [`User`] credentials if not empty
     fn save(&self) {
+        // eprintln!("saving user...");
         if Self::load_all().contains(self) {
             return;
         }
@@ -170,30 +126,30 @@ impl User {
             .open(cred_path)
             .expect("couldn't save user credentials");
 
-        // don't save if some value is missing
+        // don't save if a value is missing
         if self.username.is_empty() || self.password.is_empty() || self.school_id.is_empty() {
             return;
         }
+        write!(
+            cred_file,
+            "{}",
+            toml::to_string(&Users::from(vec![self.clone()])).expect("couldn't serialize user")
+        )
+        .expect("couldn't save user");
+    }
 
-        writeln!(cred_file, "[[user]]").unwrap();
-        writeln!(cred_file, "username = \"{}\"", self.username).unwrap();
-        writeln!(cred_file, "password = \"{}\"", self.password).unwrap();
-        writeln!(cred_file, "school_id = \"{}\"", self.school_id).unwrap();
-    }
-    /// greet user
-    pub fn greet(&self) {
-        if let Ok(info) = self.info() {
-            println!("Hello {}!\n\n", info.nev);
-        }
-    }
-    /// load [`User`] with [`User::username`] and save it to [`User::config_path`]
-    pub fn load_user(username: &str) -> Option<Self> {
+    /// load [`User`] with [`User::username`] or [`User::name()`] and save it to [`config_path()`]
+    pub fn load(username: &str) -> Option<Self> {
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
-                .name()
+                .username
                 .to_lowercase()
                 .contains(&username.to_lowercase())
+                || user
+                    .name()
+                    .to_lowercase()
+                    .contains(&username.to_lowercase())
             {
                 matching_users.push(user);
             }
@@ -213,19 +169,26 @@ impl User {
         }
         let mut conf_file = File::create(conf_path).expect("couldn't create config file");
 
-        writeln!(conf_file, "[user]").unwrap();
-        writeln!(conf_file, "name = \"{}\"", self.name()).unwrap();
+        writeln!(
+            conf_file,
+            "{}",
+            toml::to_string(&Config {
+                default_username: self.username.clone()
+            })
+            .expect("couldn't deserialize user")
+        )
+        .expect("couldn't save user");
     }
-    /// load [`User`] configured in config.toml
+    /// load [`User`] configured in [`config_path()`]
     pub fn load_conf() -> Option<Self> {
-        let conf_path = config_path().expect("couldn't find config path");
+        let conf_path = config_path()?;
         if !conf_path.exists() {
             return None;
         }
         let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
-        let username = Self::get_val(&config_content, "name")?;
+        let config = toml::from_str::<Config>(&config_content).expect("couldn't deser config");
 
-        Self::load_user(&username)
+        Self::load(&config.default_username)
     }
 
     /// get headers which are necessary for making certain requests
@@ -260,7 +223,7 @@ impl User {
         // Get nonce
         let nonce = blocking::get([endpoints::IDP, endpoints::NONCE].concat())?.text()?;
 
-        // Define the message as bytes
+        // Define the message
         let message = format!(
             "{}{}{}",
             self.school_id.to_uppercase(),
@@ -314,15 +277,12 @@ impl User {
         Ok(token)
     }
 
-    /// Returns the current [`Lesson`](s) of this [`User`] if any.
-    pub fn current_lesson(&self) -> Option<Vec<Lesson>> {
-        let now = Local::now();
-        let current = self.timetable(now, now).ok()?;
-
-        if current.is_empty() {
-            None
+    /// Returns the current [`Lesson`]s of this [`User`].
+    pub fn current_lessons(&self) -> Vec<Lesson> {
+        if let Ok(lessons) = self.timetable(Local::now(), Local::now()) {
+            lessons
         } else {
-            Some(current)
+            vec![]
         }
     }
 
@@ -513,5 +473,123 @@ impl User {
 
         // let all_announced = serde_json::from_str(&text)?;
         Ok(text)
+    }
+}
+
+/// Vec of [`User`]s, needed for deser
+#[derive(PartialEq, Debug, Serialize, Deserialize)]
+struct Users {
+    users: Vec<User>,
+}
+impl From<Vec<User>> for Users {
+    fn from(users: Vec<User>) -> Self {
+        Users { users }
+    }
+}
+impl From<Users> for Vec<User> {
+    fn from(val: Users) -> Self {
+        val.users
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+/// [`User`] preferences/config
+struct Config {
+    /// the default [`User`]s name to load
+    default_username: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn deser_user() {
+        let user = toml::from_str(
+            r#"
+            username = "Test Paul"
+            password = "2000.01.01"
+            school_id = "klik0000001"
+            "#,
+        );
+        assert_eq!(
+            Ok(User::new("Test Paul", "2000.01.01", "klik0000001")),
+            user
+        );
+    }
+
+    #[test]
+    fn ser_user() {
+        let user = User::new("Test Paul", "2000.01.01", "klik0000001");
+
+        let user_toml = r#"username = "Test Paul"
+password = "2000.01.01"
+school_id = "klik0000001"
+"#;
+
+        assert_eq!(Ok(user_toml.to_owned()), toml::to_string(&user));
+    }
+
+    #[test]
+    fn ser_users() {
+        let users: Users = vec![
+            User::new("Test Paul", "2000.01.01", "klik0000001"),
+            User::new("Test Paulina", "2000.01.02", "klik0000002"),
+        ]
+        .into();
+
+        let user_toml = r#"[[users]]
+username = "Test Paul"
+password = "2000.01.01"
+school_id = "klik0000001"
+
+[[users]]
+username = "Test Paulina"
+password = "2000.01.02"
+school_id = "klik0000002"
+"#;
+
+        assert_eq!(Ok(user_toml.to_owned()), toml::to_string(&users));
+    }
+
+    #[test]
+    fn deser_users() {
+        let users: Users = vec![
+            User::new("Test Paul", "2000.01.01", "klik0000001"),
+            User::new("Test Paulina", "2000.01.02", "klik0000002"),
+        ]
+        .into();
+
+        let user_toml = r#"[[users]]
+username = "Test Paul"
+password = "2000.01.01"
+school_id = "klik0000001"
+
+[[users]]
+username = "Test Paulina"
+password = "2000.01.02"
+school_id = "klik0000002"
+"#;
+
+        assert_eq!(toml::to_string(&users), Ok(user_toml.to_owned()));
+    }
+
+    #[test]
+    fn config_ser() {
+        let config = Config {
+            default_username: "Me Me Me!".to_owned(),
+        };
+        let config_toml = r#"default_username = "Me Me Me!"
+"#;
+        assert_eq!(Ok(config_toml.to_owned()), toml::to_string(&config));
+    }
+    #[test]
+    fn config_deser() {
+        let config_toml = r#"default_username = "Me Me Me!"
+"#;
+        let config = Config {
+            default_username: "Me Me Me!".to_owned(),
+        };
+        assert_eq!(toml::from_str(config_toml), Ok(config));
     }
 }

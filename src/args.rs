@@ -23,7 +23,7 @@ pub enum Commands {
 
     /// information about lessons, today by default
     Timetable {
-        /// which day to show: +n (where n is day, and it's added to today) or YYYY/MM/DD
+        /// which day to show: +n/n- (`n` is the number of days added to today) or YYYY/MM/DD
         #[arg(short, long)]
         day: Option<String>,
 
@@ -111,7 +111,15 @@ impl Commands {
     pub fn user_needed(&self) -> bool {
         !matches!(
             self,
-            Commands::Tui {} | Commands::Completions { shell: _ } | Commands::Schools { search: _ }
+            Commands::Tui {}
+                | Commands::Completions { shell: _ }
+                | Commands::Schools { search: _ }
+                | Commands::User {
+                    delete: _,
+                    create: _,
+                    switch: _,
+                    list: _
+                }
         )
     }
 }

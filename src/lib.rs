@@ -48,7 +48,7 @@ pub fn pretty_date(date: &DateTime<Local>) -> String {
     let day_diff = date.num_days_from_ce() - Local::now().num_days_from_ce();
 
     if !this_year {
-        format!("{}", date.format("%Y/%m/%d"))
+        format!("{}", date.format("%Y.%m.%d"))
     } else if day_diff == -1 {
         format!(
             "tegnap{}",

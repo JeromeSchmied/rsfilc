@@ -12,8 +12,8 @@
 
 #### opcionális
 
--   [w3m](https://w3m.sourceforge.net/): for enjoyable (html) message previews
--   [lynx](https://lynx.browser.org/): for enjoyable (html) message previews
+-   [w3m](https://w3m.sourceforge.net/): az élvezhetőbb üzenet-megjelenítés érdekében
+-   [lynx](https://lynx.browser.org/): az élvezhetőbb üzenet-megjelenítés érdekében
 
 ### autókitöltés:
 
@@ -88,7 +88,7 @@
     -   [x] jegyek
     -   [x] órarend
     -   [x] üzenetek
-		-   [x] csatolmányok
+        -   [x] csatolmányok
     -   [x] előre bejelentett számonkérések
     -   [x] hiányzások
 
@@ -99,7 +99,7 @@
     -   [x] jegyek
     -   [x] órarend
     -   [x] üzenetek
-		-   [x] csatolmányok
+        -   [x] csatolmányok
     -   [x] előre bejelentett számonkérések
     -   [x] hiányzások
 

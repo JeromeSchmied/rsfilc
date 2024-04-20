@@ -1,6 +1,7 @@
 //! basic User info `Kréta` stores
 use std::{collections::HashMap, fmt};
 
+use chrono::{DateTime, Local};
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -17,10 +18,12 @@ impl fmt::Display for Info {
         writeln!(f, "{}", self.nev)?;
         writeln!(
             f,
-            "Intezmeny: {}",
+            "Intézmény: {}",
             self.extra
                 .get("IntezmenyNev")
                 .expect("couldn't get institute name")
+                .to_string()
+                .trim_matches('"')
         )?;
         writeln!(
             f,
@@ -31,10 +34,17 @@ impl fmt::Display for Info {
         )?;
         writeln!(
             f,
-            "Szuletesi datum: {}",
-            self.extra
-                .get("SzuletesiDatum")
-                .expect("couldn't get birth date")
+            "Születési dátum: {}",
+            DateTime::parse_from_rfc3339(
+                self.extra
+                    .get("SzuletesiDatum")
+                    .expect("couldn't get birth date")
+                    .to_string()
+                    .trim_matches('"')
+            )
+            .expect("invalid datetime")
+            .with_timezone(&Local)
+            .format("%Y.%m.%d")
         )?;
 
         Ok(())
