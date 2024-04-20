@@ -956,6 +956,7 @@ dependencies = [
  "clap_complete",
  "dirs",
  "hmac",
+ "log",
  "reqwest",
  "serde",
  "serde_json",

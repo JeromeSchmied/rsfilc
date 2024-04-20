@@ -1,6 +1,6 @@
 use crate::{
     absences::Abs,
-    announced::Announced,
+    announced::Ancd,
     config_path, cred_path,
     endpoints::{self, *},
     evals::Eval,
@@ -14,6 +14,7 @@ use crate::{
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Local, Utc};
 use hmac::{Hmac, Mac};
+use log::{info, warn};
 use reqwest::{
     blocking::{self, Client},
     header::HeaderMap,
@@ -58,6 +59,8 @@ impl User {
 
     /// create a [`User`] from cli and save it!
     pub fn create() -> Self {
+        info!("creating user from cli");
+
         println!("please log in");
         print!("username: ");
         io::stdout().flush().unwrap();
@@ -65,6 +68,7 @@ impl User {
         io::stdin()
             .read_line(&mut username)
             .expect("couldn't read username");
+        info!("recieved username {username} from cli");
 
         print!("password: ");
         io::stdout().flush().unwrap();
@@ -72,6 +76,7 @@ impl User {
         io::stdin()
             .read_line(&mut password)
             .expect("couldn't read password");
+        info!("recieved password {password} from cli");
 
         print!("school_id: ");
         io::stdout().flush().unwrap();
@@ -79,6 +84,7 @@ impl User {
         io::stdin()
             .read_line(&mut school_id)
             .expect("couldn't read school_id");
+        info!("recieved school_id {school_id} from cli");
 
         let user = Self::new(username.trim(), password.trim(), school_id.trim());
         user.save();
@@ -91,34 +97,38 @@ impl User {
     ///
     /// Panics if cred path does not exist.
     pub fn load_all() -> Vec<Self> {
+        info!("loading users");
         let cred_path = cred_path().expect("couldn't find credential path");
 
         if !cred_path.exists() {
+            warn!("credential path doesn't exist");
             return vec![];
         }
 
         let content = fs::read_to_string(cred_path).expect("couldn't read credentials.toml");
         // migth not be necessary
         if content.is_empty() {
+            warn!("ain't no user credentials saved");
             return vec![];
         }
 
         let users: Users =
             toml::from_str(&content).expect("couldn't read user credentials from file");
-        // eprintln!("{:?}", users);
 
         users.into()
     }
     /// save [`User`] credentials if not empty
     fn save(&self) {
-        // eprintln!("saving user...");
+        info!("saving user");
         if Self::load_all().contains(self) {
+            warn!("{:?} is already saved, not saving", self);
             return;
         }
         let cred_path = cred_path().expect("couldn't find config dir");
         if !cred_path.exists() {
-            fs::create_dir_all(cred_path.parent().expect("couldn't get config dir"))
-                .expect("couldn't create config dir");
+            info!("creating credential path");
+            fs::create_dir_all(cred_path.parent().expect("couldn't get credential dir"))
+                .expect("couldn't create credential dir");
         }
         let mut cred_file = OpenOptions::new()
             .create(true)
@@ -128,6 +138,7 @@ impl User {
 
         // don't save if a value is missing
         if self.username.is_empty() || self.password.is_empty() || self.school_id.is_empty() {
+            warn!("user {:?} is missing data, not saving", self);
             return;
         }
         write!(
@@ -140,6 +151,7 @@ impl User {
 
     /// load [`User`] with [`User::username`] or [`User::name()`] and save it to [`config_path()`]
     pub fn load(username: &str) -> Option<Self> {
+        info!("loading user with {}", username);
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
@@ -162,6 +174,7 @@ impl User {
     }
     /// save [`User`] as default to config.toml
     fn save_to_conf(&self) {
+        info!("saving preferred user's name to config");
         let conf_path = config_path().expect("couldn't find config path");
         if !conf_path.exists() {
             fs::create_dir_all(conf_path.parent().expect("couldn't get config dir"))
@@ -181,6 +194,7 @@ impl User {
     }
     /// load [`User`] configured in [`config_path()`]
     pub fn load_conf() -> Option<Self> {
+        info!("loading config");
         let conf_path = config_path()?;
         if !conf_path.exists() {
             return None;
@@ -274,11 +288,13 @@ impl User {
         write!(logf, "{text}")?;
 
         let token = serde_json::from_str(&text)?;
+        info!("recieved token");
         Ok(token)
     }
 
     /// Returns the current [`Lesson`]s of this [`User`].
     pub fn current_lessons(&self) -> Vec<Lesson> {
+        info!("fetching current lesson");
         if let Ok(lessons) = self.timetable(Local::now(), Local::now()) {
             lessons
         } else {
@@ -288,6 +304,7 @@ impl User {
 
     /// get [`User`] info
     pub fn info(&self) -> AnyErr<Info> {
+        info!("recieved information about user");
         let client = Client::new();
         let res = client
             .get(base(&self.school_id) + User::ep())
@@ -314,6 +331,7 @@ impl User {
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
+        info!("recieved message overviews of kind: {:?}", msg_kind);
         Ok(msg)
     }
 
@@ -327,7 +345,7 @@ impl User {
         .concat();
 
         msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
-
+        info!("recieved every message overview");
         Ok(msg_oviews)
     }
 
@@ -344,6 +362,7 @@ impl User {
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
+        info!("recieved full message: {:?}", msg);
         Ok(msg)
     }
 
@@ -372,6 +391,7 @@ impl User {
         write!(logf, "{text}")?;
 
         let mut evals = serde_json::from_str::<Vec<Eval>>(&text)?;
+        info!("recieved evals");
 
         evals.sort_by(|a, b| {
             b.earned()
@@ -395,12 +415,13 @@ impl User {
         write!(logf, "{text}")?;
 
         let mut lessons = serde_json::from_str::<Vec<Lesson>>(&text)?;
+        info!("recieved lessons");
         lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
         Ok(lessons)
     }
 
     /// get [`Announced`] tests `from` or all
-    pub fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Announced>> {
+    pub fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Ancd>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {
@@ -408,7 +429,7 @@ impl User {
         };
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Announced::ep())
+            .get(base(&self.school_id) + Ancd::ep())
             .query(&query)
             .headers(self.headers()?)
             .send()?;
@@ -417,7 +438,8 @@ impl User {
         let mut logf = log_file("announced")?;
         write!(logf, "{text}")?;
 
-        let mut all_announced: Vec<Announced> = serde_json::from_str(&text)?;
+        let mut all_announced: Vec<Ancd> = serde_json::from_str(&text)?;
+        info!("recieved all announced tests");
         all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
         Ok(all_announced)
     }
@@ -426,8 +448,8 @@ impl User {
     pub fn download_attachments(&self, msg: &Msg) -> AnyErr<()> {
         // let download_dir = dirs::download_dir().expect("couldn't find Downloads");
         for am in msg.attachments() {
-            eprintln!("downloading {}", am.file_name);
-            let mut f = File::create(am.file_name)?;
+            info!("downloading {}", am.file_name);
+            let mut f = File::create(&am.file_name)?;
 
             let client = Client::new();
             client
@@ -436,7 +458,7 @@ impl User {
                 .send()?
                 .copy_to(&mut f)?;
 
-            eprintln!("{}", endpoints::download_attachment(am.id));
+            info!("recieved file {}", &am.file_name);
         }
         Ok(())
     }
@@ -466,6 +488,7 @@ impl User {
         write!(logf, "{text}")?;
 
         let mut abss: Vec<Abs> = serde_json::from_str(&text)?;
+        info!("recieved absences");
         abss.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
         Ok(abss)
     }

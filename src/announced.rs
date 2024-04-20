@@ -9,7 +9,7 @@ use std::{collections::HashMap, fmt};
 /// announced test
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct Announced {
+pub struct Ancd {
     /// date of doing test
     datum: String,
     /// date of entry
@@ -36,7 +36,7 @@ pub struct Announced {
     #[serde(flatten)]
     _extra: HashMap<String, serde_json::Value>,
 }
-impl Announced {
+impl Ancd {
     /// endpoint
     pub const fn ep() -> &'static str {
         "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
@@ -75,7 +75,7 @@ impl Announced {
             .to_owned()
     }
 }
-impl fmt::Display for Announced {
+impl fmt::Display for Ancd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.tantargy_neve)?;
         writeln!(f, "{}", self.temaja)?;
@@ -124,7 +124,7 @@ mod tests {
         }
     }"#;
 
-        let anc = serde_json::from_str::<Announced>(lesson_json);
+        let anc = serde_json::from_str::<Ancd>(lesson_json);
 
         assert!(anc.is_ok(), "{:?}", anc);
         let abs = anc.unwrap();

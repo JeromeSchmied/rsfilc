@@ -317,6 +317,7 @@ impl fmt::Display for Rendr {
 }
 
 /// kinds of [`Msg`]
+#[derive(Debug)]
 pub enum MsgKind {
     /// recieved
     Recv,
