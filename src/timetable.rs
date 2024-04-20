@@ -2,6 +2,7 @@
 
 use crate::{day_of_week, pretty_date};
 use chrono::{DateTime, Datelike, Duration, Local, NaiveDate};
+use log::info;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -124,6 +125,7 @@ impl Lesson {
     /// - day shifter contains invalid number.
     /// - any datetime is invalid.
     pub fn parse_day(day: &Option<String>) -> NaiveDate {
+        info!("parsing day");
         if let Some(date) = day {
             let date = date.replace(['/', '.'], "-");
             if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {

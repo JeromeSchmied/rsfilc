@@ -11,18 +11,45 @@ use rsfilc::{
     AnyErr,
 };
 use simplelog::{LevelFilter, WriteLogger};
-use std::{fs::OpenOptions, io::Write};
+use std::{fs::OpenOptions, io::Write, ops::Deref};
 
 fn main() -> AnyErr<()> {
     // set up logger
-    WriteLogger::new(
-        LevelFilter::Info,
-        simplelog::Config::default(),
-        OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(log_path("rsfilc"))?,
-    );
+    // let logger = WriteLogger::new(
+    //     LevelFilter::Info,
+    //     simplelog::Config::default(),
+    //     OpenOptions::new()
+    //         .create(true)
+    //         .append(true)
+    //         .open(log_path("rsfilc"))?,
+    // )
+    // .deref();
+    // logger.init();
+
+    fern::Dispatch::new()
+        // Perform allocation-free log formatting
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "[{} {}] {} {}",
+                Local::now(),
+                record.level(),
+                record.target(),
+                message
+            ))
+        })
+        // Add blanket level filter -
+        .level(log::LevelFilter::Info)
+        // Output to stdout, files, and other Dispatch configurations
+        // .chain(fern::log_file("output.log")?)
+        .chain(
+            OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_path("rsfilc"))?,
+        )
+        // Apply globally
+        .apply()?;
+    info!("hey there logger, you're set up!");
 
     let cli_args = Args::parse();
 
