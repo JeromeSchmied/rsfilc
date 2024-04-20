@@ -132,14 +132,11 @@ impl Lesson {
                 let day_shift = if date.starts_with('+') {
                     date.parse::<i64>().expect("invalid +day shifter")
                 } else {
-                    let date = &date[0..date.len()];
-                    eprintln!("date: {}", date);
-                    date.parse::<i64>().expect("invalid day- shifter")
+                    let date = &date[0..date.len() - 1];
+                    -date.parse::<i64>().expect("invalid day- shifter")
                 };
                 Local::now()
-                    .checked_add_signed(Duration::days(
-                        date.parse::<i64>().expect("invalid day shifter"),
-                    ))
+                    .checked_add_signed(Duration::days(day_shift))
                     .expect("invalid datetime")
                     .date_naive()
             } else {
