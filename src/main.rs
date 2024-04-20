@@ -41,14 +41,12 @@ fn main() -> AnyErr<()> {
         }
         Commands::Timetable { day, current } => {
             if current {
-                if let Some(current_lessons) = user.current_lesson() {
-                    for current_lesson in current_lessons {
-                        println!(
-                            "{}, {}m",
-                            current_lesson.subject(),
-                            (current_lesson.end() - now).num_minutes()
-                        );
-                    }
+                for current_lesson in user.current_lessons() {
+                    println!(
+                        "{}, {}m",
+                        current_lesson.subject(),
+                        (current_lesson.end() - now).num_minutes()
+                    );
                 }
                 return Ok(());
             }

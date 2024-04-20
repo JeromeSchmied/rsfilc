@@ -179,7 +179,7 @@ impl User {
         )
         .expect("couldn't save user");
     }
-    /// load [`User`] configured in config.toml
+    /// load [`User`] configured in [`config_path()`]
     pub fn load_conf() -> Option<Self> {
         let conf_path = config_path()?;
         if !conf_path.exists() {
@@ -223,7 +223,7 @@ impl User {
         // Get nonce
         let nonce = blocking::get([endpoints::IDP, endpoints::NONCE].concat())?.text()?;
 
-        // Define the message as bytes
+        // Define the message
         let message = format!(
             "{}{}{}",
             self.school_id.to_uppercase(),
@@ -277,15 +277,12 @@ impl User {
         Ok(token)
     }
 
-    /// Returns the current [`Lesson`](s) of this [`User`] if any.
-    pub fn current_lesson(&self) -> Option<Vec<Lesson>> {
-        let now = Local::now();
-        let current = self.timetable(now, now).ok()?;
-
-        if current.is_empty() {
-            None
+    /// Returns the current [`Lesson`]s of this [`User`].
+    pub fn current_lessons(&self) -> Vec<Lesson> {
+        if let Ok(lessons) = self.timetable(Local::now(), Local::now()) {
+            lessons
         } else {
-            Some(current)
+            vec![]
         }
     }
 
