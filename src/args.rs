@@ -1,4 +1,4 @@
-//! CLI arugments
+//! CLI arguments
 
 use clap::{Parser, Subcommand};
 use log::info;
