@@ -4,21 +4,24 @@ use log::*;
 use rsfilc::{
     args::{Args, Commands},
     evals::Eval,
-    log_file,
+    log_file, log_path,
     school_list::School,
     timetable::Lesson,
     user::User,
     AnyErr,
 };
 use simplelog::{LevelFilter, WriteLogger};
-use std::io::Write;
+use std::{fs::OpenOptions, io::Write};
 
 fn main() -> AnyErr<()> {
     // set up logger
     WriteLogger::new(
         LevelFilter::Info,
         simplelog::Config::default(),
-        log_file("rsfilc")?,
+        OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(log_path("rsfilc"))?,
     );
 
     let cli_args = Args::parse();

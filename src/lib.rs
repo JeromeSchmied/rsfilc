@@ -38,13 +38,15 @@ pub fn cache_path() -> Option<PathBuf> {
     }
     Some(dirs::cache_dir()?.join("rsfilc"))
 }
-/// get log path for `kind`: `kind`.log
+/// get log file with the help of [`log_path()`]
 pub fn log_file(kind: &str) -> AnyErr<File> {
-    Ok(File::create(
-        cache_path()
-            .expect("couldn't find cache path")
-            .join([kind, ".log"].concat()),
-    )?)
+    Ok(File::create(log_path(kind))?)
+}
+/// get log path for `kind`: `kind`.log
+pub fn log_path(kind: &str) -> PathBuf {
+    cache_path()
+        .expect("couldn't find cache path")
+        .join([kind, ".log"].concat())
 }
 
 /// format date so it looks pretty with hungarian text
