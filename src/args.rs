@@ -46,9 +46,6 @@ pub enum Commands {
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
-        /// reverse direction of entries
-        #[arg(short, long, default_value_t = false)]
-        reverse: bool,
     },
 
     /// messages the user either recieved or sent
@@ -56,9 +53,6 @@ pub enum Commands {
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
-        /// reverse direction of entries
-        #[arg(short, long, default_value_t = false)]
-        reverse: bool,
     },
 
     /// information about lessons the user missed
@@ -66,9 +60,6 @@ pub enum Commands {
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
-        /// reverse direction of entries
-        #[arg(short, long, default_value_t = false)]
-        reverse: bool,
         /// count the number of absences
         #[arg(short, long, default_value_t = false)]
         count: bool,
@@ -79,9 +70,6 @@ pub enum Commands {
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
-        /// reverse direction of entries
-        #[arg(short, long, default_value_t = false)]
-        reverse: bool,
     },
 
     /// managing users of this program

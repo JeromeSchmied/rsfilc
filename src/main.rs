@@ -45,7 +45,7 @@ fn main() -> AnyErr<()> {
                     println!(
                         "{}, {}m",
                         current_lesson.subject(),
-                        (current_lesson.end() - now).num_minutes()
+                        (current_lesson.end() - now).num_minutes() // minutes remaining
                     );
                 }
                 return Ok(());
@@ -64,6 +64,7 @@ fn main() -> AnyErr<()> {
                 .expect("couldn't make to")
                 .and_local_timezone(Local)
                 .unwrap();
+
             let lessons = user.timetable(from, to)?;
             if lessons.is_empty() {
                 println!(
@@ -81,7 +82,6 @@ fn main() -> AnyErr<()> {
             kind,
             number,
             average,
-            reverse,
         } => {
             let mut evals = user.evals(None, None)?;
             // eprintln!("\ngot evals...\n");
@@ -91,6 +91,7 @@ fn main() -> AnyErr<()> {
             if let Some(subject) = subject {
                 Eval::filter_evals_by_subject(&mut evals, &subject);
             }
+
             let mut logf = File::create(log_path("evals_filtered"))?;
             write!(logf, "{:?}", evals)?;
 
@@ -100,37 +101,21 @@ fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            if !reverse {
-                for eval in evals.iter().take(number) {
-                    println!("{eval}");
-                }
-            } else {
-                for eval in evals.iter().rev().take(number) {
-                    println!("{eval}");
-                }
+            for eval in evals.iter().rev().take(number) {
+                println!("{eval}");
             }
         }
 
-        Commands::Messages { number, reverse } => {
-            let mut msg_overviews = user.all_msg_oviews()?;
-            if !reverse {
-                msg_overviews
-                    .sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
-            }
-
-            for msg_overview in msg_overviews.iter().take(number) {
-                let full_msg = user.full_msg(msg_overview)?;
+        Commands::Messages { number } => {
+            for msg_oview in user.all_msg_oviews()?.iter().take(number) {
+                let full_msg = user.full_msg(msg_oview)?;
                 // println!("{}", msg_overview);
                 println!("{}", full_msg);
                 user.download_attachments(&full_msg)?;
             }
         }
 
-        Commands::Absences {
-            number,
-            count,
-            reverse,
-        } => {
+        Commands::Absences { number, count } => {
             let absences = user.absences(None, None)?;
             if count {
                 println!("Összes hiányzásod száma: {}", absences.len());
@@ -141,25 +126,13 @@ fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            if !reverse {
-                for absence in absences.iter().take(number) {
-                    println!("{}", absence);
-                }
-            } else {
-                for absence in absences.iter().rev().take(number) {
-                    println!("{}", absence);
-                }
+            for absence in absences.iter().take(number) {
+                println!("{}", absence);
             }
         }
 
-        Commands::Tests { number, reverse } => {
-            let mut all_announced = user.all_announced(None)?;
-            if !reverse {
-                all_announced
-                    .sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
-            }
-
-            for announced in all_announced.iter().take(number) {
+        Commands::Tests { number } => {
+            for announced in user.all_announced(None)?.iter().take(number) {
                 println!("{}", announced);
             }
         }
