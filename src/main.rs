@@ -220,7 +220,7 @@ fn main() -> AnyErr<()> {
             if let Some(school_name) = search {
                 let found = School::search(&school_name, &schools);
                 for school in found {
-                    println!("{school}\n");
+                    println!("{school}");
                     println!("\n---------------------------\n");
                 }
             } else {

@@ -1,7 +1,7 @@
 //! every school that uses the `Kréta` system
 
 use crate::AnyErr;
-use log::info;
+use log::{info, warn};
 use serde::Deserialize;
 use std::fmt;
 
@@ -37,18 +37,16 @@ impl School {
         matching_schools
     }
 
-    // pub  fn get_kreta() -> Result<String, AnyErr> {
+    // hey! won't work as it requires header value apiKey to include uppercase K, which is invalid HTTP
+    // pub fn get_kreta() -> AnyErr<String> {
     //     // curl "https://kretaglobalmobileapi2.ekreta.hu/api/v3/Institute" -H "apiKey: 7856d350-1fda-45f5-822d-e1a2f3f1acf0"
-
-    //     let client = reqwest::Client::new();
+    //     let client = reqwest::blocking::Client::new();
     //     let res = client
     //         .get("https://kretaglobalmobileapi2.ekreta.hu/api/v3/Institute")
     //         .header("apiKey", "7856d350-1fda-45f5-822d-e1a2f3f1acf0")
-    //         .send()
-    //         .await?;
-
-    //     // Ok(serde_json::from_str(&res.text().await?)?)
-    //     Ok(res.text().await?)
+    //         .send()?;
+    //     warn!("headers: {:?}; status: {}", res.headers(), res.status());
+    //     Ok(res.text()?)
     // }
 }
 
