@@ -126,7 +126,7 @@ impl Eval {
                 .is_some_and(|t| t.contains("felevi") || t.contains("evvegi"))
         });
 
-        let sum: u16 = evals.clone().fold(0, |sum, cur| {
+        let sum = evals.clone().fold(0, |sum, cur| {
             sum + cur.szam_ertek.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
         });
 
