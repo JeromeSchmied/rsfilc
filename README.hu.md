@@ -124,6 +124,13 @@
 -   [x] hibajelentések: esetleg `fern`
 -   [ ] segítőkész hibaüüzenetek
 -   [ ] kb minden cache-elése a valódi élmény érdekében
+    -   [ ] token
+    -   [ ] órarend
+    -   [ ] jegyek
+    -   [ ] felhasználó adatai
+    -   [ ] hiányzások
+    -   [ ] bejelentett számonkérések
+    -   [ ] üzenetek
 -   [ ] jelszavak titkosítása mentéshez
 -   [ ] jelszavak módosítása
 -   [ ] ...
