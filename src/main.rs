@@ -16,17 +16,6 @@ use std::{fs::OpenOptions, io::Write};
 
 fn main() -> AnyErr<()> {
     // set up logger
-    // let logger = WriteLogger::new(
-    //     LevelFilter::Info,
-    //     simplelog::Config::default(),
-    //     OpenOptions::new()
-    //         .create(true)
-    //         .append(true)
-    //         .open(log_path("rsfilc"))?,
-    // )
-    // .deref();
-    // logger.init();
-
     fern::Dispatch::new()
         // Perform allocation-free log formatting
         .format(|out, message, record| {
@@ -41,7 +30,6 @@ fn main() -> AnyErr<()> {
         // Add blanket level filter -
         .level(log::LevelFilter::Info)
         // Output to stdout, files, and other Dispatch configurations
-        // .chain(fern::log_file("output.log")?)
         .chain(
             OpenOptions::new()
                 .create(true)
@@ -52,16 +40,18 @@ fn main() -> AnyErr<()> {
         .apply()?;
     info!("hey there logger, you're set up!");
 
+    // parse
     let cli_args = Args::parse();
 
+    // have a valid user
     let user = if cli_args.command.user_needed() {
-        let users = User::load_all();
+        let users = User::load_all(); // load every saved user
         if let Some(default_user) = User::load_conf() {
-            default_user
+            default_user // if specified, load preferred user
         } else if let Some(loaded_user) = users.first() {
-            loaded_user.clone()
+            loaded_user.clone() // load first user
         } else {
-            User::create()
+            User::create() // create a new user
         }
     } else {
         info!(
@@ -70,8 +60,6 @@ fn main() -> AnyErr<()> {
         );
         User::new("", "", "") // dummy user
     };
-
-    let now = Local::now();
 
     match cli_args.command {
         Commands::Tui {} => {
@@ -93,7 +81,7 @@ fn main() -> AnyErr<()> {
                     println!(
                         "{}, {}m",
                         current_lesson.subject(),
-                        (current_lesson.end() - now).num_minutes() // minutes remaining
+                        (current_lesson.end() - Local::now()).num_minutes() // minutes remaining
                     );
                 }
                 return Ok(());
