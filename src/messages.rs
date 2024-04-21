@@ -1,5 +1,6 @@
 //! messaging with teachers and staff
 
+use crate::{pretty_date, AnyErr};
 use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
@@ -9,8 +10,6 @@ use std::{
     io::{Read, Write},
     process::{Child, Command, Stdio},
 };
-
-use crate::AnyErr;
 
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
@@ -237,7 +236,7 @@ impl fmt::Display for Msg {
         for am in &self.attachments() {
             writeln!(f, "Csatolmány: \"{}\", {}", am.file_name, am.id)?;
         }
-        writeln!(f, "Kiküldve: {}", self.time_sent().format("%Y/%m/%d %H:%M"))?;
+        writeln!(f, "Kiküldve: {}", pretty_date(&self.time_sent()))?;
         writeln!(f, "Feladó: {} {}", self.sender(), self.sender_title())?;
         writeln!(f, "\n{}", Self::render_html(&self.text()))?;
         writeln!(f, "---------------------------------\n")?;
