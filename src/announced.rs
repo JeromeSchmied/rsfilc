@@ -2,6 +2,7 @@
 
 use crate::pretty_date;
 use chrono::{DateTime, Local};
+use log::info;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -73,6 +74,15 @@ impl Ancd {
             .to_string()
             .trim_matches('"')
             .to_owned()
+    }
+    /// filter [`Ancd`] tests by `subj`ect
+    pub fn filter_by_subject(ancds: &mut Vec<Ancd>, subj: &str) {
+        info!("filtering announced tests by subject: {}", subj);
+        ancds.retain(|ancd| {
+            ancd.tantargy_neve
+                .to_lowercase()
+                .contains(&subj.to_lowercase())
+        });
     }
 }
 impl fmt::Display for Ancd {

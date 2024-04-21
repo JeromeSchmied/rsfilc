@@ -168,7 +168,7 @@ fn main() -> AnyErr<()> {
             count,
             subject,
         } => {
-            let absences = user.absences(None, None)?;
+            let mut absences = user.absences(None, None)?;
             if let Some(subject) = subject {
                 Abs::filter_by_subject(&mut absences, &subject);
             }
