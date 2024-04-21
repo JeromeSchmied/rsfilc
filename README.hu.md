@@ -111,7 +111,7 @@
 -   [x] üzenetek (`html`) elfogadható megjelenítése
 -   [x] üzenetek (`html`) megjelenítése `w3m`-mel vagy `lynx`-el ha lehetséges
 -   [x] shell autókitöltések: [bash, zsh, fish, elvish, powershell]
--   [ ] hibajelentések: esetleg `fern`
+-   [x] hibajelentések: esetleg `fern`
 -   [ ] segítőkész hibaüüzenetek
 -   [ ] kb minden cache-elése a valódi élmény érdekében
 -   [ ] jelszavak titkosítása mentéshez

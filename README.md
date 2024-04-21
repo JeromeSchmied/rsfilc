@@ -121,7 +121,7 @@
 -   [x] somehow rendering `html` that messages return
 -   [x] render `html` messages with `w3m` or `lynx` if possible
 -   [x] shell completions: [bash, zsh, fish, elvish, powershell]
--   [ ] logger: `fern` maybe
+-   [x] logger: `fern` maybe
 -   [ ] helpful crashes
 -   [ ] caching everything so that life remains enjoyable
 -   [ ] encoding passwords
