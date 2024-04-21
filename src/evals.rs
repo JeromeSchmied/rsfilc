@@ -1,5 +1,6 @@
 //! evaluations/grades the user recieved
 
+use crate::pretty_date;
 use chrono::{DateTime, Local};
 use log::info;
 use serde::Deserialize;
@@ -165,7 +166,8 @@ impl fmt::Display for Eval {
         if let Some(kind) = &self.kind() {
             writeln!(f, "Típus: {kind}")?;
         }
-        writeln!(f, "Szertevés dátuma: {}", self.earned().format("%Y/%m/%d"))?;
+        writeln!(f, "Szertevés dátuma: {}", pretty_date(&self.earned()))?;
+        writeln!(f, "\n--------------------------------\n")?;
 
         Ok(())
     }

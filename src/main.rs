@@ -10,8 +10,7 @@ use rsfilc::{
     user::User,
     AnyErr,
 };
-use simplelog::{LevelFilter, WriteLogger};
-use std::{fs::OpenOptions, io::Write, ops::Deref};
+use std::{fs::OpenOptions, io::Write};
 
 fn main() -> AnyErr<()> {
     // set up logger
