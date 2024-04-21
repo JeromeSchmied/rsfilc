@@ -58,6 +58,9 @@ pub enum Commands {
 
     /// information about lessons the user missed
     Absences {
+        /// filter the subject to show
+        #[arg(short, long)]
+        subject: Option<String>,
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
@@ -68,6 +71,9 @@ pub enum Commands {
 
     /// information about forecoming exams/tests
     Tests {
+        /// filter the subject to show
+        #[arg(short, long)]
+        subject: Option<String>,
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,

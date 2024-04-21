@@ -2,6 +2,8 @@ use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
 use rsfilc::{
+    absences::Abs,
+    announced::Ancd,
     args::{Args, Commands},
     evals::Eval,
     log_file, log_path,
@@ -161,8 +163,16 @@ fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Absences { number, count } => {
+        Commands::Absences {
+            number,
+            count,
+            subject,
+        } => {
             let absences = user.absences(None, None)?;
+            if let Some(subject) = subject {
+                Abs::filter_by_subject(&mut absences, &subject);
+            }
+
             if count {
                 println!("Összes hiányzásod száma: {}", absences.len());
                 println!(
@@ -177,8 +187,13 @@ fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Tests { number } => {
-            for announced in user.all_announced(None)?.iter().take(number) {
+        Commands::Tests { number, subject } => {
+            let mut all_announced = user.all_announced(None)?;
+            if let Some(subject) = subject {
+                Ancd::filter_by_subject(&mut all_announced, &subject);
+            }
+
+            for announced in all_announced.iter().take(number) {
                 println!("{}", announced);
             }
         }
