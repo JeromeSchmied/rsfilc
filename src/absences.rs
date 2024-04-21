@@ -109,7 +109,7 @@ impl fmt::Display for Abs {
             writeln!(f, "Kestel {} percet", late)?;
         }
 
-        writeln!(f)?;
+        writeln!(f, "\n----------------------\n")?;
 
         Ok(())
     }

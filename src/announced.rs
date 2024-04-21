@@ -84,7 +84,7 @@ impl fmt::Display for Ancd {
         writeln!(f, "{}", self.rogzito_tanar_neve)?;
         writeln!(f, "Bejelentés dátuma: {}", pretty_date(&self.entry_date()))?;
 
-        writeln!(f)?;
+        writeln!(f, "\n---------------------------------\n")?;
 
         Ok(())
     }

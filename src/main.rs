@@ -204,7 +204,8 @@ fn main() -> AnyErr<()> {
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
-                    println!("{}\n", current_user.info()?);
+                    println!("{}", current_user.info()?);
+                    println!("---------------------------\n");
                 }
             } else {
                 println!("{}", user.info()?);
@@ -217,11 +218,13 @@ fn main() -> AnyErr<()> {
                 let found = School::search(&school_name, &schools);
                 for school in found {
                     println!("{school}\n");
+                    println!("\n---------------------------\n");
                 }
             } else {
                 info!("listing schools");
                 for school in schools {
-                    println!("{school}\n");
+                    println!("{school}");
+                    println!("\n---------------------------\n");
                 }
             }
         }
