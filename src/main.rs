@@ -233,13 +233,5 @@ fn main() -> AnyErr<()> {
         }
     }
 
-    // let apiurls = ApiUrls::api_urls()?;
-    // eprintln!("\ngot api urls...\n");
-    // println!("{:#?}", apiurls);
-
-    // let access_token = user.token()?;
-    // eprintln!("\ngot access_token...\n");
-    // println!("{:?}", access_token);
-
     Ok(())
 }
