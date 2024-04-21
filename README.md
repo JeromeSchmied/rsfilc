@@ -86,6 +86,16 @@
 
 `rsfilc --help`
 
+## Features
+
+### cross-platform: not tested thoroughly but should run on
+
+-   linux
+-   windows
+-   macOS
+-   android via Termux
+-   everything else that Rust supports
+
 ## API
 
 -   [x] Kréta API URL fetching (no clue what they do)
@@ -98,7 +108,7 @@
     -   [x] evaluations/grades
     -   [x] timetable
     -   [x] messages
-		-   [x] attachments
+        -   [x] attachments
     -   [x] announced test
     -   [x] absences
 
@@ -109,7 +119,7 @@
     -   [x] evaluations/grades
     -   [x] timetable
     -   [x] messages
-		-   [x] attachments
+        -   [x] attachments
     -   [x] announced test
     -   [x] absences
 

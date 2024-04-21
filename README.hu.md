@@ -76,6 +76,16 @@
 
 `rsfilc --help`
 
+## Finomságok
+
+### nem rendszerhez kötött: nincs különösebben letesztelve, de elvileg fut
+
+-   linuxon
+-   windowson
+-   macOSen
+-   androidon Termuxon
+-   mindenen amit támogat a Rust 
+
 ## API
 
 -   [x] Kréta API Url-ek lekérése (nem tudom mire jók)
