@@ -28,7 +28,12 @@ fn main() -> AnyErr<()> {
         )
         // Apply globally
         .apply()?;
-    info!("hey there logger, you're set up!");
+
+    trace!("log level: TRACE");
+    debug!("log level: DEBUG");
+    info!("log level: INFO");
+    warn!("log level: WARN");
+    error!("log level: ERROR");
 
     // parse
     let cli_args = Args::parse();
