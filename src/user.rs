@@ -1,15 +1,9 @@
 use crate::{
-    absences::Abs,
-    announced::Ancd,
-    config_path, cred_path,
-    endpoints::{self, *},
-    evals::Eval,
+    endpoints::base,
     info::Info,
-    log_file,
     messages::{Msg, MsgKind, MsgOview},
-    timetable::Lesson,
     token::Token,
-    AnyErr,
+    *,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Local, Utc};
