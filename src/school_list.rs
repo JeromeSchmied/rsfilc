@@ -1,7 +1,7 @@
 //! every school that uses the `Kréta` system
 
 use crate::AnyErr;
-use log::{info, warn};
+use log::info;
 use serde::Deserialize;
 use std::fmt;
 

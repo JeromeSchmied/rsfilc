@@ -1,17 +1,7 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
-use rsfilc::{
-    absences::Abs,
-    announced::Ancd,
-    args::{Args, Commands},
-    evals::Eval,
-    log_file, log_path,
-    school_list::School,
-    timetable::Lesson,
-    user::User,
-    AnyErr,
-};
+use rsfilc::{Abs, Ancd, Eval, Lesson, School, User, *};
 use std::{fs::OpenOptions, io::Write};
 
 fn main() -> AnyErr<()> {
