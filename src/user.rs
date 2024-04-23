@@ -6,7 +6,7 @@ use crate::{
     *,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 use hmac::{Hmac, Mac};
 use log::{info, warn};
 use reqwest::{
@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::{
     collections::HashMap,
+    fmt::Debug,
     fs::{self, File, OpenOptions},
     io::{self, Write},
 };
@@ -301,8 +302,22 @@ impl User {
                         .unwrap()
                 )
             );
-            for lesson in lessons {
+            for (i, lesson) in lessons.iter().enumerate() {
                 print!("\n\n{lesson}");
+                if self
+                    .all_announced(Some(
+                        lessons.first().expect("ain't no first lesson :(").start(),
+                    ))
+                    .expect("couldn't fetch announced tests")
+                    .iter()
+                    .filter(|ancd| {
+                        ancd.day().num_days_from_ce() == lesson.start().num_days_from_ce()
+                    })
+                    .any(|j| j.orarendi_ora_oraszama.is_some_and(|x| x as usize == i + 1))
+                {
+                    println!("hello!");
+                }
+
                 if self.current_lessons().contains(lesson) {
                     println!("###################################");
                 }
@@ -438,7 +453,7 @@ impl User {
     }
 
     /// get [`Announced`] tests `from` or all
-    pub fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Ancd>> {
+    pub fn all_announced(&self, from: Option<DateTime<Local>>) -> AnyErr<Vec<Ancd>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {

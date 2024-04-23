@@ -20,7 +20,7 @@ pub struct Ancd {
     rogzito_tanar_neve: String,
 
     /// nth lesson of that day
-    orarendi_ora_oraszama: Option<u8>,
+    pub orarendi_ora_oraszama: Option<u8>,
 
     /// name of the subject
     tantargy_neve: String,
@@ -39,6 +39,7 @@ pub struct Ancd {
 }
 impl Ancd {
     /// endpoint
+    /// "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
     pub const fn ep() -> &'static str {
         "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
     }
