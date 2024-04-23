@@ -286,6 +286,26 @@ impl User {
         Ok(token)
     }
 
+    /// print all lessons of a day
+    pub fn print_day(lessons: &[Lesson]) {
+        if let Some(first_lesson) = lessons.first() {
+            println!(
+                "    {} ({})\n",
+                pretty_date(&first_lesson.start()),
+                day_of_week(
+                    first_lesson
+                        .start()
+                        .weekday()
+                        .number_from_monday()
+                        .try_into()
+                        .unwrap()
+                )
+            );
+            for lesson in lessons {
+                println!("{lesson}\n");
+            }
+        }
+    }
     /// Returns the current [`Lesson`]s of this [`User`].
     pub fn current_lessons(&self) -> Vec<Lesson> {
         info!("fetching current lesson");

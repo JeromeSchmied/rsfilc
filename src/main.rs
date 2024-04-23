@@ -105,7 +105,7 @@ fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            Lesson::print_day(&lessons);
+            User::print_day(&lessons);
         }
 
         Commands::Evals {

@@ -47,26 +47,6 @@ impl Lesson {
     pub const fn ep() -> &'static str {
         "/ellenorzo/V3/Sajat/OrarendElemek"
     }
-    /// print all lessons of a day
-    pub fn print_day(lessons: &[Lesson]) {
-        if let Some(first_lesson) = lessons.first() {
-            println!(
-                "    {} ({})\n",
-                pretty_date(&first_lesson.start()),
-                day_of_week(
-                    first_lesson
-                        .start()
-                        .weekday()
-                        .number_from_monday()
-                        .try_into()
-                        .unwrap()
-                )
-            );
-            for lesson in lessons {
-                println!("{lesson}\n");
-            }
-        }
-    }
     /// Returns whether this [`Lesson`] has been / will be cancelled.
     pub fn cancelled(&self) -> bool {
         self.allapot
