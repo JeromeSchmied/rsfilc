@@ -1,6 +1,7 @@
 //! every school that uses the `Kréta` system
 
 use crate::AnyErr;
+use log::info;
 use serde::Deserialize;
 use std::fmt;
 
@@ -13,14 +14,16 @@ pub struct School {
     name: String,
 }
 impl School {
-    /// get school list from refilc api
+    /// get [`School`] list from refilc api
     pub fn get_from_refilc() -> AnyErr<Vec<School>> {
         let res = reqwest::blocking::get("https://api.refilc.hu/v1/public/school-list")?;
 
+        info!("recieved schools from refilc api");
         Ok(serde_json::from_str(&res.text()?)?)
     }
     /// search for school
     pub fn search(find_school: &str, schools: &[School]) -> Vec<School> {
+        info!("searching for {find_school} in schools");
         let mut matching_schools = Vec::new();
         for school in schools {
             if school

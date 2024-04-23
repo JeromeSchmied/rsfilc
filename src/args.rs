@@ -1,6 +1,7 @@
-//! CLI arugments
+//! CLI arguments
 
 use clap::{Parser, Subcommand};
+use log::info;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -9,7 +10,7 @@ pub struct Args {
     pub command: Commands,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Debug)]
 pub enum Commands {
     /// starts the Text User Interface
     Tui {},
@@ -57,6 +58,9 @@ pub enum Commands {
 
     /// information about lessons the user missed
     Absences {
+        /// filter the subject to show
+        #[arg(short, long)]
+        subject: Option<String>,
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
@@ -67,6 +71,9 @@ pub enum Commands {
 
     /// information about forecoming exams/tests
     Tests {
+        /// filter the subject to show
+        #[arg(short, long)]
+        subject: Option<String>,
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
@@ -97,6 +104,7 @@ pub enum Commands {
 }
 impl Commands {
     pub fn user_needed(&self) -> bool {
+        info!("checking whether user is needed for task");
         !matches!(
             self,
             Commands::Tui {}

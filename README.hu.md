@@ -76,6 +76,16 @@
 
 `rsfilc --help`
 
+## Finomságok
+
+### nem rendszerhez kötött: nincs különösebben letesztelve, de elvileg fut
+
+-   linuxon
+-   windowson
+-   macOSen
+-   androidon Termuxon
+-   mindenen amit támogat a Rust 
+
 ## API
 
 -   [x] Kréta API Url-ek lekérése (nem tudom mire jók)
@@ -111,7 +121,7 @@
 -   [x] üzenetek (`html`) elfogadható megjelenítése
 -   [x] üzenetek (`html`) megjelenítése `w3m`-mel vagy `lynx`-el ha lehetséges
 -   [x] shell autókitöltések: [bash, zsh, fish, elvish, powershell]
--   [ ] hibajelentések: esetleg `fern`
+-   [x] hibajelentések: esetleg `fern`
 -   [ ] segítőkész hibaüüzenetek
 -   [ ] kb minden cache-elése a valódi élmény érdekében
 -   [ ] jelszavak titkosítása mentéshez

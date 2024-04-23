@@ -1,37 +1,73 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
+use log::*;
 use rsfilc::{
+    absences::Abs,
+    announced::Ancd,
     args::{Args, Commands},
     evals::Eval,
-    log_path,
+    log_file, log_path,
     school_list::School,
     timetable::Lesson,
     user::User,
     AnyErr,
 };
-use std::{fs::File, io::Write};
+use std::{fs::OpenOptions, io::Write};
 
 fn main() -> AnyErr<()> {
+    // set up logger
+    fern::Dispatch::new()
+        // Perform allocation-free log formatting
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "[{} {}] {} {}",
+                Local::now(),
+                record.level(),
+                record.target(),
+                message
+            ))
+        })
+        // Add blanket level filter -
+        .level(log::LevelFilter::Info)
+        // Output to stdout, files, and other Dispatch configurations
+        .chain(
+            OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_path("rsfilc"))?,
+        )
+        // Apply globally
+        .apply()?;
+    info!("hey there logger, you're set up!");
+
+    // parse
     let cli_args = Args::parse();
 
+    // have a valid user
     let user = if cli_args.command.user_needed() {
-        let users = User::load_all();
+        let users = User::load_all(); // load every saved user
         if let Some(default_user) = User::load_conf() {
-            default_user
+            default_user // if specified, load preferred user
         } else if let Some(loaded_user) = users.first() {
-            loaded_user.clone()
+            loaded_user.clone() // load first user
         } else {
-            User::create()
+            User::create() // create a new user
         }
     } else {
+        info!(
+            "created dummy user, as it's not needed for {:?} command",
+            cli_args.command
+        );
         User::new("", "", "") // dummy user
     };
 
-    let now = Local::now();
-
     match cli_args.command {
-        Commands::Tui {} => todo!("TUI is to be written (soon)"),
+        Commands::Tui {} => {
+            warn!("TUI is not yet written");
+            todo!("TUI is to be written (soon)")
+        }
         Commands::Completions { shell } => {
+            info!("creating shell completions for {}", shell);
             clap_complete::generate(
                 shell,
                 &mut Args::command(),
@@ -45,7 +81,7 @@ fn main() -> AnyErr<()> {
                     println!(
                         "{}, {}m",
                         current_lesson.subject(),
-                        (current_lesson.end() - now).num_minutes() // minutes remaining
+                        (current_lesson.end() - Local::now()).num_minutes() // minutes remaining
                     );
                 }
                 return Ok(());
@@ -84,15 +120,15 @@ fn main() -> AnyErr<()> {
             average,
         } => {
             let mut evals = user.evals(None, None)?;
-            // eprintln!("\ngot evals...\n");
+            info!("got evals");
             if let Some(kind) = kind {
-                Eval::filter_evals_by_kind(&mut evals, &kind);
+                Eval::filter_by_kind(&mut evals, &kind);
             }
             if let Some(subject) = subject {
-                Eval::filter_evals_by_subject(&mut evals, &subject);
+                Eval::filter_by_subject(&mut evals, &subject);
             }
 
-            let mut logf = File::create(log_path("evals_filtered"))?;
+            let mut logf = log_file("evals_filtered")?;
             write!(logf, "{:?}", evals)?;
 
             if average {
@@ -101,7 +137,7 @@ fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            for eval in evals.iter().rev().take(number) {
+            for eval in evals.iter().take(number) {
                 println!("{eval}");
             }
         }
@@ -115,8 +151,16 @@ fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Absences { number, count } => {
-            let absences = user.absences(None, None)?;
+        Commands::Absences {
+            number,
+            count,
+            subject,
+        } => {
+            let mut absences = user.absences(None, None)?;
+            if let Some(subject) = subject {
+                Abs::filter_by_subject(&mut absences, &subject);
+            }
+
             if count {
                 println!("Összes hiányzásod száma: {}", absences.len());
                 println!(
@@ -131,8 +175,13 @@ fn main() -> AnyErr<()> {
             }
         }
 
-        Commands::Tests { number } => {
-            for announced in user.all_announced(None)?.iter().take(number) {
+        Commands::Tests { number, subject } => {
+            let mut all_announced = user.all_announced(None)?;
+            if let Some(subject) = subject {
+                Ancd::filter_by_subject(&mut all_announced, &subject);
+            }
+
+            for announced in all_announced.iter().take(number) {
                 println!("{}", announced);
             }
         }
@@ -145,6 +194,7 @@ fn main() -> AnyErr<()> {
         } => {
             if let Some(switch_to) = switch {
                 let switched_to = User::load(&switch_to).expect("couldn't load user");
+                info!("switched to user {switch_to}");
                 println!("switched to {switch_to}");
                 println!("Hello {}!", switched_to.name());
 
@@ -157,7 +207,8 @@ fn main() -> AnyErr<()> {
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
-                    println!("{}\n", current_user.info()?);
+                    println!("{}", current_user.info()?);
+                    println!("---------------------------\n");
                 }
             } else {
                 println!("{}", user.info()?);
@@ -166,27 +217,21 @@ fn main() -> AnyErr<()> {
 
         Commands::Schools { search } => {
             let schools = School::get_from_refilc()?;
-            eprintln!("\ngot schools...\n");
             if let Some(school_name) = search {
                 let found = School::search(&school_name, &schools);
                 for school in found {
                     println!("{school}\n");
+                    println!("\n---------------------------\n");
                 }
             } else {
+                info!("listing schools");
                 for school in schools {
-                    println!("{school}\n");
+                    println!("{school}");
+                    println!("\n---------------------------\n");
                 }
             }
         }
     }
-
-    // let apiurls = ApiUrls::api_urls()?;
-    // eprintln!("\ngot api urls...\n");
-    // println!("{:#?}", apiurls);
-
-    // let access_token = user.token()?;
-    // eprintln!("\ngot access_token...\n");
-    // println!("{:?}", access_token);
 
     Ok(())
 }

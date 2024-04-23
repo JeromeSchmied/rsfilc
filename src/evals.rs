@@ -1,6 +1,8 @@
 //! evaluations/grades the user recieved
 
+use crate::pretty_date;
 use chrono::{DateTime, Local};
+use log::info;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -95,7 +97,8 @@ impl Eval {
     }
 
     /// Filter `evals` by `kind`
-    pub fn filter_evals_by_kind(evals: &mut Vec<Eval>, kind: &str) {
+    pub fn filter_by_kind(evals: &mut Vec<Eval>, kind: &str) {
+        info!("filtering evals by kind: {}", kind);
         evals.retain(|eval| {
             eval.kind()
                 .is_some_and(|kd| kd.to_lowercase().contains(&kind.to_lowercase()))
@@ -103,7 +106,8 @@ impl Eval {
     }
 
     /// Filter `evals` by `subject`
-    pub fn filter_evals_by_subject(evals: &mut Vec<Eval>, subj: &str) {
+    pub fn filter_by_subject(evals: &mut Vec<Eval>, subj: &str) {
+        info!("filtering evals by subject: {}", subj);
         evals.retain(|eval| {
             eval.subject_id()
                 .is_some_and(|kd| kd.to_lowercase().contains(&subj.to_lowercase()))
@@ -115,6 +119,7 @@ impl Eval {
 
     /// Calculate average of `evals`
     pub fn average(evals: &[Eval]) -> f32 {
+        info!("calculating average for evals");
         let evals = evals.iter().filter(|eval| {
             !eval
                 .type_id()
@@ -161,7 +166,8 @@ impl fmt::Display for Eval {
         if let Some(kind) = &self.kind() {
             writeln!(f, "Típus: {kind}")?;
         }
-        writeln!(f, "Szertevés dátuma: {}", self.earned().format("%Y/%m/%d"))?;
+        writeln!(f, "Szertevés dátuma: {}", pretty_date(&self.earned()))?;
+        writeln!(f, "\n--------------------------------\n")?;
 
         Ok(())
     }

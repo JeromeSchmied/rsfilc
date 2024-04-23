@@ -2,6 +2,7 @@
 
 use crate::pretty_date;
 use chrono::{DateTime, Local};
+use log::info;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -87,6 +88,12 @@ impl Abs {
             .trim_matches('"')
             .to_string()
     }
+
+    /// filter [`Abs`]ences by `subj`ect
+    pub fn filter_by_subject(abss: &mut Vec<Abs>, subj: &str) {
+        info!("filtering absences by subject: {}", subj);
+        abss.retain(|abs| abs.subj().to_lowercase().contains(&subj.to_lowercase()));
+    }
 }
 impl fmt::Display for Abs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -109,7 +116,7 @@ impl fmt::Display for Abs {
             writeln!(f, "Kestel {} percet", late)?;
         }
 
-        writeln!(f)?;
+        writeln!(f, "\n----------------------\n")?;
 
         Ok(())
     }

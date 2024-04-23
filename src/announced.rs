@@ -2,6 +2,7 @@
 
 use crate::pretty_date;
 use chrono::{DateTime, Local};
+use log::info;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -9,7 +10,7 @@ use std::{collections::HashMap, fmt};
 /// announced test
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct Announced {
+pub struct Ancd {
     /// date of doing test
     datum: String,
     /// date of entry
@@ -36,7 +37,7 @@ pub struct Announced {
     #[serde(flatten)]
     _extra: HashMap<String, serde_json::Value>,
 }
-impl Announced {
+impl Ancd {
     /// endpoint
     pub const fn ep() -> &'static str {
         "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
@@ -74,8 +75,17 @@ impl Announced {
             .trim_matches('"')
             .to_owned()
     }
+    /// filter [`Ancd`] tests by `subj`ect
+    pub fn filter_by_subject(ancds: &mut Vec<Ancd>, subj: &str) {
+        info!("filtering announced tests by subject: {}", subj);
+        ancds.retain(|ancd| {
+            ancd.tantargy_neve
+                .to_lowercase()
+                .contains(&subj.to_lowercase())
+        });
+    }
 }
-impl fmt::Display for Announced {
+impl fmt::Display for Ancd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.tantargy_neve)?;
         writeln!(f, "{}", self.temaja)?;
@@ -84,7 +94,7 @@ impl fmt::Display for Announced {
         writeln!(f, "{}", self.rogzito_tanar_neve)?;
         writeln!(f, "Bejelentés dátuma: {}", pretty_date(&self.entry_date()))?;
 
-        writeln!(f)?;
+        writeln!(f, "\n---------------------------------\n")?;
 
         Ok(())
     }
@@ -124,7 +134,7 @@ mod tests {
         }
     }"#;
 
-        let anc = serde_json::from_str::<Announced>(lesson_json);
+        let anc = serde_json::from_str::<Ancd>(lesson_json);
 
         assert!(anc.is_ok(), "{:?}", anc);
         let abs = anc.unwrap();
