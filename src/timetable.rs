@@ -1,14 +1,13 @@
 //! lessons the student has
 
-use crate::{day_of_week, pretty_date};
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate};
+use chrono::{DateTime, Duration, Local, NaiveDate};
 use log::info;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
 /// a lesson
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Lesson {
     // name of the lesson

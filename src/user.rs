@@ -287,7 +287,7 @@ impl User {
     }
 
     /// print all lessons of a day
-    pub fn print_day(lessons: &[Lesson]) {
+    pub fn print_day(&self, lessons: &[Lesson]) {
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "    {} ({})\n",
@@ -302,7 +302,10 @@ impl User {
                 )
             );
             for lesson in lessons {
-                println!("{lesson}\n");
+                print!("\n\n{lesson}");
+                if self.current_lessons().contains(lesson) {
+                    println!("###################################");
+                }
             }
         }
     }
