@@ -324,7 +324,7 @@ impl User {
                 if
                 /* current_lessons.contains(lesson)
                 || */
-                lesson.start() >= Local::now() && lesson.start() <= Local::now() {
+                lesson.start() <= Local::now() && lesson.end() >= Local::now() {
                     // info!("current lesson found!");
                     println!("###################################");
                 }
