@@ -171,7 +171,7 @@ fn main() -> AnyErr<()> {
         }
 
         Commands::Tests { number, subject } => {
-            let mut all_announced = user.all_announced(None)?;
+            let mut all_announced = user.all_announced(None, None)?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }

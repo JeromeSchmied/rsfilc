@@ -305,14 +305,12 @@ impl User {
             for (i, lesson) in lessons.iter().enumerate() {
                 print!("\n\n{lesson}");
                 if self
-                    .all_announced(Some(
-                        lessons.first().expect("ain't no first lesson :(").start(),
-                    ))
+                    .all_announced(
+                        Some(lessons.first().expect("ain't no first lesson :(").start()),
+                        Some(lessons.last().expect("no lesson!").end()),
+                    )
                     .expect("couldn't fetch announced tests")
                     .iter()
-                    .filter(|ancd| {
-                        ancd.day().num_days_from_ce() == lesson.start().num_days_from_ce()
-                    })
                     .any(|j| j.orarendi_ora_oraszama.is_some_and(|x| x as usize == i + 1))
                 {
                     println!("hello!");
@@ -453,7 +451,11 @@ impl User {
     }
 
     /// get [`Announced`] tests `from` or all
-    pub fn all_announced(&self, from: Option<DateTime<Local>>) -> AnyErr<Vec<Ancd>> {
+    pub fn all_announced(
+        &self,
+        from: Option<DateTime<Local>>,
+        to: Option<DateTime<Local>>,
+    ) -> AnyErr<Vec<Ancd>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {
@@ -472,7 +474,11 @@ impl User {
 
         let mut all_announced: Vec<Ancd> = serde_json::from_str(&text)?;
         info!("recieved all announced tests");
+
         all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
+        if let Some(to) = to {
+            all_announced.retain(|ancd| ancd.day() <= to);
+        }
         Ok(all_announced)
     }
 
