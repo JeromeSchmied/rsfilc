@@ -302,21 +302,30 @@ impl User {
                         .unwrap()
                 )
             );
+            let todays_tests = self
+                .all_announced(
+                    Some(lessons.first().expect("ain't no first lesson :(").start()),
+                    Some(lessons.last().expect("no lesson!").end()),
+                )
+                .expect("couldn't fetch announced tests");
+            // let current_lessons = self.current_lessons();
             for (i, lesson) in lessons.iter().enumerate() {
                 print!("\n\n{lesson}");
-                if self
-                    .all_announced(
-                        Some(lessons.first().expect("ain't no first lesson :(").start()),
-                        Some(lessons.last().expect("no lesson!").end()),
-                    )
-                    .expect("couldn't fetch announced tests")
+
+                if let Some(test) = todays_tests
                     .iter()
-                    .any(|j| j.orarendi_ora_oraszama.is_some_and(|x| x as usize == i + 1))
+                    .find(|j| j.orarendi_ora_oraszama.is_some_and(|x| x as usize == i + 1))
                 {
-                    println!("hello!");
+                    println!("{}: {}", test.kind(), test.temaja);
                 }
 
-                if self.current_lessons().contains(lesson) {
+                // info!("current lesson:\n{}", current_lessons.first().unwrap());
+                // info!("{}. lesson:\n{lesson}", i + 1);
+                if
+                /* current_lessons.contains(lesson)
+                || */
+                lesson.start() >= Local::now() && lesson.start() <= Local::now() {
+                    // info!("current lesson found!");
                     println!("###################################");
                 }
             }
@@ -326,6 +335,7 @@ impl User {
     pub fn current_lessons(&self) -> Vec<Lesson> {
         info!("fetching current lesson");
         if let Ok(lessons) = self.timetable(Local::now(), Local::now()) {
+            // info!("current lessons: {}", lessons.first().unwrap());
             lessons
         } else {
             vec![]

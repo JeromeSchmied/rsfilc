@@ -28,7 +28,7 @@ pub struct Ancd {
     _tantargy: HashMap<String, Value>,
 
     /// topic of the test
-    temaja: String,
+    pub temaja: String,
 
     /// how it'll be done
     modja: HashMap<String, Value>,
@@ -68,7 +68,7 @@ impl Ancd {
     /// # Panics
     ///
     /// Panics if data doesn't contain `kind`.
-    fn kind(&self) -> String {
+    pub fn kind(&self) -> String {
         self.modja
             .get("Leiras")
             .expect("couldn't find kind")

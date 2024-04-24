@@ -10,7 +10,7 @@ fn main() -> AnyErr<()> {
         // Perform allocation-free log formatting
         .format(|out, message, record| {
             out.finish(format_args!(
-                "[{} {}] {} {}",
+                "{} [{}] {} {}",
                 Local::now(),
                 record.level(),
                 record.target(),
