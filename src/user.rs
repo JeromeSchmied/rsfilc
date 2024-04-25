@@ -308,7 +308,6 @@ impl User {
                     Some(lessons.last().expect("no lesson!").end()),
                 )
                 .expect("couldn't fetch announced tests");
-            // let current_lessons = self.current_lessons();
             for (i, lesson) in lessons.iter().enumerate() {
                 print!("\n\n{lesson}");
 
@@ -319,13 +318,7 @@ impl User {
                     println!("{}: {}", test.kind(), test.temaja);
                 }
 
-                // info!("current lesson:\n{}", current_lessons.first().unwrap());
-                // info!("{}. lesson:\n{lesson}", i + 1);
-                if
-                /* current_lessons.contains(lesson)
-                || */
-                lesson.start() <= Local::now() && lesson.end() >= Local::now() {
-                    // info!("current lesson found!");
+                if lesson.start() <= Local::now() && lesson.end() >= Local::now() {
                     println!("###################################");
                 }
             }
@@ -335,7 +328,6 @@ impl User {
     pub fn current_lessons(&self) -> Vec<Lesson> {
         info!("fetching current lesson");
         if let Ok(lessons) = self.timetable(Local::now(), Local::now()) {
-            // info!("current lessons: {}", lessons.first().unwrap());
             lessons
         } else {
             vec![]

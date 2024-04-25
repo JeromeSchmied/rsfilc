@@ -1,5 +1,7 @@
 //! CLI arguments
 
+use std::path::PathBuf;
+
 use clap::{Parser, Subcommand};
 use log::info;
 
@@ -31,6 +33,10 @@ pub enum Commands {
         /// show current lesson if any
         #[arg(short, long, default_value_t = false)]
         current: bool,
+
+        /// export as json
+        #[arg(short, long)]
+        export_day: Option<PathBuf>,
     },
 
     /// evaluations/grades the user recieved

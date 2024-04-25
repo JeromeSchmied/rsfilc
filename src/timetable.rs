@@ -2,12 +2,12 @@
 
 use chrono::{DateTime, Duration, Local, NaiveDate};
 use log::info;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
 /// a lesson
-#[derive(Debug, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Lesson {
     // name of the lesson

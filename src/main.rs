@@ -2,7 +2,10 @@ use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
 use rsfilc::{Abs, Ancd, Eval, Lesson, School, User, *};
-use std::{fs::OpenOptions, io::Write};
+use std::{
+    fs::{File, OpenOptions},
+    io::Write,
+};
 
 fn main() -> AnyErr<()> {
     // set up logger
@@ -70,7 +73,11 @@ fn main() -> AnyErr<()> {
                 &mut std::io::stdout(),
             );
         }
-        Commands::Timetable { day, current } => {
+        Commands::Timetable {
+            day,
+            current,
+            export_day,
+        } => {
             if current {
                 for current_lesson in user.current_lessons() {
                     println!(
@@ -103,6 +110,15 @@ fn main() -> AnyErr<()> {
                     day.weekday()
                 );
                 return Ok(());
+            }
+            if let Some(export_json_to) = export_day {
+                let mut f = File::create(export_json_to)?;
+                // for lesson in &lessons {
+                //     let x = serde_json::to_string(&lesson)?;
+                // }
+                let content = serde_json::to_string(&lessons)?;
+                write!(f, "{}", content)?;
+                // let content = lessons.iter().fold(, )
             }
 
             user.print_day(&lessons);
