@@ -2,7 +2,7 @@
 
 #![allow(unused)]
 
-use crate::AnyErr;
+use crate::Res;
 use serde::Deserialize;
 
 /// ```json
@@ -29,7 +29,7 @@ impl ApiUrls {
         "https://kretamobile.blob.core.windows.net/configuration/ConfigurationDescriptor.json"
             .to_string()
     }
-    pub fn get() -> AnyErr<ApiUrls> {
+    pub fn get() -> Res<ApiUrls> {
         let res = reqwest::blocking::get(ApiUrls::api_url())?;
 
         Ok(serde_json::from_str(&res.text()?)?)

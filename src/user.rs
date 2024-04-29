@@ -201,7 +201,7 @@ impl User {
     }
 
     /// get headers which are necessary for making certain requests
-    fn headers(&self) -> AnyErr<HeaderMap> {
+    fn headers(&self) -> Res<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
@@ -225,7 +225,7 @@ impl User {
     ///         &grant_type=password \
     ///         &client_id=kreta-ellenorzo-mobile-android"
     /// ```
-    fn token(&self) -> AnyErr<Token> {
+    fn token(&self) -> Res<Token> {
         // Define the key as bytes
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
 
@@ -335,7 +335,7 @@ impl User {
     }
 
     /// get [`User`] info
-    pub fn info(&self) -> AnyErr<Info> {
+    pub fn info(&self) -> Res<Info> {
         info!("recieved information about user");
         let client = Client::new();
         let res = client
@@ -351,7 +351,7 @@ impl User {
     }
 
     /// get all [`MsgOview`]s of a [`MsgKind`]
-    pub fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
+    pub fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> Res<Vec<MsgOview>> {
         let client = Client::new();
         let res = client
             .get(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val()))
@@ -368,7 +368,7 @@ impl User {
     }
 
     /// get all [`MsgOview`]s, of any [`MsgKind`]
-    pub fn all_msg_oviews(&self) -> AnyErr<Vec<MsgOview>> {
+    pub fn all_msg_oviews(&self) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
             self.msg_oviews_of_kind(MsgKind::Recv)?,
             self.msg_oviews_of_kind(MsgKind::Sent)?,
@@ -382,7 +382,7 @@ impl User {
     }
 
     /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
-    pub fn full_msg(&self, msg_oview: &MsgOview) -> AnyErr<Msg> {
+    pub fn full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
         let client = Client::new();
         let res = client
             .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.azonosito))
@@ -401,7 +401,7 @@ impl User {
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
-    ) -> AnyErr<Vec<Msg>> {
+    ) -> Res<Vec<Msg>> {
         let mut msgs = Vec::new();
 
         for msg_oview in self.all_msg_oviews()? {
@@ -423,7 +423,7 @@ impl User {
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
-    ) -> AnyErr<Vec<Eval>> {
+    ) -> Res<Vec<Eval>> {
         let mut query = vec![];
         if let Some(from) = from {
             query.push(("datumTol", from.to_rfc3339()));
@@ -454,7 +454,7 @@ impl User {
     }
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
-    pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> AnyErr<Vec<Lesson>> {
+    pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
         let client = Client::new();
         let res = client
             .get(base(&self.school_id) + timetable::ep())
@@ -477,7 +477,7 @@ impl User {
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
-    ) -> AnyErr<Vec<Ancd>> {
+    ) -> Res<Vec<Ancd>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {
@@ -505,7 +505,7 @@ impl User {
     }
 
     /// Download all [`Attachment`]s of this [`Msg`].
-    pub fn download_attachments(&self, msg: &Msg) -> AnyErr<()> {
+    pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
         // let download_dir = dirs::download_dir().expect("couldn't find Downloads");
         for am in msg.attachments() {
             info!("downloading {}", am.file_name);
@@ -528,7 +528,7 @@ impl User {
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
-    ) -> AnyErr<Vec<Abs>> {
+    ) -> Res<Vec<Abs>> {
         let mut query = vec![];
         if let Some(from) = from {
             query.push(("datumTol", from.to_rfc3339()));
@@ -554,7 +554,7 @@ impl User {
     }
 
     /// get groups the [`User`] is a member of
-    pub fn groups(&self) -> AnyErr<String> {
+    pub fn groups(&self) -> Res<String> {
         let client = Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::CLASSES)

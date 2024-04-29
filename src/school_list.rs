@@ -1,6 +1,6 @@
 //! every school that uses the `Kréta` system
 
-use crate::AnyErr;
+use crate::Res;
 use log::info;
 use serde::Deserialize;
 use std::fmt;
@@ -15,7 +15,7 @@ pub struct School {
 }
 impl School {
     /// get [`School`] list from refilc api
-    pub fn get_from_refilc() -> AnyErr<Vec<School>> {
+    pub fn get_from_refilc() -> Res<Vec<School>> {
         let res = reqwest::blocking::get("https://api.refilc.hu/v1/public/school-list")?;
 
         info!("recieved schools from refilc api");

@@ -1,6 +1,6 @@
 //! messaging with teachers and staff
 
-use crate::{pretty_date, AnyErr};
+use crate::{pretty_date, Res};
 use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
@@ -254,7 +254,7 @@ enum Rendr {
     Lynx,
 }
 impl Rendr {
-    fn child(&self) -> AnyErr<Child> {
+    fn child(&self) -> Res<Child> {
         match self {
             Rendr::W3m => {
                 let mut w3m_cmd = Command::new("w3m");

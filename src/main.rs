@@ -7,7 +7,7 @@ use std::{
     io::Write,
 };
 
-fn main() -> AnyErr<()> {
+fn main() -> Res<()> {
     // set up logger
     fern::Dispatch::new()
         // Perform allocation-free log formatting

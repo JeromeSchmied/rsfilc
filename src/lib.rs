@@ -29,7 +29,7 @@ pub use timetable::Lesson;
 pub use user::User;
 
 /// Result from `T` and `Box<dyn Error>`
-pub type AnyErr<T> = Result<T, Box<dyn std::error::Error>>;
+pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
 
 /// get path for saved user credentials
 pub fn cred_path() -> Option<PathBuf> {
@@ -48,7 +48,7 @@ pub fn cache_path() -> Option<PathBuf> {
     Some(dirs::cache_dir()?.join("rsfilc"))
 }
 /// get log file with the help of [`log_path()`]
-pub fn log_file(kind: &str) -> AnyErr<File> {
+pub fn log_file(kind: &str) -> Res<File> {
     Ok(File::create(log_path(kind))?)
 }
 /// get log path for `kind`: `kind`.log
