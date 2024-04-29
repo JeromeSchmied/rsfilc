@@ -1,14 +1,50 @@
 //! lessons the student has
 
-use crate::{day_of_week, pretty_date};
-use chrono::{DateTime, Datelike, Duration, Local, NaiveDate};
+use chrono::{DateTime, Duration, Local, NaiveDate};
 use log::info;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
+/// Parse the day got as `argument`.
+///
+/// # Panics
+///
+/// Panics if
+/// - day shifter contains invalid number.
+/// - any datetime is invalid.
+pub fn parse_day(day: &Option<String>) -> NaiveDate {
+    info!("parsing day");
+    if let Some(date) = day {
+        let date = date.replace(['/', '.'], "-");
+        if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+            ndate
+        } else if date.starts_with('+') || date.ends_with('-') {
+            let day_shift = if date.starts_with('+') {
+                date.parse::<i64>().expect("invalid +day shifter")
+            } else {
+                let date = &date[0..date.len() - 1];
+                -date.parse::<i64>().expect("invalid day- shifter")
+            };
+            Local::now()
+                .checked_add_signed(Duration::days(day_shift))
+                .expect("invalid datetime")
+                .date_naive()
+        } else {
+            Local::now().date_naive()
+        }
+    } else {
+        Local::now().date_naive()
+    }
+}
+
+/// endpoint
+pub const fn ep() -> &'static str {
+    "/ellenorzo/V3/Sajat/OrarendElemek"
+}
+
 /// a lesson
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct Lesson {
     // name of the lesson
@@ -43,30 +79,6 @@ pub struct Lesson {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Lesson {
-    /// endpoint
-    pub const fn ep() -> &'static str {
-        "/ellenorzo/V3/Sajat/OrarendElemek"
-    }
-    /// print all lessons of a day
-    pub fn print_day(lessons: &[Lesson]) {
-        if let Some(first_lesson) = lessons.first() {
-            println!(
-                "    {} ({})\n",
-                pretty_date(&first_lesson.start()),
-                day_of_week(
-                    first_lesson
-                        .start()
-                        .weekday()
-                        .number_from_monday()
-                        .try_into()
-                        .unwrap()
-                )
-            );
-            for lesson in lessons {
-                println!("{lesson}\n");
-            }
-        }
-    }
     /// Returns whether this [`Lesson`] has been / will be cancelled.
     pub fn cancelled(&self) -> bool {
         self.allapot
@@ -117,37 +129,7 @@ impl Lesson {
     pub fn subject(&self) -> String {
         self.nev.clone()
     }
-    /// Parse the day got as `argument`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if
-    /// - day shifter contains invalid number.
-    /// - any datetime is invalid.
-    pub fn parse_day(day: &Option<String>) -> NaiveDate {
-        info!("parsing day");
-        if let Some(date) = day {
-            let date = date.replace(['/', '.'], "-");
-            if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
-                ndate
-            } else if date.starts_with('+') || date.ends_with('-') {
-                let day_shift = if date.starts_with('+') {
-                    date.parse::<i64>().expect("invalid +day shifter")
-                } else {
-                    let date = &date[0..date.len() - 1];
-                    -date.parse::<i64>().expect("invalid day- shifter")
-                };
-                Local::now()
-                    .checked_add_signed(Duration::days(day_shift))
-                    .expect("invalid datetime")
-                    .date_naive()
-            } else {
-                Local::now().date_naive()
-            }
-        } else {
-            Local::now().date_naive()
-        }
-    }
+
     // pub fn nth_of_day(lessons: &[Lesson]) -> Option<Lesson> {
     //     todo!()
     // }

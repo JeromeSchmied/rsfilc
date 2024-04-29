@@ -1,18 +1,11 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
-use rsfilc::{
-    absences::Abs,
-    announced::Ancd,
-    args::{Args, Commands},
-    evals::Eval,
-    log_file, log_path,
-    school_list::School,
-    timetable::Lesson,
-    user::User,
-    AnyErr,
+use rsfilc::{Abs, Ancd, Eval, School, User, *};
+use std::{
+    fs::{File, OpenOptions},
+    io::Write,
 };
-use std::{fs::OpenOptions, io::Write};
 
 fn main() -> AnyErr<()> {
     // set up logger
@@ -20,7 +13,7 @@ fn main() -> AnyErr<()> {
         // Perform allocation-free log formatting
         .format(|out, message, record| {
             out.finish(format_args!(
-                "[{} {}] {} {}",
+                "{} [{}] {} {}",
                 Local::now(),
                 record.level(),
                 record.target(),
@@ -38,7 +31,12 @@ fn main() -> AnyErr<()> {
         )
         // Apply globally
         .apply()?;
-    info!("hey there logger, you're set up!");
+
+    trace!("log level: TRACE");
+    debug!("log level: DEBUG");
+    info!("log level: INFO");
+    warn!("log level: WARN");
+    error!("log level: ERROR");
 
     // parse
     let cli_args = Args::parse();
@@ -75,7 +73,11 @@ fn main() -> AnyErr<()> {
                 &mut std::io::stdout(),
             );
         }
-        Commands::Timetable { day, current } => {
+        Commands::Timetable {
+            day,
+            current,
+            export_day,
+        } => {
             if current {
                 for current_lesson in user.current_lessons() {
                     println!(
@@ -88,7 +90,7 @@ fn main() -> AnyErr<()> {
             }
 
             // parse day
-            let day = Lesson::parse_day(&day);
+            let day = timetable::parse_day(&day);
 
             let from = day
                 .and_hms_opt(0, 0, 0)
@@ -109,8 +111,13 @@ fn main() -> AnyErr<()> {
                 );
                 return Ok(());
             }
+            if let Some(export_json_to) = export_day {
+                let mut f = File::create(export_json_to)?;
+                let content = serde_json::to_string(&lessons)?;
+                write!(f, "{}", content)?;
+            }
 
-            Lesson::print_day(&lessons);
+            user.print_day(&lessons);
         }
 
         Commands::Evals {
@@ -176,7 +183,7 @@ fn main() -> AnyErr<()> {
         }
 
         Commands::Tests { number, subject } => {
-            let mut all_announced = user.all_announced(None)?;
+            let mut all_announced = user.all_announced(None, None)?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }
@@ -220,7 +227,7 @@ fn main() -> AnyErr<()> {
             if let Some(school_name) = search {
                 let found = School::search(&school_name, &schools);
                 for school in found {
-                    println!("{school}\n");
+                    println!("{school}");
                     println!("\n---------------------------\n");
                 }
             } else {

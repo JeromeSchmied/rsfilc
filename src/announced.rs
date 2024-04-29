@@ -20,7 +20,7 @@ pub struct Ancd {
     rogzito_tanar_neve: String,
 
     /// nth lesson of that day
-    orarendi_ora_oraszama: Option<u8>,
+    pub orarendi_ora_oraszama: Option<u8>,
 
     /// name of the subject
     tantargy_neve: String,
@@ -28,7 +28,7 @@ pub struct Ancd {
     _tantargy: HashMap<String, Value>,
 
     /// topic of the test
-    temaja: String,
+    pub temaja: String,
 
     /// how it'll be done
     modja: HashMap<String, Value>,
@@ -39,6 +39,7 @@ pub struct Ancd {
 }
 impl Ancd {
     /// endpoint
+    /// "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
     pub const fn ep() -> &'static str {
         "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
     }
@@ -67,7 +68,7 @@ impl Ancd {
     /// # Panics
     ///
     /// Panics if data doesn't contain `kind`.
-    fn kind(&self) -> String {
+    pub fn kind(&self) -> String {
         self.modja
             .get("Leiras")
             .expect("couldn't find kind")

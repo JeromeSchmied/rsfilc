@@ -1,18 +1,12 @@
 use crate::{
-    absences::Abs,
-    announced::Ancd,
-    config_path, cred_path,
-    endpoints::{self, *},
-    evals::Eval,
+    endpoints::base,
     info::Info,
-    log_file,
     messages::{Msg, MsgKind, MsgOview},
-    timetable::Lesson,
     token::Token,
-    AnyErr,
+    *,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Local, Utc};
+use chrono::{DateTime, Local};
 use hmac::{Hmac, Mac};
 use log::{info, warn};
 use reqwest::{
@@ -23,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha512;
 use std::{
     collections::HashMap,
+    fmt::Debug,
     fs::{self, File, OpenOptions},
     io::{self, Write},
 };
@@ -292,6 +287,43 @@ impl User {
         Ok(token)
     }
 
+    /// print all lessons of a day
+    pub fn print_day(&self, lessons: &[Lesson]) {
+        if let Some(first_lesson) = lessons.first() {
+            println!(
+                "    {} ({})\n",
+                pretty_date(&first_lesson.start()),
+                day_of_week(
+                    first_lesson
+                        .start()
+                        .weekday()
+                        .number_from_monday()
+                        .try_into()
+                        .unwrap()
+                )
+            );
+            let todays_tests = self
+                .all_announced(
+                    Some(lessons.first().expect("ain't no first lesson :(").start()),
+                    Some(lessons.last().expect("no lesson!").end()),
+                )
+                .expect("couldn't fetch announced tests");
+            for (i, lesson) in lessons.iter().enumerate() {
+                print!("\n\n{lesson}");
+
+                if let Some(test) = todays_tests
+                    .iter()
+                    .find(|j| j.orarendi_ora_oraszama.is_some_and(|x| x as usize == i + 1))
+                {
+                    println!("{}: {}", test.kind(), test.temaja);
+                }
+
+                if lesson.start() <= Local::now() && lesson.end() >= Local::now() {
+                    println!("###################################");
+                }
+            }
+        }
+    }
     /// Returns the current [`Lesson`]s of this [`User`].
     pub fn current_lessons(&self) -> Vec<Lesson> {
         info!("fetching current lesson");
@@ -405,7 +437,7 @@ impl User {
     pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> AnyErr<Vec<Lesson>> {
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Lesson::ep())
+            .get(base(&self.school_id) + timetable::ep())
             .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
             .headers(self.headers()?)
             .send()?;
@@ -421,7 +453,11 @@ impl User {
     }
 
     /// get [`Announced`] tests `from` or all
-    pub fn all_announced(&self, from: Option<DateTime<Utc>>) -> AnyErr<Vec<Ancd>> {
+    pub fn all_announced(
+        &self,
+        from: Option<DateTime<Local>>,
+        to: Option<DateTime<Local>>,
+    ) -> AnyErr<Vec<Ancd>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {
@@ -440,7 +476,11 @@ impl User {
 
         let mut all_announced: Vec<Ancd> = serde_json::from_str(&text)?;
         info!("recieved all announced tests");
+
         all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
+        if let Some(to) = to {
+            all_announced.retain(|ancd| ancd.day() <= to);
+        }
         Ok(all_announced)
     }
 

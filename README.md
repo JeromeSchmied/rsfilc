@@ -134,6 +134,13 @@
 -   [x] logger: `fern` maybe
 -   [ ] helpful crashes
 -   [ ] caching everything so that life remains enjoyable
+    -   [ ] token
+    -   [ ] timetable
+    -   [ ] evals
+    -   [ ] user info
+    -   [ ] absences
+    -   [ ] announced tests
+    -   [ ] messages
 -   [ ] encoding passwords
 -   [ ] changing passwords
 

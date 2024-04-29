@@ -19,6 +19,15 @@ pub mod timetable;
 pub mod token;
 pub mod user;
 
+// reexports
+pub use absences::Abs;
+pub use announced::Ancd;
+pub use args::{Args, Commands};
+pub use evals::Eval;
+pub use school_list::School;
+pub use timetable::Lesson;
+pub use user::User;
+
 /// Result from `T` and `Box<dyn Error>`
 pub type AnyErr<T> = Result<T, Box<dyn std::error::Error>>;
 
