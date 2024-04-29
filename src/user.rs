@@ -397,6 +397,26 @@ impl User {
         info!("recieved full message: {:?}", msg);
         Ok(msg)
     }
+    pub fn msgs(
+        &self,
+        from: Option<DateTime<Local>>,
+        to: Option<DateTime<Local>>,
+    ) -> AnyErr<Vec<Msg>> {
+        let mut msgs = Vec::new();
+
+        for msg_oview in self.all_msg_oviews()? {
+            // if isn't between `from`-`to`
+            if from.is_some_and(|from| msg_oview.sent() < from)
+                || to.is_some_and(|to| msg_oview.sent() > to)
+            {
+                continue;
+            }
+            let msg = self.full_msg(&msg_oview)?;
+            msgs.push(msg);
+        }
+
+        Ok(msgs)
+    }
 
     /// get all [`Eval`]s with `from` `to` or all
     pub fn evals(

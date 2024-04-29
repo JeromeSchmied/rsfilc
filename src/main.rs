@@ -150,11 +150,11 @@ fn main() -> AnyErr<()> {
         }
 
         Commands::Messages { number } => {
-            for msg_oview in user.all_msg_oviews()?.iter().take(number) {
-                let full_msg = user.full_msg(msg_oview)?;
-                // println!("{}", msg_overview);
-                println!("{}", full_msg);
-                user.download_attachments(&full_msg)?;
+            let msgs = user.msgs(None, None)?;
+
+            for msg in msgs.iter().take(number) {
+                println!("{}", msg);
+                user.download_attachments(msg)?;
             }
         }
 
