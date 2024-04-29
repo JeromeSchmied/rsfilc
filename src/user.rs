@@ -397,6 +397,7 @@ impl User {
         info!("recieved full message: {:?}", msg);
         Ok(msg)
     }
+    /// Fetch all [`Msg`]s between `from` and `to`.
     pub fn msgs(
         &self,
         from: Option<DateTime<Local>>,
