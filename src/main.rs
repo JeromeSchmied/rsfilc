@@ -1,7 +1,7 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
-use rsfilc::{Abs, Ancd, Eval, Lesson, School, User, *};
+use rsfilc::{Abs, Ancd, Eval, School, User, *};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
@@ -90,7 +90,7 @@ fn main() -> AnyErr<()> {
             }
 
             // parse day
-            let day = Lesson::parse_day(&day);
+            let day = timetable::parse_day(&day);
 
             let from = day
                 .and_hms_opt(0, 0, 0)
@@ -113,12 +113,8 @@ fn main() -> AnyErr<()> {
             }
             if let Some(export_json_to) = export_day {
                 let mut f = File::create(export_json_to)?;
-                // for lesson in &lessons {
-                //     let x = serde_json::to_string(&lesson)?;
-                // }
                 let content = serde_json::to_string(&lessons)?;
                 write!(f, "{}", content)?;
-                // let content = lessons.iter().fold(, )
             }
 
             user.print_day(&lessons);

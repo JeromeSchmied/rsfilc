@@ -437,7 +437,7 @@ impl User {
     pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> AnyErr<Vec<Lesson>> {
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Lesson::ep())
+            .get(base(&self.school_id) + timetable::ep())
             .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
             .headers(self.headers()?)
             .send()?;
