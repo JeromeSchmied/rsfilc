@@ -5,6 +5,8 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use log::info;
 
+const NUM: usize = usize::MAX;
+
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Args {
@@ -54,14 +56,14 @@ pub enum Commands {
         #[arg(short, long, default_value_t = false)]
         reverse: bool,
         /// number of entries to show
-        #[arg(short, long, default_value_t = usize::MAX)]
+        #[arg(short, long, default_value_t = NUM)]
         number: usize,
     },
 
     /// messages the user either recieved or sent
     Messages {
         /// number of entries to show
-        #[arg(short, long, default_value_t = usize::MAX)]
+        #[arg(short, long, default_value_t = NUM)]
         number: usize,
         /// reverse the output
         #[arg(short, long, default_value_t = false)]
@@ -74,7 +76,7 @@ pub enum Commands {
         #[arg(short, long)]
         subject: Option<String>,
         /// number of entries to show
-        #[arg(short, long, default_value_t = usize::MAX)]
+        #[arg(short, long, default_value_t = NUM)]
         number: usize,
         /// count the number of absences
         #[arg(short, long, default_value_t = false)]
@@ -90,7 +92,7 @@ pub enum Commands {
         #[arg(short, long)]
         subject: Option<String>,
         /// number of entries to show
-        #[arg(short, long, default_value_t = usize::MAX)]
+        #[arg(short, long, default_value_t = NUM)]
         number: usize,
         /// reverse the output
         #[arg(short, long, default_value_t = false)]
