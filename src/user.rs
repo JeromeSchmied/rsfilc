@@ -325,6 +325,10 @@ impl User {
         }
     }
     /// Returns the current [`Lesson`]s of this [`User`].
+    ///
+    /// # Warning
+    ///
+    /// returns a `Vec<Lesson>`, as a person might accidentally have more than one lessons at a time
     pub fn current_lessons(&self) -> Vec<Lesson> {
         info!("fetching current lesson");
         if let Ok(lessons) = self.timetable(Local::now(), Local::now()) {
