@@ -115,33 +115,33 @@ pub fn pretty_date(date: &DateTime<Local>) -> String {
     }
 }
 /// converts from month as number to month as hungarian text
-pub fn month(m: u8) -> String {
+pub fn month<'a>(m: u8) -> &'a str {
     match m {
-        1 => "jan.".to_string(),
-        2 => "feb.".to_string(),
-        3 => "már.".to_string(),
-        4 => "ápr.".to_string(),
-        5 => "máj.".to_string(),
-        6 => "jún.".to_string(),
-        7 => "júl.".to_string(),
-        8 => "aug.".to_string(),
-        9 => "szep.".to_string(),
-        10 => "okt.".to_string(),
-        11 => "nov.".to_string(),
-        12 => "dec.".to_string(),
+        1 => "jan.",
+        2 => "feb.",
+        3 => "már.",
+        4 => "ápr.",
+        5 => "máj.",
+        6 => "jún.",
+        7 => "júl.",
+        8 => "aug.",
+        9 => "szep.",
+        10 => "okt.",
+        11 => "nov.",
+        12 => "dec.",
         _ => unreachable!("invalid month"),
     }
 }
 /// converts from day as number of week to day as hungarian text
-pub fn day_of_week(d: u8) -> String {
+pub fn day_of_week<'a>(d: u8) -> &'a str {
     match d {
-        1 => "hétfő".to_string(),
-        2 => "kedd".to_string(),
-        3 => "szerda".to_string(),
-        4 => "csütörtök".to_string(),
-        5 => "péntek".to_string(),
-        6 => "szombat".to_string(),
-        7 => "vasárnap".to_string(),
+        1 => "hétfő",
+        2 => "kedd",
+        3 => "szerda",
+        4 => "csütörtök",
+        5 => "péntek",
+        6 => "szombat",
+        7 => "vasárnap",
         _ => unreachable!("invalid day of week"),
     }
 }
