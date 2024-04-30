@@ -927,7 +927,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.5.11"
+version = "0.5.12"
 dependencies = [
  "base64",
  "chrono",
