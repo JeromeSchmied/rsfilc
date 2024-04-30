@@ -50,7 +50,10 @@ pub const fn ep() -> &'static str {
 /// returns a `Vec<&Lesson>`, as a person might accidentally have more than one lessons at a time
 pub fn current_lessons(lessons: &[Lesson]) -> Vec<&Lesson> {
     info!("searching for current lesson(s)");
-    lessons.iter().filter(|lsn| lsn.happening()).collect()
+    lessons
+        .iter()
+        .filter(|lsn| lsn.happening() && lsn.cancelled())
+        .collect()
 }
 /// Returns the next [`Lesson`] of this [`User`] from `lessons` which shall include today's [`Lesson`]s.
 ///
@@ -103,7 +106,7 @@ pub struct Lesson {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Lesson {
-    /// Returns whether this [`Lesson`] has been / will be cancelled.
+    /// Returns whether this [`Lesson`] has been/will be cancelled.
     pub fn cancelled(&self) -> bool {
         self.allapot
             .as_ref()
