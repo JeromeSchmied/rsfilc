@@ -152,7 +152,7 @@ fn main() -> Res<()> {
                 return Ok(());
             }
 
-            if reverse {
+            if !reverse {
                 for eval in evals.iter().take(number) {
                     println!("{eval}");
                 }
@@ -166,7 +166,7 @@ fn main() -> Res<()> {
         Commands::Messages { number, reverse } => {
             let msgs = user.msgs(None, None)?;
 
-            if reverse {
+            if !reverse {
                 for msg in msgs.iter().take(number) {
                     println!("{msg}");
                     user.download_attachments(msg)?;
@@ -199,7 +199,7 @@ fn main() -> Res<()> {
                 return Ok(());
             }
 
-            if reverse {
+            if !reverse {
                 for absence in absences.iter().take(number) {
                     println!("{}", absence);
                 }
@@ -220,7 +220,7 @@ fn main() -> Res<()> {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }
 
-            if reverse {
+            if !reverse {
                 for announced in all_announced.iter().take(number) {
                     println!("{}", announced);
                 }
