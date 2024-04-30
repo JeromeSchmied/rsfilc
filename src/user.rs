@@ -311,30 +311,17 @@ impl User {
             for (i, lesson) in lessons.iter().enumerate() {
                 print!("\n\n{lesson}");
 
-                if let Some(test) = todays_tests
-                    .iter()
-                    .find(|j| j.orarendi_ora_oraszama.is_some_and(|x| x as usize == i + 1))
-                {
+                if let Some(test) = todays_tests.iter().find(|ancd| {
+                    ancd.orarendi_ora_oraszama
+                        .is_some_and(|x| x as usize == i + 1)
+                }) {
                     println!("{}: {}", test.kind(), test.temaja);
                 }
 
-                if lesson.start() <= Local::now() && lesson.end() >= Local::now() {
+                if lesson.happening() {
                     println!("###################################");
                 }
             }
-        }
-    }
-    /// Returns the current [`Lesson`]s of this [`User`].
-    ///
-    /// # Warning
-    ///
-    /// returns a `Vec<Lesson>`, as a person might accidentally have more than one lessons at a time
-    pub fn current_lessons(&self) -> Vec<Lesson> {
-        info!("fetching current lesson");
-        if let Ok(lessons) = self.timetable(Local::now(), Local::now()) {
-            lessons
-        } else {
-            vec![]
         }
     }
 

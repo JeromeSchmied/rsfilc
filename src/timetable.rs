@@ -43,8 +43,32 @@ pub const fn ep() -> &'static str {
     "/ellenorzo/V3/Sajat/OrarendElemek"
 }
 
+/// Returns the current [`Lesson`]s of this [`User`] from `lessons` which shall include today's [`Lesson`]s.
+///
+/// # Warning
+///
+/// returns a `Vec<&Lesson>`, as a person might accidentally have more than one lessons at a time
+pub fn current_lessons(lessons: &[Lesson]) -> Vec<&Lesson> {
+    info!("searching for current lesson(s)");
+    lessons.iter().filter(|lsn| lsn.happening()).collect()
+}
+/// Returns the next [`Lesson`] of this [`User`] from `lessons` which shall include today's [`Lesson`]s.
+///
+/// # Warning
+///
+/// There might accidentally be more next [`Lesson`]s. In this case only one of them is returned.
+pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
+    info!("searching for next lesson");
+    lessons
+        .iter()
+        .filter(|lsn| lsn.forecoming())
+        .collect::<Vec<_>>()
+        .first()
+        .copied()
+}
+
 /// a lesson
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct Lesson {
     // name of the lesson
@@ -128,6 +152,16 @@ impl Lesson {
     /// Returns the subject id of this [`Lesson`].
     pub fn subject(&self) -> String {
         self.nev.clone()
+    }
+
+    /// Returns whether this [`Lesson`] is currently happening.
+    pub fn happening(&self) -> bool {
+        self.start() <= Local::now() && self.end() >= Local::now()
+    }
+
+    /// Returns whether this [`Lesson`] is a forecoming one: to be done.
+    pub fn forecoming(&self) -> bool {
+        self.start() > Local::now()
     }
 
     // pub fn nth_of_day(lessons: &[Lesson]) -> Option<Lesson> {

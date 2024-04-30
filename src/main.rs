@@ -72,17 +72,6 @@ fn main() -> Res<()> {
             current,
             export_day,
         } => {
-            if current {
-                for current_lesson in user.current_lessons() {
-                    println!(
-                        "{}, {}m",
-                        current_lesson.subject(),
-                        (current_lesson.end() - Local::now()).num_minutes() // minutes remaining
-                    );
-                }
-                return Ok(());
-            }
-
             // parse day
             let day = timetable::parse_day(&day);
 
@@ -98,6 +87,7 @@ fn main() -> Res<()> {
                 .unwrap();
 
             let lessons = user.timetable(from, to)?;
+
             if lessons.is_empty() {
                 println!(
                     "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
@@ -105,6 +95,29 @@ fn main() -> Res<()> {
                 );
                 return Ok(());
             }
+
+            if current {
+                let current_lessons = timetable::current_lessons(&lessons);
+                if current_lessons.is_empty() {
+                    if let Some(nxt) = timetable::next_lesson(&lessons) {
+                        println!(
+                            "{}m -> {}",
+                            (nxt.start() - Local::now()).num_minutes(), // minutes remaining
+                            nxt.subject()
+                        );
+                    }
+                }
+                for current_lesson in current_lessons {
+                    println!(
+                        "{}, {}m",
+                        current_lesson.subject(),
+                        (current_lesson.end() - Local::now()).num_minutes() // minutes remaining
+                    );
+                }
+
+                return Ok(());
+            }
+
             if let Some(export_json_to) = export_day {
                 let mut f = File::create(export_json_to)?;
                 let content = serde_json::to_string(&lessons)?;
