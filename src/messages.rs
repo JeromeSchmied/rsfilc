@@ -231,7 +231,7 @@ impl fmt::Display for Msg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Tárgy: {}", self.subj())?;
         for am in &self.attachments() {
-            writeln!(f, "Csatolmány: \"{}\", {}", am.file_name, am.id)?;
+            writeln!(f, "Csatolmány: {}", am.file_name)?;
         }
         writeln!(f, "Kiküldve: {}", pretty_date(&self.time_sent()))?;
         writeln!(f, "Feladó: {} {}", self.sender(), self.sender_title())?;
