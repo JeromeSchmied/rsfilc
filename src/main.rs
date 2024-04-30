@@ -152,17 +152,30 @@ fn main() -> Res<()> {
                 return Ok(());
             }
 
-            for eval in evals.iter().take(number) {
-                println!("{eval}");
+            if reverse {
+                for eval in evals.iter().take(number) {
+                    println!("{eval}");
+                }
+            } else {
+                for eval in evals.iter().take(number).rev() {
+                    println!("{eval}");
+                }
             }
         }
 
         Commands::Messages { number, reverse } => {
             let msgs = user.msgs(None, None)?;
 
-            for msg in msgs.iter().take(number) {
-                println!("{msg}");
-                user.download_attachments(msg)?;
+            if reverse {
+                for msg in msgs.iter().take(number) {
+                    println!("{msg}");
+                    user.download_attachments(msg)?;
+                }
+            } else {
+                for msg in msgs.iter().take(number).rev() {
+                    println!("{msg}");
+                    user.download_attachments(msg)?;
+                }
             }
         }
 
@@ -207,8 +220,14 @@ fn main() -> Res<()> {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }
 
-            for announced in all_announced.iter().take(number) {
-                println!("{}", announced);
+            if reverse {
+                for announced in all_announced.iter().take(number) {
+                    println!("{}", announced);
+                }
+            } else {
+                for announced in all_announced.iter().take(number).rev() {
+                    println!("{}", announced);
+                }
             }
         }
 
