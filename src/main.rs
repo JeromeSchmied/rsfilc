@@ -132,6 +132,7 @@ fn main() -> Res<()> {
             kind,
             number,
             average,
+            reverse,
         } => {
             let mut evals = user.evals(None, None)?;
             info!("got evals");
@@ -156,7 +157,7 @@ fn main() -> Res<()> {
             }
         }
 
-        Commands::Messages { number } => {
+        Commands::Messages { number, reverse } => {
             let msgs = user.msgs(None, None)?;
 
             for msg in msgs.iter().take(number) {
@@ -169,6 +170,7 @@ fn main() -> Res<()> {
             number,
             count,
             subject,
+            reverse,
         } => {
             let mut absences = user.absences(None, None)?;
             if let Some(subject) = subject {
@@ -184,12 +186,22 @@ fn main() -> Res<()> {
                 return Ok(());
             }
 
-            for absence in absences.iter().take(number) {
-                println!("{}", absence);
+            if reverse {
+                for absence in absences.iter().take(number) {
+                    println!("{}", absence);
+                }
+            } else {
+                for absence in absences.iter().take(number).rev() {
+                    println!("{}", absence);
+                }
             }
         }
 
-        Commands::Tests { number, subject } => {
+        Commands::Tests {
+            number,
+            subject,
+            reverse,
+        } => {
             let mut all_announced = user.all_announced(None, None)?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);

@@ -47,9 +47,12 @@ pub enum Commands {
         /// filter the kind to show
         #[arg(short, long)]
         kind: Option<String>,
-        /// average
+        /// calculate average
         #[arg(short, long, default_value_t = false)]
         average: bool,
+        /// reverse the output
+        #[arg(short, long, default_value_t = false)]
+        reverse: bool,
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
@@ -60,6 +63,9 @@ pub enum Commands {
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
+        /// reverse the output
+        #[arg(short, long, default_value_t = false)]
+        reverse: bool,
     },
 
     /// information about lessons the user missed
@@ -73,6 +79,9 @@ pub enum Commands {
         /// count the number of absences
         #[arg(short, long, default_value_t = false)]
         count: bool,
+        /// reverse the output
+        #[arg(short, long, default_value_t = false)]
+        reverse: bool,
     },
 
     /// information about forecoming exams/tests
@@ -83,6 +92,9 @@ pub enum Commands {
         /// number of entries to show
         #[arg(short, long, default_value_t = usize::MAX)]
         number: usize,
+        /// reverse the output
+        #[arg(short, long, default_value_t = false)]
+        reverse: bool,
     },
 
     /// managing users of this program
@@ -94,7 +106,7 @@ pub enum Commands {
         #[arg(short, long, default_value_t = false)]
         create: bool,
         /// switch between existing accounts
-        #[arg(short, long)]
+        #[arg(short, long, name = "USERNAME")]
         switch: Option<String>,
         /// list all users
         #[arg(short, long, default_value_t = false)]
