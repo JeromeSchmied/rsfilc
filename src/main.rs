@@ -119,6 +119,7 @@ fn main() -> Res<()> {
             }
 
             if let Some(export_json_to) = export_day {
+                info!("exported timetable to json");
                 let mut f = File::create(export_json_to)?;
                 let content = serde_json::to_string(&lessons)?;
                 write!(f, "{}", content)?;
