@@ -32,12 +32,6 @@ fn main() -> Res<()> {
         // Apply globally
         .apply()?;
 
-    trace!("log level: TRACE");
-    debug!("log level: DEBUG");
-    info!("log level: INFO");
-    warn!("log level: WARN");
-    error!("log level: ERROR");
-
     // parse
     let cli_args = Args::parse();
 

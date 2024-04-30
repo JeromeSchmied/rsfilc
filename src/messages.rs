@@ -169,7 +169,7 @@ impl Msg {
             // eprintln!("rendering with {}", pref.other());
             other_proc
         } else {
-            eprintln!("couldn't spawn lynx nor w3m, falling back to very-very-basic-html-renderer-I-wrote-in-22-lines ;)");
+            eprintln!("couldn't spawn lynx nor w3m, falling back to very-very-basic-html-renderer-written-in-22-lines ;)");
             return None;
         };
 
@@ -204,9 +204,6 @@ impl Msg {
                 if attr.contains('/') {
                     text.push('\n');
                 }
-                // if !attr.is_empty() {
-                //     let attr = attr.trim();
-                // }
             }
 
             if is_attr {
