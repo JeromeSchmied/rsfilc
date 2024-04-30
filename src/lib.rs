@@ -57,6 +57,16 @@ pub fn log_path(kind: &str) -> PathBuf {
         .expect("couldn't find cache path")
         .join([kind, ".log"].concat())
 }
+/// get path for `Downloads`
+pub fn download_dir() -> PathBuf {
+    if let Some(default_dl) = dirs::download_dir() {
+        default_dl
+    } else if let Some(home) = dirs::home_dir() {
+        home.join("Downloads")
+    } else {
+        panic!("couldn't find Downloads directory");
+    }
+}
 
 /// format date so it looks pretty with hungarian text
 pub fn pretty_date(date: &DateTime<Local>) -> String {
@@ -151,5 +161,10 @@ mod tests {
     #[test]
     fn cred_path_exists() {
         assert!(cred_path().is_some());
+    }
+    #[test]
+    /// just check whether it panics
+    fn dl_path_exists() {
+        download_dir();
     }
 }

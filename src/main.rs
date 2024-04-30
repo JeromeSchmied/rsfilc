@@ -160,7 +160,7 @@ fn main() -> Res<()> {
             let msgs = user.msgs(None, None)?;
 
             for msg in msgs.iter().take(number) {
-                println!("{}", msg);
+                println!("{msg}");
                 user.download_attachments(msg)?;
             }
         }
