@@ -1,11 +1,2 @@
 # Cargo build files
 /target
-
-# credentials: private data
-*creds.txt
-
-# temporarily downloaded files from my account, contains private data
-*.json
-
-# log files
-*.log
