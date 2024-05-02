@@ -103,14 +103,14 @@ fn main() -> Res<()> {
                         println!(
                             "{}m -> {}",
                             (nxt.start() - Local::now()).num_minutes(), // minutes remaining
-                            nxt.subject()
+                            nxt.subject
                         );
                     }
                 }
                 for current_lesson in current_lessons {
                     println!(
                         "{}, {}m",
-                        current_lesson.subject(),
+                        current_lesson.subject,
                         (current_lesson.end() - Local::now()).num_minutes() // minutes remaining
                     );
                 }

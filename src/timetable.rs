@@ -75,7 +75,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 pub struct Lesson {
     // name of the lesson
     #[serde(rename(deserialize = "Nev"))]
-    name: String,
+    pub subject: String,
     // room in which it will be held
     #[serde(rename(deserialize = "TeremNeve"))]
     room: Option<String>,
@@ -100,7 +100,7 @@ pub struct Lesson {
 
     /// subject: information about the type of the lesson: eg.: maths, history
     #[serde(rename(deserialize = "Tantargy"))]
-    subject: Option<HashMap<String, Value>>,
+    subject_details: Option<HashMap<String, Value>>,
 
     /// whether it has been cancelled or what
     #[serde(rename(deserialize = "Allapot"))]
@@ -135,9 +135,7 @@ impl Lesson {
     ///
     /// Panics if `kezdet_idopont` is invalid as date.
     pub fn start(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.start)
-            .expect("couldn't parse kezdet_idopont")
-            .into()
+        DateTime::parse_from_rfc3339(&self.start).unwrap().into()
     }
     /// Returns the end of this [`Lesson`].
     ///
@@ -145,14 +143,12 @@ impl Lesson {
     ///
     /// Panics if `veg_idopont` is invalid as date.
     pub fn end(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.end)
-            .expect("couldn't parse veg_idopont")
-            .into()
+        DateTime::parse_from_rfc3339(&self.end).unwrap().into()
     }
     /// Returns the subject id of this [`Lesson`].
     pub fn subject_id(&self) -> Option<String> {
         Some(
-            self.subject
+            self.subject_details
                 .as_ref()?
                 .get("Kategoria")?
                 .get("Nev")?
@@ -160,10 +156,6 @@ impl Lesson {
                 .trim_matches('"')
                 .to_string(),
         )
-    }
-    /// Returns the subject id of this [`Lesson`].
-    pub fn subject(&self) -> String {
-        self.name.clone()
     }
 
     /// Returns whether this [`Lesson`] is currently happening.
@@ -175,15 +167,10 @@ impl Lesson {
     pub fn forecoming(&self) -> bool {
         self.start() > Local::now()
     }
-
-    // pub fn nth_of_day(lessons: &[Lesson]) -> Option<Lesson> {
-    //     todo!()
-    // }
-    // pub fn parse_time(time: &str) ->
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ", self.name)?;
+        write!(f, "{} ", self.subject)?;
         if let Some(room) = &self.room {
             writeln!(f, "a(z) {} teremben", room.replace("terem", "").trim())?;
         } else {
@@ -290,7 +277,7 @@ mod tests {
         assert!(lesson.is_ok(), "{:?}", lesson);
         let lesson = lesson.unwrap();
 
-        assert_eq!(lesson.name, "fizika");
+        assert_eq!(lesson.subject, "fizika");
         assert_eq!(lesson.room, Some("Fizika".to_string()));
         assert_eq!(lesson.topic, Some("Félvezetők".to_string()));
         assert_eq!(lesson.start, "2024-03-18T08:50:00Z");
