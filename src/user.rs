@@ -1,6 +1,6 @@
 use crate::{
     endpoints::base,
-    info::Info,
+    information::Info,
     messages::{Msg, MsgKind, MsgOview},
     token::Token,
     *,

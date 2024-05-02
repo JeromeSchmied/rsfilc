@@ -13,7 +13,7 @@ mod api_urls;
 pub mod args;
 pub mod endpoints;
 pub mod evals;
-pub mod info;
+pub mod information;
 pub mod messages;
 pub mod school_list;
 pub mod timetable;

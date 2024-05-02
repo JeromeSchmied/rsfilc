@@ -1,9 +1,8 @@
 //! CLI arguments
 
-use std::path::PathBuf;
-
 use clap::{Parser, Subcommand};
 use log::info;
+use std::path::PathBuf;
 
 const NUM: usize = usize::MAX;
 
