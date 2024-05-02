@@ -261,8 +261,9 @@ fn main() -> Res<()> {
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
-                    println!("{}", current_user.info()?);
-                    println!("---------------------------\n");
+                    let user_info = current_user.info()?;
+                    print!("\n\n{user_info}");
+                    fill_under(&user_info.to_string(), '-');
                 }
             } else {
                 println!("{}", user.info()?);

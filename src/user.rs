@@ -35,7 +35,7 @@ pub struct User {
 impl User {
     /// get name of [`User`]
     pub fn name(&self) -> String {
-        self.info().expect("couldn't get user info").nev
+        self.info().expect("couldn't get user info").name
     }
 
     /// endpoint

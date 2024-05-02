@@ -15,7 +15,6 @@ pub const fn ep() -> &'static str {
 
 /// announced test
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct Ancd {
     /// date of doing test
     #[serde(rename(deserialize = "Datum"))]

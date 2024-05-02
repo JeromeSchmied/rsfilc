@@ -12,7 +12,6 @@ use std::{
 
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct MsgOview {
     /// id
     #[serde(rename(deserialize = "azonosito"))]
