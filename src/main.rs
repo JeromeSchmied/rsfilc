@@ -5,6 +5,7 @@ use rsfilc::{Abs, Ancd, Eval, School, User, *};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
+    process::exit,
 };
 
 fn main() -> Res<()> {
@@ -42,8 +43,10 @@ fn main() -> Res<()> {
             default_user // if specified, load preferred user
         } else if let Some(loaded_user) = users.first() {
             loaded_user.clone() // load first user
+        } else if let Some(created) = User::create() {
+            created
         } else {
-            User::create() // create a new user
+            exit(1);
         }
     } else {
         info!(
@@ -250,7 +253,7 @@ fn main() -> Res<()> {
                 let switched_to = User::load(&switch_to).expect("couldn't load user");
                 info!("switched to user {switch_to}");
                 println!("switched to {switch_to}");
-                println!("Hello {}!", switched_to.name());
+                println!("Hello {}!", switched_to.name()?);
 
                 return Ok(());
             }
