@@ -98,7 +98,6 @@ fn main() -> Res<()> {
 
             if current {
                 let current_lessons = timetable::current_lessons(&lessons);
-                info!("current lessons: {:?}", current_lessons);
                 if current_lessons.is_empty() {
                     if let Some(nxt) = timetable::next_lesson(&lessons) {
                         println!(

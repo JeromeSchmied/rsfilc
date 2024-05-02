@@ -72,34 +72,43 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 
 /// a lesson
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-#[serde(rename_all = "PascalCase")]
 pub struct Lesson {
     // name of the lesson
-    nev: String,
+    #[serde(rename(deserialize = "Nev"))]
+    name: String,
     // room in which it will be held
-    terem_neve: Option<String>,
+    #[serde(rename(deserialize = "TeremNeve"))]
+    room: Option<String>,
 
     // start datetime
-    kezdet_idopont: String,
+    #[serde(rename(deserialize = "KezdetIdopont"))]
+    start: String,
     // end datetime
-    veg_idopont: String,
+    #[serde(rename(deserialize = "VegIdopont"))]
+    end: String,
 
     /// topic of the lesson
-    tema: Option<String>,
+    #[serde(rename(deserialize = "Tema"))]
+    topic: Option<String>,
 
     /// name of the teacher
-    tanar_neve: Option<String>,
+    #[serde(rename(deserialize = "TanarNeve"))]
+    teacher: Option<String>,
     /// alternative teacher's name if any
-    helyettes_tanar_neve: Option<String>,
+    #[serde(rename(deserialize = "HelyettesTanarNeve"))]
+    alt_teacher: Option<String>,
 
     /// subject: information about the type of the lesson: eg.: maths, history
-    tantargy: Option<HashMap<String, Value>>,
+    #[serde(rename(deserialize = "Tantargy"))]
+    subject: Option<HashMap<String, Value>>,
 
     /// whether it has been cancelled or what
-    allapot: Option<HashMap<String, String>>,
+    #[serde(rename(deserialize = "Allapot"))]
+    status: Option<HashMap<String, String>>,
 
     /// info about the student being present
-    tanulo_jelenlet: Option<HashMap<String, String>>,
+    #[serde(rename(deserialize = "TanuloJelenlet"))]
+    absence: Option<HashMap<String, String>>,
 
     /// not needed
     #[serde(flatten)]
@@ -108,13 +117,13 @@ pub struct Lesson {
 impl Lesson {
     /// Returns whether this [`Lesson`] has been/will be cancelled.
     pub fn cancelled(&self) -> bool {
-        self.allapot
+        self.status
             .as_ref()
             .is_some_and(|state| state.get("Nev").is_some_and(|state| state == "Elmaradt"))
     }
     /// Returns whether the student has appeared on this [`Lesson`].
     pub fn absent(&self) -> bool {
-        self.tanulo_jelenlet.as_ref().is_some_and(|absence| {
+        self.absence.as_ref().is_some_and(|absence| {
             absence
                 .get("Nev")
                 .is_some_and(|presence| presence == "Hianyzas")
@@ -126,7 +135,7 @@ impl Lesson {
     ///
     /// Panics if `kezdet_idopont` is invalid as date.
     pub fn start(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.kezdet_idopont)
+        DateTime::parse_from_rfc3339(&self.start)
             .expect("couldn't parse kezdet_idopont")
             .into()
     }
@@ -136,14 +145,14 @@ impl Lesson {
     ///
     /// Panics if `veg_idopont` is invalid as date.
     pub fn end(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.veg_idopont)
+        DateTime::parse_from_rfc3339(&self.end)
             .expect("couldn't parse veg_idopont")
             .into()
     }
     /// Returns the subject id of this [`Lesson`].
     pub fn subject_id(&self) -> Option<String> {
         Some(
-            self.tantargy
+            self.subject
                 .as_ref()?
                 .get("Kategoria")?
                 .get("Nev")?
@@ -154,7 +163,7 @@ impl Lesson {
     }
     /// Returns the subject id of this [`Lesson`].
     pub fn subject(&self) -> String {
-        self.nev.clone()
+        self.name.clone()
     }
 
     /// Returns whether this [`Lesson`] is currently happening.
@@ -174,14 +183,14 @@ impl Lesson {
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ", self.nev)?;
-        if let Some(room) = &self.terem_neve {
+        write!(f, "{} ", self.name)?;
+        if let Some(room) = &self.room {
             writeln!(f, "a(z) {} teremben", room.replace("terem", "").trim())?;
         } else {
             writeln!(f)?;
         }
 
-        if let Some(tema) = &self.tema {
+        if let Some(tema) = &self.topic {
             writeln!(f, "Témája: {tema}")?;
         }
 
@@ -202,11 +211,11 @@ impl fmt::Display for Lesson {
             )?;
         }
 
-        if let Some(teacher) = &self.tanar_neve {
+        if let Some(teacher) = &self.teacher {
             writeln!(f, "Tanár: {teacher}")?;
         }
 
-        if let Some(helyettes_tanar) = &self.helyettes_tanar_neve {
+        if let Some(helyettes_tanar) = &self.alt_teacher {
             writeln!(f, "Helyettesítő tanár: {helyettes_tanar}")?;
         }
 
@@ -281,13 +290,13 @@ mod tests {
         assert!(lesson.is_ok(), "{:?}", lesson);
         let lesson = lesson.unwrap();
 
-        assert_eq!(lesson.nev, "fizika");
-        assert_eq!(lesson.terem_neve, Some("Fizika".to_string()));
-        assert_eq!(lesson.tema, Some("Félvezetők".to_string()));
-        assert_eq!(lesson.kezdet_idopont, "2024-03-18T08:50:00Z");
-        assert_eq!(lesson.veg_idopont, "2024-03-18T09:35:00Z");
-        assert_eq!(lesson.tanar_neve, Some("Teszt Katalin".to_string()));
-        assert_eq!(lesson.helyettes_tanar_neve, None);
+        assert_eq!(lesson.name, "fizika");
+        assert_eq!(lesson.room, Some("Fizika".to_string()));
+        assert_eq!(lesson.topic, Some("Félvezetők".to_string()));
+        assert_eq!(lesson.start, "2024-03-18T08:50:00Z");
+        assert_eq!(lesson.end, "2024-03-18T09:35:00Z");
+        assert_eq!(lesson.teacher, Some("Teszt Katalin".to_string()));
+        assert_eq!(lesson.alt_teacher, None);
         assert!(!lesson.cancelled());
         assert!(!lesson.absent());
         assert_eq!(lesson.subject_id(), Some("fizika".to_string()));
