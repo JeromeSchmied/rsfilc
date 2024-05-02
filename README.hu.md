@@ -89,7 +89,7 @@
 ## API
 
 -   [x] Kréta API Url-ek lekérése (nem tudom mire jók)
--   [x] iskolák lekérése [ReFilc API](https://api.refilc.hu/v1/public/school-list)-ból
+-   [x] iskolák lekérése [reFilc API](https://api.refilc.hu/v1/public/school-list)-ból
 
 -   [x] felhasználó adatainak lekérése (json)
 
@@ -151,5 +151,5 @@
 ## Elismerések
 
 Az API alapvetően [ez alapján a dokumentáció](https://github.com/bczsalba/ekreta-docs-v3) alapján valósult meg.
-Kódinspiráció a [ReFilc](https://github.com/refilc/naplo)ből.
+Kódinspiráció a [reFilc](https://github.com/refilc/naplo)ből.
 Autókitöltés leírás innen: [zoxide](https://github.com/ajeetdsouza/zoxide)
