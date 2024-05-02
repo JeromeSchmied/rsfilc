@@ -13,7 +13,7 @@
 
 ### Dependencies
 
-#### optional
+#### optional, recommended
 
 -   [w3m](https://w3m.sourceforge.net/): for enjoyable (html) message previews
 -   [lynx](https://lynx.browser.org/): for enjoyable (html) message previews
