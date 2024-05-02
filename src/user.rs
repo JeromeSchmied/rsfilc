@@ -430,7 +430,7 @@ impl User {
         }
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Eval::ep())
+            .get(base(&self.school_id) + evals::ep())
             .query(&query)
             .headers(self.headers()?)
             .send()?;

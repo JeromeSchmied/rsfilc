@@ -5,6 +5,11 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
+/// endpoint
+pub const fn ep() -> &'static str {
+    "/ellenorzo/V3/Sajat/Ertekelesek"
+}
+
 /// evaluation/grade
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -54,11 +59,6 @@ pub struct Eval {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Eval {
-    /// endpoint
-    pub const fn ep() -> &'static str {
-        "/ellenorzo/V3/Sajat/Ertekelesek"
-    }
-
     /// Returns the subject of this [`Eval`].
     /// Eg. "magyar_nyelv_es_irodalom"
     pub fn subject_id(&self) -> Option<String> {
