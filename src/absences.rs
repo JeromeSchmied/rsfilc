@@ -102,26 +102,23 @@ impl Abs {
 }
 impl fmt::Display for Abs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.teacher)?;
-        writeln!(f, "{}", self.subj())?;
+        writeln!(f, "| {}", self.subj())?;
+        writeln!(f, "| {}", self.teacher)?;
         writeln!(
             f,
-            "{} -> {}",
+            "| {} -> {}",
             pretty_date(&self.start()),
             pretty_date(&self.end()),
         )?;
+        if let Some(late) = &self.mins_late {
+            writeln!(f, "| Késtél {} percet", late)?;
+        }
 
         if self.verified() {
-            writeln!(f, "igazolt")?;
+            write!(f, "| igazolt")?;
         } else {
-            writeln!(f, "igazolatlan")?;
+            write!(f, "| igazolatlan")?;
         }
-
-        if let Some(late) = &self.mins_late {
-            writeln!(f, "Kestel {} percet", late)?;
-        }
-
-        writeln!(f, "\n----------------------\n")?;
 
         Ok(())
     }

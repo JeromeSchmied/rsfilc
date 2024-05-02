@@ -204,11 +204,13 @@ fn main() -> Res<()> {
 
             if !reverse {
                 for absence in absences.iter().take(number) {
-                    println!("{}", absence);
+                    print!("\n\n{absence}");
+                    fill_under(&absence.to_string(), '-');
                 }
             } else {
                 for absence in absences.iter().take(number).rev() {
-                    println!("{}", absence);
+                    print!("\n\n{absence}");
+                    fill_under(&absence.to_string(), '-');
                 }
             }
         }
