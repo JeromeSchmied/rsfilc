@@ -99,7 +99,7 @@
 ## API
 
 -   [x] Kréta API URL fetching (no clue what they do)
--   [x] school fetching from [ReFilc API](https://api.refilc.hu/v1/public/school-list)
+-   [x] school fetching from [reFilc API](https://api.refilc.hu/v1/public/school-list)
 
 -   [x] user info fetch (json)
 
@@ -160,5 +160,5 @@
 ## Acknowledgements
 
 -   The API is written according to [this great documentation](https://github.com/bczsalba/ekreta-docs-v3).
--   Code ideas from [ReFilc](https://github.com/refilc/naplo).
+-   Code ideas from [reFilc](https://github.com/refilc/naplo).
 -   Shell completions section got from [zoxide](https://github.com/ajeetdsouza/zoxide)
