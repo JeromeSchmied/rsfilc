@@ -1,40 +1,45 @@
 //! Absences
 
-use crate::pretty_date;
-use chrono::{DateTime, Local};
-use log::info;
+use crate::*;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
+/// endpoint
+/// "/ellenorzo/V3/Sajat/Mulasztasok"
+pub const fn ep() -> &'static str {
+    "/ellenorzo/V3/Sajat/Mulasztasok"
+}
+
 /// Absence info
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct Abs {
     /// subject: information about the type of the lesson: eg.: maths, history
-    tantargy: HashMap<String, Value>,
+    #[serde(rename(deserialize = "Tantargy"))]
+    subject: HashMap<String, Value>,
 
     /// lesson from, to it was held
-    ora: HashMap<String, Value>,
+    #[serde(rename(deserialize = "Ora"))]
+    lesson: HashMap<String, Value>,
 
     /// teacher who entered it
-    rogzito_tanar_neve: String,
+    #[serde(rename(deserialize = "RogzitoTanarNeve"))]
+    teacher: String,
 
     /// minutes of being late
-    keses_percben: Option<String>,
+    #[serde(rename(deserialize = "KesesPercben"))]
+    mins_late: Option<String>,
     /// whether it's already verified
-    igazolas_allapota: String,
+    #[serde(rename(deserialize = "IgazolasAllapota"))]
+    verification_status: String,
     // /// type of verification
+    // #[serde(rename(deserialize = "igazolasTipusa"))]
     // igazolas_tipusa: HashMap<String, Value>,
     /// not needed
     #[serde(flatten)]
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Abs {
-    /// endpoint
-    pub const fn ep() -> &'static str {
-        "/ellenorzo/V3/Sajat/Mulasztasok"
-    }
     /// Returns the starting date of this [`Abs`].
     ///
     /// # Panics
@@ -44,13 +49,13 @@ impl Abs {
     /// - which is invalid.
     pub fn start(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(
-            self.ora
+            self.lesson
                 .get("KezdoDatum")
-                .expect("couldn't find starting date")
+                .unwrap()
                 .to_string()
                 .trim_matches('"'),
         )
-        .expect("invalid date-time")
+        .unwrap()
         .into()
     }
     /// Returns the end date of this [`Abs`].
@@ -62,18 +67,18 @@ impl Abs {
     /// - which is invalid.
     pub fn end(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(
-            self.ora
+            self.lesson
                 .get("VegDatum")
-                .expect("couldn't find starting date")
+                .unwrap()
                 .to_string()
                 .trim_matches('"'),
         )
-        .expect("invalid date-time")
+        .unwrap()
         .into()
     }
     /// Returns whether the [`Abs`] has been verified.
-    pub fn verif(&self) -> bool {
-        self.igazolas_allapota == "Igazolt"
+    pub fn verified(&self) -> bool {
+        self.verification_status == "Igazolt"
     }
     /// Returns the subject of the lesson which was missed in this [`Abs`].
     ///
@@ -81,7 +86,7 @@ impl Abs {
     ///
     /// Panics if data doesn't contain `subject`.
     fn subj(&self) -> String {
-        self.tantargy
+        self.subject
             .get("Nev")
             .expect("couldn't find subject")
             .to_string()
@@ -97,26 +102,23 @@ impl Abs {
 }
 impl fmt::Display for Abs {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.rogzito_tanar_neve)?;
-        writeln!(f, "{}", self.subj())?;
+        writeln!(f, "| {}", self.subj())?;
+        writeln!(f, "| {}", self.teacher)?;
         writeln!(
             f,
-            "{} -> {}",
+            "| {} -> {}",
             pretty_date(&self.start()),
             pretty_date(&self.end()),
         )?;
+        if let Some(late) = &self.mins_late {
+            writeln!(f, "| Késtél {} percet", late)?;
+        }
 
-        if self.verif() {
-            writeln!(f, "igazolt")?;
+        if self.verified() {
+            write!(f, "| igazolt")?;
         } else {
-            writeln!(f, "igazolatlan")?;
+            write!(f, "| igazolatlan")?;
         }
-
-        if let Some(late) = &self.keses_percben {
-            writeln!(f, "Kestel {} percet", late)?;
-        }
-
-        writeln!(f, "\n----------------------\n")?;
 
         Ok(())
     }
@@ -176,9 +178,9 @@ mod tests {
         let abs = abs.unwrap();
 
         assert_eq!(abs.subj(), "osztályfőnöki");
-        assert_eq!(abs.keses_percben, None);
-        assert_eq!(abs.rogzito_tanar_neve, "Teszt Lajos");
-        assert_eq!(abs.igazolas_allapota, "Igazolt");
-        assert!(abs.verif());
+        assert_eq!(abs.mins_late, None);
+        assert_eq!(abs.teacher, "Teszt Lajos");
+        assert_eq!(abs.verification_status, "Igazolt");
+        assert!(abs.verified());
     }
 }

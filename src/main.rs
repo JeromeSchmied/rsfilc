@@ -7,7 +7,7 @@ use std::{
     io::Write,
 };
 
-fn main() -> AnyErr<()> {
+fn main() -> Res<()> {
     // set up logger
     fern::Dispatch::new()
         // Perform allocation-free log formatting
@@ -31,12 +31,6 @@ fn main() -> AnyErr<()> {
         )
         // Apply globally
         .apply()?;
-
-    trace!("log level: TRACE");
-    debug!("log level: DEBUG");
-    info!("log level: INFO");
-    warn!("log level: WARN");
-    error!("log level: ERROR");
 
     // parse
     let cli_args = Args::parse();
@@ -78,17 +72,6 @@ fn main() -> AnyErr<()> {
             current,
             export_day,
         } => {
-            if current {
-                for current_lesson in user.current_lessons() {
-                    println!(
-                        "{}, {}m",
-                        current_lesson.subject(),
-                        (current_lesson.end() - Local::now()).num_minutes() // minutes remaining
-                    );
-                }
-                return Ok(());
-            }
-
             // parse day
             let day = timetable::parse_day(&day);
 
@@ -104,6 +87,7 @@ fn main() -> AnyErr<()> {
                 .unwrap();
 
             let lessons = user.timetable(from, to)?;
+
             if lessons.is_empty() {
                 println!(
                     "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
@@ -111,7 +95,31 @@ fn main() -> AnyErr<()> {
                 );
                 return Ok(());
             }
+
+            if current {
+                let current_lessons = timetable::current_lessons(&lessons);
+                if current_lessons.is_empty() {
+                    if let Some(nxt) = timetable::next_lesson(&lessons) {
+                        println!(
+                            "{}m -> {}",
+                            (nxt.start() - Local::now()).num_minutes(), // minutes remaining
+                            nxt.subject
+                        );
+                    }
+                }
+                for current_lesson in current_lessons {
+                    println!(
+                        "{}, {}m",
+                        current_lesson.subject,
+                        (current_lesson.end() - Local::now()).num_minutes() // minutes remaining
+                    );
+                }
+
+                return Ok(());
+            }
+
             if let Some(export_json_to) = export_day {
+                info!("exported timetable to json");
                 let mut f = File::create(export_json_to)?;
                 let content = serde_json::to_string(&lessons)?;
                 write!(f, "{}", content)?;
@@ -125,6 +133,7 @@ fn main() -> AnyErr<()> {
             kind,
             number,
             average,
+            reverse,
         } => {
             let mut evals = user.evals(None, None)?;
             info!("got evals");
@@ -144,17 +153,34 @@ fn main() -> AnyErr<()> {
                 return Ok(());
             }
 
-            for eval in evals.iter().take(number) {
-                println!("{eval}");
+            if !reverse {
+                for eval in evals.iter().take(number) {
+                    print!("\n\n{eval}");
+                    fill_under(&eval.to_string(), '-');
+                }
+            } else {
+                for eval in evals.iter().take(number).rev() {
+                    print!("\n\n{eval}");
+                    fill_under(&eval.to_string(), '-');
+                }
             }
         }
 
-        Commands::Messages { number } => {
-            for msg_oview in user.all_msg_oviews()?.iter().take(number) {
-                let full_msg = user.full_msg(msg_oview)?;
-                // println!("{}", msg_overview);
-                println!("{}", full_msg);
-                user.download_attachments(&full_msg)?;
+        Commands::Messages { number, reverse } => {
+            let msgs = user.msgs(None, None)?;
+
+            if !reverse {
+                for msg in msgs.iter().take(number) {
+                    println!("\n\n\n\n{msg}");
+                    fill_under(&msg.to_string(), '-');
+                    user.download_attachments(msg)?;
+                }
+            } else {
+                for msg in msgs.iter().take(number).rev() {
+                    println!("\n\n\n\n{msg}");
+                    fill_under(&msg.to_string(), '-');
+                    user.download_attachments(msg)?;
+                }
             }
         }
 
@@ -162,6 +188,7 @@ fn main() -> AnyErr<()> {
             number,
             count,
             subject,
+            reverse,
         } => {
             let mut absences = user.absences(None, None)?;
             if let Some(subject) = subject {
@@ -172,24 +199,44 @@ fn main() -> AnyErr<()> {
                 println!("Összes hiányzásod száma: {}", absences.len());
                 println!(
                     "Ebből még igazolatlan: {}",
-                    absences.iter().filter(|item| !item.verif()).count()
+                    absences.iter().filter(|item| !item.verified()).count()
                 );
                 return Ok(());
             }
 
-            for absence in absences.iter().take(number) {
-                println!("{}", absence);
+            if !reverse {
+                for absence in absences.iter().take(number) {
+                    print!("\n\n{absence}");
+                    fill_under(&absence.to_string(), '-');
+                }
+            } else {
+                for absence in absences.iter().take(number).rev() {
+                    print!("\n\n{absence}");
+                    fill_under(&absence.to_string(), '-');
+                }
             }
         }
 
-        Commands::Tests { number, subject } => {
+        Commands::Tests {
+            number,
+            subject,
+            reverse,
+        } => {
             let mut all_announced = user.all_announced(None, None)?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }
 
-            for announced in all_announced.iter().take(number) {
-                println!("{}", announced);
+            if !reverse {
+                for announced in all_announced.iter().take(number) {
+                    print!("\n\n{}", announced);
+                    fill_under(&announced.to_string(), '-');
+                }
+            } else {
+                for announced in all_announced.iter().take(number).rev() {
+                    print!("\n\n{}", announced);
+                    fill_under(&announced.to_string(), '-');
+                }
             }
         }
 
@@ -214,8 +261,9 @@ fn main() -> AnyErr<()> {
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
-                    println!("{}", current_user.info()?);
-                    println!("---------------------------\n");
+                    let user_info = current_user.info()?;
+                    print!("\n\n{user_info}");
+                    fill_under(&user_info.to_string(), '-');
                 }
             } else {
                 println!("{}", user.info()?);
@@ -225,16 +273,16 @@ fn main() -> AnyErr<()> {
         Commands::Schools { search } => {
             let schools = School::get_from_refilc()?;
             if let Some(school_name) = search {
-                let found = School::search(&school_name, &schools);
+                let found = School::search(&schools, &school_name);
                 for school in found {
-                    println!("{school}");
-                    println!("\n---------------------------\n");
+                    print!("\n\n{school}");
+                    fill_under(&school.to_string(), '-');
                 }
             } else {
                 info!("listing schools");
                 for school in schools {
-                    println!("{school}");
-                    println!("\n---------------------------\n");
+                    print!("\n\n{school}");
+                    fill_under(&school.to_string(), '-');
                 }
             }
         }

@@ -1,6 +1,6 @@
 use crate::{
     endpoints::base,
-    info::Info,
+    information::Info,
     messages::{Msg, MsgKind, MsgOview},
     token::Token,
     *,
@@ -22,6 +22,11 @@ use std::{
     io::{self, Write},
 };
 
+/// endpoint
+pub const fn ep() -> &'static str {
+    "/ellenorzo/V3/Sajat/TanuloAdatlap"
+}
+
 /// Kréta, app user
 #[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct User {
@@ -35,12 +40,7 @@ pub struct User {
 impl User {
     /// get name of [`User`]
     pub fn name(&self) -> String {
-        self.info().expect("couldn't get user info").nev
-    }
-
-    /// endpoint
-    pub const fn ep() -> &'static str {
-        "/ellenorzo/V3/Sajat/TanuloAdatlap"
+        self.info().expect("couldn't get user info").name
     }
 
     /// create new instance of [`User`]
@@ -201,7 +201,7 @@ impl User {
     }
 
     /// get headers which are necessary for making certain requests
-    fn headers(&self) -> AnyErr<HeaderMap> {
+    fn headers(&self) -> Res<HeaderMap> {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
@@ -225,7 +225,7 @@ impl User {
     ///         &grant_type=password \
     ///         &client_id=kreta-ellenorzo-mobile-android"
     /// ```
-    fn token(&self) -> AnyErr<Token> {
+    fn token(&self) -> Res<Token> {
         // Define the key as bytes
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
 
@@ -273,7 +273,7 @@ impl User {
 
         let client = Client::new();
         let res = client
-            .post([endpoints::IDP, Token::ep()].concat())
+            .post([endpoints::IDP, token::ep()].concat())
             .headers(headers)
             .form(&data)
             .send()?;
@@ -291,7 +291,7 @@ impl User {
     pub fn print_day(&self, lessons: &[Lesson]) {
         if let Some(first_lesson) = lessons.first() {
             println!(
-                "    {} ({})\n",
+                "    {} ({})",
                 pretty_date(&first_lesson.start()),
                 day_of_week(
                     first_lesson
@@ -302,44 +302,40 @@ impl User {
                         .unwrap()
                 )
             );
+            if first_lesson.shite() {
+                print!("{}", first_lesson);
+                fill_under(&first_lesson.to_string(), '|');
+            }
             let todays_tests = self
                 .all_announced(
-                    Some(lessons.first().expect("ain't no first lesson :(").start()),
-                    Some(lessons.last().expect("no lesson!").end()),
+                    Some(first_lesson.start()),
+                    Some(lessons.last().unwrap().end()),
                 )
                 .expect("couldn't fetch announced tests");
-            for (i, lesson) in lessons.iter().enumerate() {
+            for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
                 print!("\n\n{lesson}");
 
                 if let Some(test) = todays_tests
                     .iter()
-                    .find(|j| j.orarendi_ora_oraszama.is_some_and(|x| x as usize == i + 1))
+                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == i + 1))
                 {
-                    println!("{}: {}", test.kind(), test.temaja);
+                    print!("\n| {}: {}", test.kind(), test.topic);
                 }
 
-                if lesson.start() <= Local::now() && lesson.end() >= Local::now() {
-                    println!("###################################");
-                }
+                fill_under(
+                    &lesson.to_string(),
+                    if lesson.happening() { '$' } else { '-' },
+                );
             }
-        }
-    }
-    /// Returns the current [`Lesson`]s of this [`User`].
-    pub fn current_lessons(&self) -> Vec<Lesson> {
-        info!("fetching current lesson");
-        if let Ok(lessons) = self.timetable(Local::now(), Local::now()) {
-            lessons
-        } else {
-            vec![]
         }
     }
 
     /// get [`User`] info
-    pub fn info(&self) -> AnyErr<Info> {
+    pub fn info(&self) -> Res<Info> {
         info!("recieved information about user");
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + User::ep())
+            .get(base(&self.school_id) + user::ep())
             .headers(self.headers()?)
             .send()?;
         let text = res.text()?;
@@ -351,7 +347,7 @@ impl User {
     }
 
     /// get all [`MsgOview`]s of a [`MsgKind`]
-    pub fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> AnyErr<Vec<MsgOview>> {
+    pub fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> Res<Vec<MsgOview>> {
         let client = Client::new();
         let res = client
             .get(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val()))
@@ -368,7 +364,7 @@ impl User {
     }
 
     /// get all [`MsgOview`]s, of any [`MsgKind`]
-    pub fn all_msg_oviews(&self) -> AnyErr<Vec<MsgOview>> {
+    pub fn all_msg_oviews(&self) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
             self.msg_oviews_of_kind(MsgKind::Recv)?,
             self.msg_oviews_of_kind(MsgKind::Sent)?,
@@ -382,10 +378,10 @@ impl User {
     }
 
     /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
-    pub fn full_msg(&self, msg_oview: &MsgOview) -> AnyErr<Msg> {
+    pub fn full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
         let client = Client::new();
         let res = client
-            .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.azonosito))
+            .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id))
             .headers(self.headers()?)
             .send()?;
 
@@ -397,13 +393,34 @@ impl User {
         info!("recieved full message: {:?}", msg);
         Ok(msg)
     }
+    /// Fetch all [`Msg`]s between `from` and `to`.
+    pub fn msgs(
+        &self,
+        from: Option<DateTime<Local>>,
+        to: Option<DateTime<Local>>,
+    ) -> Res<Vec<Msg>> {
+        let mut msgs = Vec::new();
+
+        for msg_oview in self.all_msg_oviews()? {
+            // if isn't between `from`-`to`
+            if from.is_some_and(|from| msg_oview.sent() < from)
+                || to.is_some_and(|to| msg_oview.sent() > to)
+            {
+                continue;
+            }
+            let msg = self.full_msg(&msg_oview)?;
+            msgs.push(msg);
+        }
+
+        Ok(msgs)
+    }
 
     /// get all [`Eval`]s with `from` `to` or all
     pub fn evals(
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
-    ) -> AnyErr<Vec<Eval>> {
+    ) -> Res<Vec<Eval>> {
         let mut query = vec![];
         if let Some(from) = from {
             query.push(("datumTol", from.to_rfc3339()));
@@ -413,7 +430,7 @@ impl User {
         }
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Eval::ep())
+            .get(base(&self.school_id) + evals::ep())
             .query(&query)
             .headers(self.headers()?)
             .send()?;
@@ -434,7 +451,7 @@ impl User {
     }
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
-    pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> AnyErr<Vec<Lesson>> {
+    pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
         let client = Client::new();
         let res = client
             .get(base(&self.school_id) + timetable::ep())
@@ -457,7 +474,7 @@ impl User {
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
-    ) -> AnyErr<Vec<Ancd>> {
+    ) -> Res<Vec<Ancd>> {
         let query = if let Some(from) = from {
             vec![("datumTol", from.to_rfc3339())]
         } else {
@@ -465,7 +482,7 @@ impl User {
         };
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Ancd::ep())
+            .get(base(&self.school_id) + announced::ep())
             .query(&query)
             .headers(self.headers()?)
             .send()?;
@@ -484,12 +501,11 @@ impl User {
         Ok(all_announced)
     }
 
-    /// Download all [`Attachment`]s of this [`Msg`].
-    pub fn download_attachments(&self, msg: &Msg) -> AnyErr<()> {
-        // let download_dir = dirs::download_dir().expect("couldn't find Downloads");
+    /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
+    pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
         for am in msg.attachments() {
-            info!("downloading {}", am.file_name);
-            let mut f = File::create(&am.file_name)?;
+            info!("downloading file://{}", am.download_to().display());
+            let mut f = File::create(download_dir().join(&am.file_name))?;
 
             let client = Client::new();
             client
@@ -508,7 +524,7 @@ impl User {
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
-    ) -> AnyErr<Vec<Abs>> {
+    ) -> Res<Vec<Abs>> {
         let mut query = vec![];
         if let Some(from) = from {
             query.push(("datumTol", from.to_rfc3339()));
@@ -518,7 +534,7 @@ impl User {
         }
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Abs::ep())
+            .get(base(&self.school_id) + absences::ep())
             .query(&query)
             .headers(self.headers()?)
             .send()?;
@@ -534,7 +550,7 @@ impl User {
     }
 
     /// get groups the [`User`] is a member of
-    pub fn groups(&self) -> AnyErr<String> {
+    pub fn groups(&self) -> Res<String> {
         let client = Client::new();
         let res = client
             .get(base(&self.school_id) + endpoints::CLASSES)

@@ -1,9 +1,11 @@
 //! CLI arguments
 
-use std::path::PathBuf;
-
 use clap::{Parser, Subcommand};
 use log::info;
+use std::path::PathBuf;
+
+/// default number of entries to show
+const NUM: usize = usize::MAX;
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -47,19 +49,25 @@ pub enum Commands {
         /// filter the kind to show
         #[arg(short, long)]
         kind: Option<String>,
-        /// average
+        /// calculate average
         #[arg(short, long, default_value_t = false)]
         average: bool,
+        /// reverse the output
+        #[arg(short, long, default_value_t = false)]
+        reverse: bool,
         /// number of entries to show
-        #[arg(short, long, default_value_t = usize::MAX)]
+        #[arg(short, long, default_value_t = NUM)]
         number: usize,
     },
 
     /// messages the user either recieved or sent
     Messages {
         /// number of entries to show
-        #[arg(short, long, default_value_t = usize::MAX)]
+        #[arg(short, long, default_value_t = NUM)]
         number: usize,
+        /// reverse the output
+        #[arg(short, long, default_value_t = false)]
+        reverse: bool,
     },
 
     /// information about lessons the user missed
@@ -68,11 +76,14 @@ pub enum Commands {
         #[arg(short, long)]
         subject: Option<String>,
         /// number of entries to show
-        #[arg(short, long, default_value_t = usize::MAX)]
+        #[arg(short, long, default_value_t = NUM)]
         number: usize,
         /// count the number of absences
         #[arg(short, long, default_value_t = false)]
         count: bool,
+        /// reverse the output
+        #[arg(short, long, default_value_t = false)]
+        reverse: bool,
     },
 
     /// information about forecoming exams/tests
@@ -81,8 +92,11 @@ pub enum Commands {
         #[arg(short, long)]
         subject: Option<String>,
         /// number of entries to show
-        #[arg(short, long, default_value_t = usize::MAX)]
+        #[arg(short, long, default_value_t = NUM)]
         number: usize,
+        /// reverse the output
+        #[arg(short, long, default_value_t = false)]
+        reverse: bool,
     },
 
     /// managing users of this program
@@ -94,7 +108,7 @@ pub enum Commands {
         #[arg(short, long, default_value_t = false)]
         create: bool,
         /// switch between existing accounts
-        #[arg(short, long)]
+        #[arg(short, long, name = "USERNAME")]
         switch: Option<String>,
         /// list all users
         #[arg(short, long, default_value_t = false)]
@@ -104,7 +118,7 @@ pub enum Commands {
     /// information about all schools in the `Kréta` database
     Schools {
         /// search for school
-        #[arg(short, long)]
+        #[arg(short, long, name = "SCHOOL_PROPERTY")]
         search: Option<String>,
     },
 }

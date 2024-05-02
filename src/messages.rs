@@ -1,7 +1,6 @@
-//! messaging with teachers and staff
+//! messages from teachers and staff
 
-use crate::{pretty_date, AnyErr};
-use chrono::{DateTime, Local};
+use crate::*;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
@@ -13,20 +12,24 @@ use std::{
 
 /// this is just a short representation of the real message
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct MsgOview {
     /// id
-    pub azonosito: u64,
+    #[serde(rename(deserialize = "azonosito"))]
+    pub id: u64,
     /// another id
     // uzenet_azonosito: u64,
 
     /// date of sending
-    uzenet_kuldes_datum: String,
+    #[serde(rename(deserialize = "uzenetKuldesDatum"))]
+    date_sent: String,
     // /// sender
+    // #[serde(rename(deserialize = "uzenetFeladoNev"))]
     // uzenet_felado_nev: String,
     // /// title
+    // #[serde(rename(deserialize = "uzenetFeladoTitulus"))]
     // uzenet_felado_titulus: String,
     // /// subject
+    // #[serde(rename(deserialize = "uzenetTargy"))]
     // uzenet_targy: String,
 
     // /// has attachment
@@ -43,8 +46,8 @@ impl MsgOview {
     ///
     /// Panics if `uzenet_kuldes_datum` is invalid as date.
     pub fn sent(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&format!("{}Z", &self.uzenet_kuldes_datum))
-            .expect("couldn't parse kezdet_idopont")
+        DateTime::parse_from_rfc3339(&format!("{}Z", &self.date_sent))
+            .unwrap()
             .into()
     }
 }
@@ -71,24 +74,36 @@ pub struct Attachment {
     pub id: u64,
 }
 
+impl Attachment {
+    /// Returns the path where this [`Attachment`] shall be downloaded.
+    pub fn download_to(&self) -> PathBuf {
+        download_dir().join(&self.file_name)
+    }
+}
+
 /// the message itself
 #[derive(Debug, Deserialize, Clone)]
-// #[serde(rename_all = "camelCase")]
 pub struct Msg {
     // /// id
+    // #[serde(rename(deserialize = "azonosito"))]
     // azonosito: u32,
 
     // /// is read
+    // #[serde(rename(deserialize = "isElolvasva"))]
     // is_elolvasva: bool,
     // /// is deleted
+    // #[serde(rename(deserialize = "isToroltElem"))]
     // is_torolt_elem: bool,
 
     // /// kind
+    // #[serde(rename(deserialize = "tipus"))]
     // tipus: HashMap<String, Value>,
     /// the message itself
-    uzenet: HashMap<String, Value>,
+    #[serde(rename(deserialize = "uzenet"))]
+    msg: HashMap<String, Value>,
 
     // /// attachments
+    // #[serde(rename(deserialize = "csatolmanyok"))]
     // // csatolmanyok: Vec<HashMap<String, Value>>,
     // csatolmanyok: Option<Vec<Attachment>>,
     #[serde(flatten)]
@@ -104,7 +119,7 @@ impl Msg {
     /// - which contains invalid date-time value.
     pub fn time_sent(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&format!("{}Z", self.msg_kv("kuldesDatum")))
-            .expect("invalid date-time of date of sending")
+            .unwrap()
             .into()
     }
 
@@ -114,7 +129,7 @@ impl Msg {
     ///
     /// Panics if data doesn't contain `k`ey.
     fn msg_kv(&self, k: &str) -> String {
-        self.uzenet
+        self.msg
             .get(k)
             .expect("couldn't find key")
             .to_string()
@@ -154,11 +169,16 @@ impl Msg {
     pub fn sender_title(&self) -> String {
         self.msg_kv("feladoTitulus")
     }
+    /// Returns the [`Attachment`]s of this [`Msg`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if [`Msg`] doesn't contain attachments field.
     pub fn attachments(&self) -> Vec<Attachment> {
         serde_json::from_str(&self.msg_kv("csatolmanyok")).expect("couldn't find attachments")
     }
 
-    /// render html with [`Rendr`]
+    /// render html with a [`Rendr`]
     fn render_with_external(html: &str, pref: Option<Rendr>) -> Option<String> {
         let pref = if let Some(pr) = pref { pr } else { Rendr::W3m };
 
@@ -169,7 +189,7 @@ impl Msg {
             // eprintln!("rendering with {}", pref.other());
             other_proc
         } else {
-            eprintln!("couldn't spawn lynx nor w3m, falling back to very-very-basic-html-renderer-I-wrote-in-22-lines ;)");
+            eprintln!("couldn't spawn lynx nor w3m, falling back to very-very-basic-html-renderer-written-in-22-lines ;)");
             return None;
         };
 
@@ -204,9 +224,6 @@ impl Msg {
                 if attr.contains('/') {
                     text.push('\n');
                 }
-                // if !attr.is_empty() {
-                //     let attr = attr.trim();
-                // }
             }
 
             if is_attr {
@@ -232,15 +249,13 @@ impl Msg {
 }
 impl fmt::Display for Msg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Tárgy: {}", self.subj())?;
+        writeln!(f, "| Tárgy: {}", self.subj())?;
         for am in &self.attachments() {
-            writeln!(f, "Csatolmány: \"{}\", {}", am.file_name, am.id)?;
+            writeln!(f, "| Csatolmány: {}", am.download_to().display())?;
         }
-        writeln!(f, "Kiküldve: {}", pretty_date(&self.time_sent()))?;
-        writeln!(f, "Feladó: {} {}", self.sender(), self.sender_title())?;
-        writeln!(f, "\n{}", Self::render_html(&self.text()))?;
-        writeln!(f, "---------------------------------\n")?;
-        // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
+        writeln!(f, "| Kiküldve: {}", pretty_date(&self.time_sent()))?;
+        writeln!(f, "| Feladó: {} {}", self.sender(), self.sender_title())?;
+        write!(f, "\n{}", Self::render_html(&self.text()).trim())?;
         // if !self.is_elolvasva {
         //     writeln!(f, "Olvasatlan")?;
         // }
@@ -254,7 +269,8 @@ enum Rendr {
     Lynx,
 }
 impl Rendr {
-    fn child(&self) -> AnyErr<Child> {
+    /// Returns the child process needed for this [`Rendr`].
+    fn child(&self) -> Res<Child> {
         match self {
             Rendr::W3m => {
                 let mut w3m_cmd = Command::new("w3m");
@@ -291,12 +307,14 @@ impl Rendr {
             }
         }
     }
+    /// Returns the other [`Rendr`].
     fn other(&self) -> Self {
         match self {
             Self::W3m => Self::Lynx,
             Self::Lynx => Self::W3m,
         }
     }
+    /// Returns both [`Rendr`]'s name.
     fn both_name() -> &'static str {
         "w3m/lynx"
     }
@@ -361,10 +379,10 @@ mod test {
 
         let message = message.unwrap();
 
-        assert_eq!(message.azonosito, 137283859);
+        assert_eq!(message.id, 137283859);
         // assert_eq!(message.uzenet_azonosito, 26669244);
 
-        assert_eq!(message.uzenet_kuldes_datum, "2022-09-07T08:18:17");
+        assert_eq!(message.date_sent, "2022-09-07T08:18:17");
         // assert_eq!(message.uzenet_felado_nev, "Schultz Zoltán");
         // assert_eq!(message.uzenet_felado_titulus, "intézményvezető");
         // assert_eq!(message.uzenet_targy, "Tájékoztató - Elf Bar - Rendőrség");

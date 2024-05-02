@@ -1,6 +1,6 @@
 //! every school that uses the `Kréta` system
 
-use crate::AnyErr;
+use crate::Res;
 use log::info;
 use serde::Deserialize;
 use std::fmt;
@@ -15,21 +15,23 @@ pub struct School {
 }
 impl School {
     /// get [`School`] list from refilc api
-    pub fn get_from_refilc() -> AnyErr<Vec<School>> {
+    pub fn get_from_refilc() -> Res<Vec<School>> {
         let res = reqwest::blocking::get("https://api.refilc.hu/v1/public/school-list")?;
 
         info!("recieved schools from refilc api");
         Ok(serde_json::from_str(&res.text()?)?)
     }
     /// search for school
-    pub fn search(find_school: &str, schools: &[School]) -> Vec<School> {
+    pub fn search(schools: &[School], find_school: &str) -> Vec<School> {
         info!("searching for {find_school} in schools");
         let mut matching_schools = Vec::new();
         for school in schools {
-            if school
-                .name
-                .to_lowercase()
-                .contains(&find_school.to_lowercase())
+            if [
+                school.name.to_lowercase(),
+                school.city.to_lowercase(),
+                school.institute_code.to_lowercase(),
+            ]
+            .contains(&find_school.to_lowercase())
             {
                 matching_schools.push(school.clone());
             }
@@ -52,9 +54,9 @@ impl School {
 
 impl fmt::Display for School {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.name.replace('"', ""))?;
-        writeln!(f, "id: {}", self.institute_code)?;
-        writeln!(f, "location: {}", self.city)?;
+        writeln!(f, "| {}", self.name.replace('"', ""))?;
+        writeln!(f, "| id: {}", self.institute_code)?;
+        write!(f, "| helye: {}", self.city)?;
 
         Ok(())
     }
