@@ -381,7 +381,7 @@ impl User {
     pub fn full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
         let client = Client::new();
         let res = client
-            .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.azonosito))
+            .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id))
             .headers(self.headers()?)
             .send()?;
 

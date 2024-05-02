@@ -169,12 +169,14 @@ fn main() -> Res<()> {
 
             if !reverse {
                 for msg in msgs.iter().take(number) {
-                    println!("{msg}");
+                    println!("\n\n\n\n{msg}");
+                    fill_under(&msg.to_string(), '-');
                     user.download_attachments(msg)?;
                 }
             } else {
                 for msg in msgs.iter().take(number).rev() {
-                    println!("{msg}");
+                    println!("\n\n\n\n{msg}");
+                    fill_under(&msg.to_string(), '-');
                     user.download_attachments(msg)?;
                 }
             }
