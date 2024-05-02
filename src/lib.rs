@@ -1,6 +1,7 @@
 //! RsFilc: `Kréta` API and client
 
 use chrono::{DateTime, Datelike, Local, Timelike};
+use log::*;
 use std::{
     fs::{self, File},
     path::PathBuf,
