@@ -4,6 +4,7 @@ use clap::{Parser, Subcommand};
 use log::info;
 use std::path::PathBuf;
 
+/// default number of entries to show
 const NUM: usize = usize::MAX;
 
 #[derive(Parser)]
