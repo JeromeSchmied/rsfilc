@@ -26,18 +26,12 @@ impl School {
         info!("searching for {find_school} in schools");
         let mut matching_schools = Vec::new();
         for school in schools {
-            if school
-                .name
-                .to_lowercase()
-                .contains(&find_school.to_lowercase())
-                || school
-                    .city
-                    .to_lowercase()
-                    .contains(&find_school.to_lowercase())
-                || school
-                    .institute_code
-                    .to_lowercase()
-                    .contains(&find_school.to_lowercase())
+            if [
+                school.name.to_lowercase(),
+                school.city.to_lowercase(),
+                school.institute_code.to_lowercase(),
+            ]
+            .contains(&find_school.to_lowercase())
             {
                 matching_schools.push(school.clone());
             }
