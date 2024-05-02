@@ -155,11 +155,13 @@ fn main() -> Res<()> {
 
             if !reverse {
                 for eval in evals.iter().take(number) {
-                    println!("{eval}");
+                    print!("\n\n{eval}");
+                    fill_under(&eval.to_string(), '-');
                 }
             } else {
                 for eval in evals.iter().take(number).rev() {
-                    println!("{eval}");
+                    print!("\n\n{eval}");
+                    fill_under(&eval.to_string(), '-');
                 }
             }
         }

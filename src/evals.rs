@@ -16,7 +16,7 @@ pub const fn ep() -> &'static str {
 pub struct Eval {
     // /// the time it was saved to `Kréta`?
     // #[serde(rename(deserialize = "RogzitesDatuma"))]
-    // rogzites_datuma: String,
+    // date_saved: String,
     /// the time it was actually earned?
     #[serde(rename(deserialize = "KeszitesDatuma"))]
     earned: String,
@@ -45,10 +45,10 @@ pub struct Eval {
     // jelleg: String,
     /// with number (1,2,3,4,5)
     #[serde(rename(deserialize = "SzamErtek"))]
-    with_num: Option<u8>,
+    as_num: Option<u8>,
     /// with text and number actually (Elégtelen(1), Elégséges(2), Közepes(3), Jó(4), Példás(5))
     #[serde(rename(deserialize = "SzovegesErtek"))]
-    with_txt: String,
+    as_txt: String,
 
     /// weigth in % (about: 0-5000 ?)
     #[serde(rename(deserialize = "SulySzazalekErteke"))]
@@ -99,9 +99,7 @@ impl Eval {
     ///
     /// Panics if `keszites_datuma` is invalid date-time.
     pub fn earned(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.earned)
-            .expect("couldn't parse veg_idopont")
-            .into()
+        DateTime::parse_from_rfc3339(&self.earned).unwrap().into()
     }
 
     /// Filter `evals` by `kind`
@@ -135,7 +133,7 @@ impl Eval {
         });
 
         let sum = evals.clone().fold(0, |sum, cur| {
-            sum + cur.with_num.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
+            sum + cur.as_num.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
         });
 
         let count = evals
@@ -160,22 +158,21 @@ impl Eval {
 
 impl fmt::Display for Eval {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "| ")?;
         if let Some(desc) = &self.topic {
             write!(f, "{desc}: ")?;
         }
-        writeln!(f, "{}", self.with_txt)?;
+        writeln!(f, "{}", self.as_txt)?;
         if let Some(subject) = self.subject_name() {
-            writeln!(f, "Tantárgy: {subject}")?;
+            writeln!(f, "| {subject}")?;
+        }
+        if let Some(kind) = &self.kind() {
+            writeln!(f, "| {kind}")?;
         }
         if let Some(teacher) = &self.teacher {
-            writeln!(f, "Értékelő tanár: {teacher}")?;
+            writeln!(f, "| {teacher}")?;
         }
-
-        if let Some(kind) = &self.kind() {
-            writeln!(f, "Típus: {kind}")?;
-        }
-        writeln!(f, "Szertevés dátuma: {}", pretty_date(&self.earned()))?;
-        writeln!(f, "\n--------------------------------\n")?;
+        write!(f, "| Időpont: {}", pretty_date(&self.earned()))?;
 
         Ok(())
     }
@@ -237,8 +234,8 @@ mod tests {
 
         assert_eq!(eval.topic, Some("Villon".to_string()));
         assert_eq!(eval.teacher, Some("Teszt Tamás".to_owned()));
-        assert_eq!(eval.with_num, Some(5));
-        assert_eq!(eval.with_txt, "Jeles(5)");
+        assert_eq!(eval.as_num, Some(5));
+        assert_eq!(eval.as_txt, "Jeles(5)");
         assert_eq!(eval.weight_in_percent, Some(100));
         assert_eq!(
             eval.subject_id(),
