@@ -150,6 +150,12 @@ pub fn day_of_week<'a>(d: u8) -> &'a str {
     }
 }
 
+/// Fill under `fill` with many `with` [`char`]s.
+pub fn fill_under(fill: &str, with: char) {
+    let longest = fill.lines().max_by_key(|l| l.chars().count()).unwrap_or("");
+    println!("\n{}", with.to_string().repeat(longest.chars().count() + 2));
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

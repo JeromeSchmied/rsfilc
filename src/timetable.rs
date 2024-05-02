@@ -176,7 +176,7 @@ impl Lesson {
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.subject)?;
+        write!(f, "| {}", self.subject)?;
         if let Some(room) = &self.room {
             writeln!(f, ", {}", room.replace("terem", "").trim())?;
         }
@@ -184,22 +184,22 @@ impl fmt::Display for Lesson {
         if !self.shite() {
             writeln!(
                 f,
-                "{} -> {}",
+                "| {} -> {}",
                 self.start().format("%H:%M"),
                 self.end().format("%H:%M")
             )?;
         }
 
         if let Some(tema) = &self.topic {
-            writeln!(f, "{tema}")?;
+            writeln!(f, "| {tema}")?;
         }
 
         if self.absent() {
-            writeln!(f, "Ezen az órán nem voltál jelen.")?;
+            writeln!(f, "| Ezen az órán nem voltál jelen.")?;
         }
 
         if self.cancelled() {
-            writeln!(f, "Ez az óra elmarad{}.", {
+            writeln!(f, "| Ez az óra elmarad{}.", {
                 if !self.forecoming() {
                     "t"
                 } else {
@@ -211,12 +211,12 @@ impl fmt::Display for Lesson {
         if let Some(teacher) = &self.teacher {
             // only show teacher, if there is no alternative one
             if self.alt_teacher.is_none() {
-                writeln!(f, "{teacher}")?;
+                write!(f, "| {teacher}")?;
             }
         }
 
         if let Some(helyettes_tanar) = &self.alt_teacher {
-            writeln!(f, "Helyettesítő tanár: {helyettes_tanar}")?;
+            write!(f, "| Helyettesítő tanár: {helyettes_tanar}")?;
         }
 
         Ok(())

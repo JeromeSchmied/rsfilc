@@ -311,6 +311,7 @@ impl User {
             for (i, lesson) in lessons.iter().enumerate() {
                 print!("\n\n{lesson}");
                 if lesson.shite() {
+                    fill_under(&lesson.to_string(), '|');
                     continue;
                 }
 
@@ -318,12 +319,13 @@ impl User {
                     ancd.orarendi_ora_oraszama
                         .is_some_and(|x| x as usize == i + 1)
                 }) {
-                    println!("{}: {}", test.kind(), test.temaja);
+                    print!("\n| {}: {}", test.kind(), test.temaja);
                 }
 
-                if lesson.happening() {
-                    println!("###################################");
-                }
+                fill_under(
+                    &lesson.to_string(),
+                    if lesson.happening() { '$' } else { '-' },
+                );
             }
         }
     }
