@@ -273,16 +273,16 @@ fn main() -> Res<()> {
         Commands::Schools { search } => {
             let schools = School::get_from_refilc()?;
             if let Some(school_name) = search {
-                let found = School::search(&school_name, &schools);
+                let found = School::search(&schools, &school_name);
                 for school in found {
-                    println!("{school}");
-                    println!("\n---------------------------\n");
+                    print!("\n\n{school}");
+                    fill_under(&school.to_string(), '-');
                 }
             } else {
                 info!("listing schools");
                 for school in schools {
-                    println!("{school}");
-                    println!("\n---------------------------\n");
+                    print!("\n\n{school}");
+                    fill_under(&school.to_string(), '-');
                 }
             }
         }

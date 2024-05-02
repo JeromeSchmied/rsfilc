@@ -118,7 +118,7 @@ pub enum Commands {
     /// information about all schools in the `Kréta` database
     Schools {
         /// search for school
-        #[arg(short, long)]
+        #[arg(short, long, name = "SCHOOL_PROPERTY")]
         search: Option<String>,
     },
 }
