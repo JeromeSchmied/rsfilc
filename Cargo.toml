@@ -1,6 +1,6 @@
 [package]
 name = "rsfilc"
-version = "0.5.19"
+version = "0.5.20"
 edition = "2021"
 authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
 description = "A Kréta API and client(cli and TUI: todo!) written entirely in Rust from the ground up."
@@ -21,6 +21,7 @@ fern = "0.6.2"
 hmac = "0.12.1"
 log = "0.4.21"
 reqwest = { version = "0.12.1", features = ["blocking"] }
+rpassword = "7.3.1"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
 sha2 = "0.10.8"

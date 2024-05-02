@@ -75,13 +75,7 @@ impl User {
         }
         info!("recieved username {username} from cli");
 
-        print!("password: ");
-        io::stdout().flush().unwrap();
-        let mut password = String::new();
-        io::stdin()
-            .read_line(&mut password)
-            .expect("couldn't read password");
-        let password = password.trim();
+        let password = rpassword::prompt_password("password: ").unwrap();
         if password.is_empty() {
             println!("password is required");
             return None;
@@ -101,7 +95,7 @@ impl User {
         }
         info!("recieved school_id {school_id} from cli");
 
-        let user = Self::new(username, password, school_id);
+        let user = Self::new(username, &password, school_id);
         if let Ok(name) = user.name() {
             println!("Hi {name}, nice to see you!");
         } else {
