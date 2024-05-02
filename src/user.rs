@@ -22,6 +22,11 @@ use std::{
     io::{self, Write},
 };
 
+/// endpoint
+pub const fn ep() -> &'static str {
+    "/ellenorzo/V3/Sajat/TanuloAdatlap"
+}
+
 /// Kréta, app user
 #[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct User {
@@ -36,11 +41,6 @@ impl User {
     /// get name of [`User`]
     pub fn name(&self) -> String {
         self.info().expect("couldn't get user info").name
-    }
-
-    /// endpoint
-    pub const fn ep() -> &'static str {
-        "/ellenorzo/V3/Sajat/TanuloAdatlap"
     }
 
     /// create new instance of [`User`]
@@ -335,7 +335,7 @@ impl User {
         info!("recieved information about user");
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + User::ep())
+            .get(base(&self.school_id) + user::ep())
             .headers(self.headers()?)
             .send()?;
         let text = res.text()?;
