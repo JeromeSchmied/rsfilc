@@ -52,7 +52,7 @@ pub fn current_lessons(lessons: &[Lesson]) -> Vec<&Lesson> {
     info!("searching for current lesson(s)");
     lessons
         .iter()
-        .filter(|lsn| lsn.happening() && lsn.cancelled())
+        .filter(|lsn| lsn.happening() && !lsn.cancelled())
         .collect()
 }
 /// Returns the next [`Lesson`] of this [`User`] from `lessons` which shall include today's [`Lesson`]s.

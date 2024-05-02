@@ -57,15 +57,19 @@ pub fn log_path(kind: &str) -> PathBuf {
         .expect("couldn't find cache path")
         .join([kind, ".log"].concat())
 }
-/// get path for `Downloads`
+/// get path for `Downloads/rsfilc`, and create it if doesn't exist yet
 pub fn download_dir() -> PathBuf {
-    if let Some(default_dl) = dirs::download_dir() {
-        default_dl
+    let dl_dir = if let Some(default_dl) = dirs::download_dir() {
+        default_dl.join("rsfilc")
     } else if let Some(home) = dirs::home_dir() {
-        home.join("Downloads")
+        home.join("Downloads").join("rsfilc")
     } else {
         panic!("couldn't find Downloads directory");
+    };
+    if !dl_dir.exists() {
+        fs::create_dir_all(&dl_dir).unwrap();
     }
+    dl_dir
 }
 
 /// format date so it looks pretty with hungarian text

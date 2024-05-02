@@ -1,6 +1,6 @@
 //! messaging with teachers and staff
 
-use crate::{pretty_date, Res};
+use crate::{download_dir, pretty_date, Res};
 use chrono::{DateTime, Local};
 use serde::Deserialize;
 use serde_json::Value;
@@ -8,6 +8,7 @@ use std::{
     collections::HashMap,
     fmt,
     io::{Read, Write},
+    path::PathBuf,
     process::{Child, Command, Stdio},
 };
 
@@ -69,6 +70,13 @@ pub struct Attachment {
     /// id
     #[serde(rename(deserialize = "azonosito"))]
     pub id: u64,
+}
+
+impl Attachment {
+    /// Returns the path where this [`Attachment`] shall be downloaded.
+    pub fn download_to(&self) -> PathBuf {
+        download_dir().join(&self.file_name)
+    }
 }
 
 /// the message itself
@@ -231,7 +239,7 @@ impl fmt::Display for Msg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Tárgy: {}", self.subj())?;
         for am in &self.attachments() {
-            writeln!(f, "Csatolmány: {}", am.file_name)?;
+            writeln!(f, "Csatolmány: {}", am.download_to().display())?;
         }
         writeln!(f, "Kiküldve: {}", pretty_date(&self.time_sent()))?;
         writeln!(f, "Feladó: {} {}", self.sender(), self.sender_title())?;

@@ -499,7 +499,7 @@ impl User {
     /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
     pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
         for am in msg.attachments() {
-            info!("downloading {}", am.file_name);
+            info!("downloading file://{}", am.download_to().display());
             let mut f = File::create(download_dir().join(&am.file_name))?;
 
             let client = Client::new();
