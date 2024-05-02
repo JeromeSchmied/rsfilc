@@ -1,8 +1,6 @@
 //! evaluations/grades the user recieved
 
-use crate::pretty_date;
-use chrono::{DateTime, Local};
-use log::info;
+use crate::*;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -11,35 +9,45 @@ use std::{collections::HashMap, fmt};
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Eval {
-    // /// the time it was saved to `Kréta`
+    // /// the time it was saved to `Kréta`?
+    // #[serde(rename(deserialize = "RogzitesDatuma"))]
     // rogzites_datuma: String,
-    /// the time it was actually earned
-    keszites_datuma: String,
+    /// the time it was actually earned?
+    #[serde(rename(deserialize = "KeszitesDatuma"))]
+    earned: String,
 
     /// subject: information about the type of the lesson: eg.: maths, history
-    tantargy: Option<HashMap<String, Value>>,
+    #[serde(rename(deserialize = "Tantargy"))]
+    subject: Option<HashMap<String, Value>>,
 
     /// topic of the evaluation
-    tema: Option<String>,
+    #[serde(rename(deserialize = "Tema"))]
+    topic: Option<String>,
 
     /// type of it
-    tipus: Option<HashMap<String, String>>,
+    #[serde(rename(deserialize = "Tipus"))]
+    kind: Option<HashMap<String, String>>,
 
     /// type of it ?
-    r#mod: Option<HashMap<String, String>>,
+    #[serde(rename(deserialize = "Mod"))]
+    another_kind: Option<HashMap<String, String>>,
 
     /// name of the teacher who made the evaluation
-    ertekelo_tanar_neve: Option<String>,
+    #[serde(rename(deserialize = "ErtekeloTanarNeve"))]
+    teacher: Option<String>,
 
     // /// type, again?
     // jelleg: String,
     /// with number (1,2,3,4,5)
-    szam_ertek: Option<u8>,
+    #[serde(rename(deserialize = "SzamErtek"))]
+    with_num: Option<u8>,
     /// with text and number actually (Elégtelen(1), Elégséges(2), Közepes(3), Jó(4), Példás(5))
-    szoveges_ertek: String,
+    #[serde(rename(deserialize = "SzovegesErtek"))]
+    with_txt: String,
 
     /// weigth in % (about: 0-5000 ?)
-    suly_szazalek_erteke: Option<u16>,
+    #[serde(rename(deserialize = "SulySzazalekErteke"))]
+    weight_in_percent: Option<u16>,
 
     /// not needed
     #[serde(flatten)]
@@ -55,7 +63,7 @@ impl Eval {
     /// Eg. "magyar_nyelv_es_irodalom"
     pub fn subject_id(&self) -> Option<String> {
         Some(
-            self.tantargy
+            self.subject
                 .as_ref()?
                 .get("Kategoria")?
                 .get("Nev")?
@@ -69,7 +77,7 @@ impl Eval {
     /// Eg. "Magyar nyelv és irodalom"
     pub fn subject_name(&self) -> Option<String> {
         Some(
-            self.tantargy
+            self.subject
                 .as_ref()?
                 .get("Kategoria")?
                 .get("Leiras")?
@@ -82,7 +90,7 @@ impl Eval {
     /// Returns the kind of this [`Eval`].
     /// Eg. "Memoriter"
     fn kind(&self) -> Option<String> {
-        Some(self.r#mod.as_ref()?.get("Leiras")?.to_owned())
+        Some(self.another_kind.as_ref()?.get("Leiras")?.to_owned())
     }
 
     /// Returns the date when earned of this [`Eval`].
@@ -91,7 +99,7 @@ impl Eval {
     ///
     /// Panics if `keszites_datuma` is invalid date-time.
     pub fn earned(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.keszites_datuma)
+        DateTime::parse_from_rfc3339(&self.earned)
             .expect("couldn't parse veg_idopont")
             .into()
     }
@@ -127,7 +135,7 @@ impl Eval {
         });
 
         let sum = evals.clone().fold(0, |sum, cur| {
-            sum + cur.szam_ertek.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
+            sum + cur.with_num.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
         });
 
         let count = evals
@@ -140,26 +148,26 @@ impl Eval {
     /// Returns the multiplication value from percent of this [`Eval`].
     /// Eg. for 100% -> 1
     fn multi_from_percent(&self) -> u8 {
-        (self.suly_szazalek_erteke.unwrap_or(100) / 100) as u8
+        (self.weight_in_percent.unwrap_or(100) / 100) as u8
     }
 
     /// Returns the type id of this [`Eval`].
     /// Eg. "evkozi_jegy_ertekeles"
     fn type_id(&self) -> Option<String> {
-        Some(self.tipus.as_ref()?.get("Nev")?.to_owned())
+        Some(self.kind.as_ref()?.get("Nev")?.to_owned())
     }
 }
 
 impl fmt::Display for Eval {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(desc) = &self.tema {
+        if let Some(desc) = &self.topic {
             write!(f, "{desc}: ")?;
         }
-        writeln!(f, "{}", self.szoveges_ertek)?;
+        writeln!(f, "{}", self.with_txt)?;
         if let Some(subject) = self.subject_name() {
             writeln!(f, "Tantárgy: {subject}")?;
         }
-        if let Some(teacher) = &self.ertekelo_tanar_neve {
+        if let Some(teacher) = &self.teacher {
             writeln!(f, "Értékelő tanár: {teacher}")?;
         }
 
@@ -227,11 +235,11 @@ mod tests {
 
         let eval = eval.unwrap();
 
-        assert_eq!(eval.tema, Some("Villon".to_string()));
-        assert_eq!(eval.ertekelo_tanar_neve, Some("Teszt Tamás".to_owned()));
-        assert_eq!(eval.szam_ertek, Some(5));
-        assert_eq!(eval.szoveges_ertek, "Jeles(5)");
-        assert_eq!(eval.suly_szazalek_erteke, Some(100));
+        assert_eq!(eval.topic, Some("Villon".to_string()));
+        assert_eq!(eval.teacher, Some("Teszt Tamás".to_owned()));
+        assert_eq!(eval.with_num, Some(5));
+        assert_eq!(eval.with_txt, "Jeles(5)");
+        assert_eq!(eval.weight_in_percent, Some(100));
         assert_eq!(
             eval.subject_id(),
             Some("magyar_nyelv_es_irodalom".to_owned())
