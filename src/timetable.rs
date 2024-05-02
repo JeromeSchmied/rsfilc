@@ -64,7 +64,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     info!("searching for next lesson");
     lessons
         .iter()
-        .filter(|lsn| lsn.forecoming())
+        .filter(|lsn| lsn.forecoming() && !lsn.false_positive())
         .collect::<Vec<_>>()
         .first()
         .copied()
@@ -166,6 +166,12 @@ impl Lesson {
     /// Returns whether this [`Lesson`] is a forecoming one: to be done.
     pub fn forecoming(&self) -> bool {
         self.start() > Local::now()
+    }
+
+    /// Returns whether this [`Lesson`] is just false positive, meaning it's just a title for a day.
+    pub fn false_positive(&self) -> bool {
+        let dur = (self.end() - self.start()).num_milliseconds();
+        dur == 0
     }
 }
 impl fmt::Display for Lesson {
