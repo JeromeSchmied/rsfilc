@@ -25,9 +25,8 @@ pub struct ApiUrls {
     global_mobile_api_url_prod: String,
 }
 impl ApiUrls {
-    pub fn api_url() -> String {
+    pub fn api_url() -> &'static str {
         "https://kretamobile.blob.core.windows.net/configuration/ConfigurationDescriptor.json"
-            .to_string()
     }
     pub fn get() -> Res<ApiUrls> {
         let res = reqwest::blocking::get(ApiUrls::api_url())?;
