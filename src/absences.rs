@@ -51,11 +51,11 @@ impl Abs {
         DateTime::parse_from_rfc3339(
             self.lesson
                 .get("KezdoDatum")
-                .expect("couldn't find starting date")
+                .unwrap()
                 .to_string()
                 .trim_matches('"'),
         )
-        .expect("invalid date-time")
+        .unwrap()
         .into()
     }
     /// Returns the end date of this [`Abs`].
@@ -69,15 +69,15 @@ impl Abs {
         DateTime::parse_from_rfc3339(
             self.lesson
                 .get("VegDatum")
-                .expect("couldn't find starting date")
+                .unwrap()
                 .to_string()
                 .trim_matches('"'),
         )
-        .expect("invalid date-time")
+        .unwrap()
         .into()
     }
     /// Returns whether the [`Abs`] has been verified.
-    pub fn verif(&self) -> bool {
+    pub fn verified(&self) -> bool {
         self.verification_status == "Igazolt"
     }
     /// Returns the subject of the lesson which was missed in this [`Abs`].
@@ -111,7 +111,7 @@ impl fmt::Display for Abs {
             pretty_date(&self.end()),
         )?;
 
-        if self.verif() {
+        if self.verified() {
             writeln!(f, "igazolt")?;
         } else {
             writeln!(f, "igazolatlan")?;
@@ -184,6 +184,6 @@ mod tests {
         assert_eq!(abs.mins_late, None);
         assert_eq!(abs.teacher, "Teszt Lajos");
         assert_eq!(abs.verification_status, "Igazolt");
-        assert!(abs.verif());
+        assert!(abs.verified());
     }
 }

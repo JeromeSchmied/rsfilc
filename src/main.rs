@@ -197,7 +197,7 @@ fn main() -> Res<()> {
                 println!("Összes hiányzásod száma: {}", absences.len());
                 println!(
                     "Ebből még igazolatlan: {}",
-                    absences.iter().filter(|item| !item.verif()).count()
+                    absences.iter().filter(|item| !item.verified()).count()
                 );
                 return Ok(());
             }
