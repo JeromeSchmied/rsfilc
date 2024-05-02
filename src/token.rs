@@ -3,6 +3,11 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
+/// access [`Token`] endpoint
+pub const fn ep() -> &'static str {
+    "/connect/token"
+}
+
 /// Token
 ///
 /// consists of
@@ -20,9 +25,4 @@ pub struct Token {
     #[serde(flatten)]
     _extra: HashMap<String, serde_json::Value>,
 }
-impl Token {
-    /// access [`Token`] endpoint
-    pub const fn ep() -> &'static str {
-        "/connect/token"
-    }
-}
+impl Token {}

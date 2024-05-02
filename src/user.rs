@@ -273,7 +273,7 @@ impl User {
 
         let client = Client::new();
         let res = client
-            .post([endpoints::IDP, Token::ep()].concat())
+            .post([endpoints::IDP, token::ep()].concat())
             .headers(headers)
             .form(&data)
             .send()?;
