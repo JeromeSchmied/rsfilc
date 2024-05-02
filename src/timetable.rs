@@ -64,7 +64,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     info!("searching for next lesson");
     lessons
         .iter()
-        .filter(|lsn| lsn.forecoming() && !lsn.false_positive())
+        .filter(|lsn| lsn.forecoming() && !lsn.shite())
         .collect::<Vec<_>>()
         .first()
         .copied()
@@ -73,7 +73,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 /// a lesson
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Lesson {
-    // name of the lesson
+    // subject of the lesson
     #[serde(rename(deserialize = "Nev"))]
     pub subject: String,
     // room in which it will be held
@@ -145,6 +145,7 @@ impl Lesson {
     pub fn end(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.end).unwrap().into()
     }
+
     /// Returns the subject id of this [`Lesson`].
     pub fn subject_id(&self) -> Option<String> {
         Some(
@@ -169,22 +170,28 @@ impl Lesson {
     }
 
     /// Returns whether this [`Lesson`] is just false positive, meaning it's just a title for a day.
-    pub fn false_positive(&self) -> bool {
-        let dur = (self.end() - self.start()).num_milliseconds();
-        dur == 0
+    pub fn shite(&self) -> bool {
+        self.start().signed_duration_since(self.end()).is_zero()
     }
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ", self.subject)?;
+        write!(f, "{}", self.subject)?;
         if let Some(room) = &self.room {
-            writeln!(f, "a(z) {} teremben", room.replace("terem", "").trim())?;
-        } else {
-            writeln!(f)?;
+            writeln!(f, ", {}", room.replace("terem", "").trim())?;
+        }
+
+        if !self.shite() {
+            writeln!(
+                f,
+                "{} -> {}",
+                self.start().format("%H:%M"),
+                self.end().format("%H:%M")
+            )?;
         }
 
         if let Some(tema) = &self.topic {
-            writeln!(f, "Témája: {tema}")?;
+            writeln!(f, "{tema}")?;
         }
 
         if self.absent() {
@@ -192,20 +199,20 @@ impl fmt::Display for Lesson {
         }
 
         if self.cancelled() {
-            writeln!(f, "Ez az óra elmaradt.")?;
-        }
-
-        if !self.start().signed_duration_since(self.end()).is_zero() {
-            writeln!(
-                f,
-                "{} -> {}",
-                self.start().time().format("%H:%M"),
-                self.end().time().format("%H:%M")
-            )?;
+            writeln!(f, "Ez az óra elmarad{}.", {
+                if !self.forecoming() {
+                    "t"
+                } else {
+                    ""
+                }
+            })?;
         }
 
         if let Some(teacher) = &self.teacher {
-            writeln!(f, "Tanár: {teacher}")?;
+            // only show teacher, if there is no alternative one
+            if self.alt_teacher.is_none() {
+                writeln!(f, "{teacher}")?;
+            }
         }
 
         if let Some(helyettes_tanar) = &self.alt_teacher {
@@ -293,5 +300,6 @@ mod tests {
         assert!(!lesson.cancelled());
         assert!(!lesson.absent());
         assert_eq!(lesson.subject_id(), Some("fizika".to_string()));
+        assert!(!lesson.shite());
     }
 }

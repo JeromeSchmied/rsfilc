@@ -310,6 +310,9 @@ impl User {
                 .expect("couldn't fetch announced tests");
             for (i, lesson) in lessons.iter().enumerate() {
                 print!("\n\n{lesson}");
+                if lesson.shite() {
+                    continue;
+                }
 
                 if let Some(test) = todays_tests.iter().find(|ancd| {
                     ancd.orarendi_ora_oraszama
