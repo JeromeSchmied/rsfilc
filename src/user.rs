@@ -37,10 +37,15 @@ pub struct User {
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
     school_id: String,
 }
+impl Default for User {
+    fn default() -> Self {
+        Self::new("", "", "")
+    }
+}
 impl User {
     /// get name of [`User`]
-    pub fn name(&self) -> String {
-        self.info().expect("couldn't get user info").name
+    pub fn name(&self) -> Res<String> {
+        Ok(self.info()?.name)
     }
 
     /// create new instance of [`User`]
@@ -53,7 +58,7 @@ impl User {
     }
 
     /// create a [`User`] from cli and save it!
-    pub fn create() -> Self {
+    pub fn create() -> Option<Self> {
         info!("creating user from cli");
 
         println!("please log in");
@@ -63,6 +68,11 @@ impl User {
         io::stdin()
             .read_line(&mut username)
             .expect("couldn't read username");
+        let username = username.trim();
+        if username.is_empty() {
+            println!("username is required");
+            return None;
+        }
         info!("recieved username {username} from cli");
 
         print!("password: ");
@@ -71,6 +81,11 @@ impl User {
         io::stdin()
             .read_line(&mut password)
             .expect("couldn't read password");
+        let password = password.trim();
+        if password.is_empty() {
+            println!("password is required");
+            return None;
+        }
         info!("recieved password {password} from cli");
 
         print!("school_id: ");
@@ -79,11 +94,22 @@ impl User {
         io::stdin()
             .read_line(&mut school_id)
             .expect("couldn't read school_id");
+        let school_id = school_id.trim();
+        if school_id.is_empty() {
+            println!("school_id is required");
+            return None;
+        }
         info!("recieved school_id {school_id} from cli");
 
-        let user = Self::new(username.trim(), password.trim(), school_id.trim());
+        let user = Self::new(username, password, school_id);
+        if let Ok(name) = user.name() {
+            println!("Hi {name}, nice to see you!");
+        } else {
+            println!("Sorry, couldn't authenticate, make sure you have internet connection and all your credentials are correct.");
+            return None;
+        }
         user.save();
-        user
+        Some(user)
     }
 
     /// Load every saved [`User`] from [`cred_path()`]
@@ -155,8 +181,7 @@ impl User {
                 .contains(&username.to_lowercase())
                 || user
                     .name()
-                    .to_lowercase()
-                    .contains(&username.to_lowercase())
+                    .is_ok_and(|nm| nm.to_lowercase().contains(&username.to_lowercase()))
             {
                 matching_users.push(user);
             }
@@ -469,7 +494,7 @@ impl User {
         Ok(lessons)
     }
 
-    /// get [`Announced`] tests `from` or all
+    /// get [`Announced`] tests `from` `to` or all
     pub fn all_announced(
         &self,
         from: Option<DateTime<Local>>,
