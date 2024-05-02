@@ -534,7 +534,7 @@ impl User {
         }
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Abs::ep())
+            .get(base(&self.school_id) + absences::ep())
             .query(&query)
             .headers(self.headers()?)
             .send()?;
