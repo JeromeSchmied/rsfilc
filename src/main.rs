@@ -223,11 +223,13 @@ fn main() -> Res<()> {
 
             if !reverse {
                 for announced in all_announced.iter().take(number) {
-                    println!("{}", announced);
+                    print!("\n\n{}", announced);
+                    fill_under(&announced.to_string(), '-');
                 }
             } else {
                 for announced in all_announced.iter().take(number).rev() {
-                    println!("{}", announced);
+                    print!("\n\n{}", announced);
+                    fill_under(&announced.to_string(), '-');
                 }
             }
         }

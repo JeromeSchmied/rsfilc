@@ -7,49 +7,58 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
+/// endpoint
+/// "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
+pub const fn ep() -> &'static str {
+    "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
+}
+
 /// announced test
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Ancd {
     /// date of doing test
-    datum: String,
+    #[serde(rename(deserialize = "Datum"))]
+    date: String,
     /// date of entry
-    bejelentes_datuma: String,
+    #[serde(rename(deserialize = "BejelentesDatuma"))]
+    entry_date: String,
 
     /// teacher who entered it
-    rogzito_tanar_neve: String,
+    #[serde(rename(deserialize = "RogzitoTanarNeve"))]
+    teacher_entered: String,
 
     /// nth lesson of that day
-    pub orarendi_ora_oraszama: Option<u8>,
+    #[serde(rename(deserialize = "OrarendiOraOraszama"))]
+    pub nth: Option<u8>,
 
     /// name of the subject
-    tantargy_neve: String,
+    #[serde(rename(deserialize = "TantargyNeve"))]
+    subject: String,
     /// subject: information about the type of the lesson: eg.: maths, history
-    _tantargy: HashMap<String, Value>,
+    #[serde(rename(deserialize = "Tantargy"))]
+    _subject_details: HashMap<String, Value>,
 
     /// topic of the test
-    pub temaja: String,
+    #[serde(rename(deserialize = "Temaja"))]
+    pub topic: String,
 
     /// how it'll be done
-    modja: HashMap<String, Value>,
+    #[serde(rename(deserialize = "Modja"))]
+    kind: HashMap<String, Value>,
 
     /// not needed
     #[serde(flatten)]
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Ancd {
-    /// endpoint
-    /// "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
-    pub const fn ep() -> &'static str {
-        "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
-    }
     /// Returns the entry date of this [`Announced`].
     ///
     /// # Panics
     ///
     /// Panics if data contains invalid date-time.
     pub fn entry_date(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.bejelentes_datuma)
+        DateTime::parse_from_rfc3339(&self.entry_date)
             .expect("invalid date-time")
             .into()
     }
@@ -59,9 +68,7 @@ impl Ancd {
     ///
     /// Panics if data contains invalid date-time.
     pub fn day(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.datum)
-            .expect("invalid date-time")
-            .into()
+        DateTime::parse_from_rfc3339(&self.date).unwrap().into()
     }
     /// Returns the kind of this [`Announced`].
     ///
@@ -69,9 +76,9 @@ impl Ancd {
     ///
     /// Panics if data doesn't contain `kind`.
     pub fn kind(&self) -> String {
-        self.modja
+        self.kind
             .get("Leiras")
-            .expect("couldn't find kind")
+            .unwrap()
             .to_string()
             .trim_matches('"')
             .to_owned()
@@ -79,23 +86,17 @@ impl Ancd {
     /// filter [`Ancd`] tests by `subj`ect
     pub fn filter_by_subject(ancds: &mut Vec<Ancd>, subj: &str) {
         info!("filtering announced tests by subject: {}", subj);
-        ancds.retain(|ancd| {
-            ancd.tantargy_neve
-                .to_lowercase()
-                .contains(&subj.to_lowercase())
-        });
+        ancds.retain(|ancd| ancd.subject.to_lowercase().contains(&subj.to_lowercase()));
     }
 }
 impl fmt::Display for Ancd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.tantargy_neve)?;
-        writeln!(f, "{}", self.temaja)?;
-        writeln!(f, "{}", self.kind())?;
-        writeln!(f, "Írás dátuma: {}", pretty_date(&self.day()))?;
-        writeln!(f, "{}", self.rogzito_tanar_neve)?;
-        writeln!(f, "Bejelentés dátuma: {}", pretty_date(&self.entry_date()))?;
-
-        writeln!(f, "\n---------------------------------\n")?;
+        write!(f, "| {}", self.kind())?;
+        writeln!(f, ", {}", pretty_date(&self.day()))?;
+        write!(f, "| {}", self.subject)?;
+        writeln!(f, ": {}", self.topic)?;
+        writeln!(f, "| {}", self.teacher_entered)?;
+        write!(f, "| Rögzítés dátuma: {}", pretty_date(&self.entry_date()))?;
 
         Ok(())
     }
@@ -140,10 +141,10 @@ mod tests {
         assert!(anc.is_ok(), "{:?}", anc);
         let abs = anc.unwrap();
 
-        assert_eq!(abs.rogzito_tanar_neve, "Teszt Mónika");
-        assert_eq!(abs.orarendi_ora_oraszama, Some(6));
-        assert_eq!(abs.tantargy_neve, "matematika");
-        assert_eq!(abs.temaja, "Matematikai logika");
+        assert_eq!(abs.teacher_entered, "Teszt Mónika");
+        assert_eq!(abs.nth, Some(6));
+        assert_eq!(abs.subject, "matematika");
+        assert_eq!(abs.topic, "Matematikai logika");
         assert_eq!(abs.kind(), "Írásbeli röpdolgozat");
     }
 }

@@ -315,11 +315,11 @@ impl User {
                     continue;
                 }
 
-                if let Some(test) = todays_tests.iter().find(|ancd| {
-                    ancd.orarendi_ora_oraszama
-                        .is_some_and(|x| x as usize == i + 1)
-                }) {
-                    print!("\n| {}: {}", test.kind(), test.temaja);
+                if let Some(test) = todays_tests
+                    .iter()
+                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == i + 1))
+                {
+                    print!("\n| {}: {}", test.kind(), test.topic);
                 }
 
                 fill_under(
@@ -482,7 +482,7 @@ impl User {
         };
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + Ancd::ep())
+            .get(base(&self.school_id) + announced::ep())
             .query(&query)
             .headers(self.headers()?)
             .send()?;
