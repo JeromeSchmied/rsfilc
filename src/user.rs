@@ -302,18 +302,18 @@ impl User {
                         .unwrap()
                 )
             );
+            if first_lesson.shite() {
+                print!("{}", first_lesson);
+                fill_under(&first_lesson.to_string(), '|');
+            }
             let todays_tests = self
                 .all_announced(
-                    Some(lessons.first().expect("ain't no first lesson :(").start()),
-                    Some(lessons.last().expect("no lesson!").end()),
+                    Some(first_lesson.start()),
+                    Some(lessons.last().unwrap().end()),
                 )
                 .expect("couldn't fetch announced tests");
-            for (i, lesson) in lessons.iter().enumerate() {
+            for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
                 print!("\n\n{lesson}");
-                if lesson.shite() {
-                    fill_under(&lesson.to_string(), '|');
-                    continue;
-                }
 
                 if let Some(test) = todays_tests
                     .iter()
