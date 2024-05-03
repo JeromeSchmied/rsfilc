@@ -32,6 +32,7 @@ pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
     username: String,
     /// the password, usually it defaults to the date of birth of the user: `YYYY-MM-DD`
+    /// base64 encoded
     password: String,
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
     school_id: String,
@@ -44,6 +45,7 @@ impl User {
 
     /// create new instance of [`User`]
     pub fn new(username: &str, password: &str, school_id: &str) -> Self {
+        let password = STANDARD.encode(password);
         Self {
             username: username.to_string(),
             password: password.to_string(),
@@ -52,6 +54,7 @@ impl User {
     }
     /// creates dummy [`User`], that won't be saved
     pub fn dummy() -> Self {
+        info!("created dummy user");
         Self::new("", "", "")
     }
 
@@ -281,9 +284,12 @@ impl User {
         headers.insert("X-AuthorizationPolicy-Version", "v2".parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
 
+        let decoded_password = STANDARD.decode(&self.password)?;
+        let decoded_password = String::from_utf8(decoded_password)?;
+
         let mut data = HashMap::new();
         data.insert("userName", self.username.as_str());
-        data.insert("password", &self.password);
+        data.insert("password", &decoded_password /* .decode_64() */);
         data.insert("institute_code", &self.school_id);
         data.insert("grant_type", "password");
         data.insert("client_id", endpoints::CLIENT_ID);
