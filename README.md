@@ -1,8 +1,19 @@
-# [RsFilc](https://codeberg.org/jark/rsfilc): `Kréta` client in [Rust](https://rust-lang.org)
+# [RsFilc](https://codeberg.org/jark/rsfilc): [`E-Kréta`](https://www.e-kreta.hu/) console client in [Rust](https://rust-lang.org)
 
-> `Kréta` is an awful Hungarian electronic school administration system
+> `E-Kréta` is an awful Hungarian electronic school administration system
 
 > [Magyar leírás](README.hu.md)
+
+> # IMPORTANT!
+>
+> When upgrading from `v0.5.21`, credentials have to be recreated.
+> It's necessary, as from `v0.5.22`, base64 encoding is user for password storing.
+>
+> 1. You have to manually find and delete them. A user called Alice would find `credentials` under:
+>     - linux: `/home/alice/.config/rsfilc/credentials.toml`
+>     - windows: `C:\Users\Alice\AppData\Roaming\rsfilc\credentials.toml`
+>     - mac: `/Users/Alice/Library/Application Support/rsfilc/credentials.toml`
+> 2. recreate all users with `rsfilc user --create`
 
 ## Installation
 
