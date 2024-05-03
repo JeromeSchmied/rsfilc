@@ -4,6 +4,8 @@
 
 > [Magyar leírás](README.hu.md)
 
+[![dependency status](https://deps.rs/repo/codeberg/jark/rsfilc/status.svg)](https://deps.rs/repo/codeberg/jark/rsfilc)
+
 > # IMPORTANT!
 >
 > When upgrading from `v0.5.21`, credentials have to be recreated.
