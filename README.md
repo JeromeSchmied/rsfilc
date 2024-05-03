@@ -7,7 +7,7 @@
 > # IMPORTANT!
 >
 > When upgrading from `v0.5.21`, credentials have to be recreated.
-> It's necessary, as from `v0.5.22`, base64 encoding is user for password storing.
+> It's necessary, as from `v0.5.22`, base64 encoding is used for storing passwords.
 >
 > 1. You have to manually find and delete them. A user called Alice would find `credentials` under:
 >     - linux: `/home/alice/.config/rsfilc/credentials.toml`
