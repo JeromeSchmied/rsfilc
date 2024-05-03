@@ -5,7 +5,7 @@ use rsfilc::{Abs, Ancd, Eval, School, User, *};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
-    process::exit,
+    process,
 };
 
 fn main() -> Res<()> {
@@ -46,7 +46,7 @@ fn main() -> Res<()> {
         } else if let Some(created) = User::create() {
             created
         } else {
-            exit(1);
+            process::exit(1);
         }
     } else {
         info!(
