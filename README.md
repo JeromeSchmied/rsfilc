@@ -152,7 +152,7 @@
     -   [ ] absences
     -   [ ] announced tests
     -   [ ] messages
--   [ ] encoding passwords
+-   [x] encoding passwords
 -   [ ] changing passwords
 
 ## TUI

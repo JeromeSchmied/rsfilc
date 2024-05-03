@@ -142,7 +142,7 @@
     -   [ ] hiányzások
     -   [ ] bejelentett számonkérések
     -   [ ] üzenetek
--   [ ] jelszavak titkosítása mentéshez
+-   [x] jelszavak titkosítása mentéshez
 -   [ ] jelszavak módosítása
 -   [ ] ...
 
