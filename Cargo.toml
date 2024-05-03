@@ -6,7 +6,7 @@ authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
 description = "A Kréta API and console client: cli and todo!(\"TUI\"), written entirely in Rust from the ground up."
 keywords = ["kreta", "api", "client", "hungarian"]
 categories = ["command-line-interface"]
-repository = "https://codeberg.org/jark/kreta-rs"
+repository = "https://codeberg.org/jark/rsfilc"
 license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
