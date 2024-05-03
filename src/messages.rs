@@ -254,12 +254,7 @@ impl fmt::Display for Msg {
             )?;
         }
 
-        let head = match self.kind() {
-            MsgKind::Recv => "Beérkezett",
-            MsgKind::Sent => "Elküldve",
-            MsgKind::Del => "Törölve",
-        };
-        writeln!(f, "| {head}: {}", pretty_date(&self.time_sent()))?;
+        writeln!(f, "| {}: {}", self.kind(), pretty_date(&self.time_sent()))?;
         writeln!(
             f,
             "| Feladó: {} {}",
@@ -372,6 +367,20 @@ impl From<&String> for MsgKind {
             "torolt" => Self::Del,
             v => unreachable!("{v} would be invalid, `Kréta` doesn't do that"),
         }
+    }
+}
+impl fmt::Display for MsgKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "{}",
+            match self {
+                MsgKind::Recv => "Beérkezett",
+                MsgKind::Sent => "Elküldve",
+                MsgKind::Del => "Törölve",
+            }
+        )?;
+        Ok(())
     }
 }
 impl MsgKind {
