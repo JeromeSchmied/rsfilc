@@ -1,6 +1,17 @@
-# [RsFilc](https://codeberg.org/jark/rsfilc): Kréta kliens [Rust](https://rust-lang.org)ban
+# [RsFilc](https://codeberg.org/jark/rsfilc): [E-Kréta](https://www.e-kreta.hu/) konzol kliens [Rust](https://rust-lang.org)ban
 
 > [English README](README.md)
+
+> # FONTOS!
+>
+> Ha `v0.5.21`-ről frissítéshez újra kell csinálni a bejelentkezéseket.
+> Ez azért szükséges, mivel a `v0.5.22`-től kezdve `base64` titkosítással vannak tárolva a kódok.
+>
+> 1. Ki kell törölni a régi bejelentkezéseket. Alice ezeket erre találná meg:
+>     - linux: `/home/alice/.config/rsfilc/credentials.toml`
+>     - windows: `C:\Users\Alice\AppData\Roaming\rsfilc\credentials.toml`
+>     - mac: `/Users/Alice/Library/Application Support/rsfilc/credentials.toml`
+> 2. Hozd létre újból a bejelentkezéseket a `rsfilc user --create` használatával.
 
 ## Letöltés
 
@@ -84,7 +95,7 @@
 -   windowson
 -   macOSen
 -   androidon Termuxon
--   mindenen amit támogat a Rust 
+-   mindenen amit támogat a Rust
 
 ## API
 

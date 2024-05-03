@@ -32,14 +32,10 @@ pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
     username: String,
     /// the password, usually it defaults to the date of birth of the user: `YYYY-MM-DD`
+    /// base64 encoded
     password: String,
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
     school_id: String,
-}
-impl Default for User {
-    fn default() -> Self {
-        Self::new("", "", "")
-    }
 }
 impl User {
     /// get name of [`User`]
@@ -49,11 +45,26 @@ impl User {
 
     /// create new instance of [`User`]
     pub fn new(username: &str, password: &str, school_id: &str) -> Self {
+        let password = STANDARD.encode(password);
         Self {
             username: username.to_string(),
             password: password.to_string(),
             school_id: school_id.to_string(),
         }
+    }
+    /// Returns the decoded password of this [`User`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if decode fails.
+    fn decode_password(&self) -> String {
+        let decoded_password = STANDARD.decode(&self.password).unwrap();
+        String::from_utf8(decoded_password).unwrap()
+    }
+    /// creates dummy [`User`], that won't be saved
+    pub fn dummy() -> Self {
+        info!("created dummy user");
+        Self::new("", "", "")
     }
 
     /// create a [`User`] from cli and save it!
@@ -282,9 +293,11 @@ impl User {
         headers.insert("X-AuthorizationPolicy-Version", "v2".parse().unwrap());
         headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
 
+        let decoded_password = self.decode_password();
+
         let mut data = HashMap::new();
         data.insert("userName", self.username.as_str());
-        data.insert("password", &self.password);
+        data.insert("password", &decoded_password);
         data.insert("institute_code", &self.school_id);
         data.insert("grant_type", "password");
         data.insert("client_id", endpoints::CLIENT_ID);
@@ -614,11 +627,34 @@ mod tests {
     use super::*;
 
     #[test]
+    fn en_then_decode() {
+        let orig_passwd = "it's_magic×2004.12.30";
+        let usr = User::new("simon", orig_passwd, "klik00000000");
+        let encoded_passwd = &usr.password;
+
+        assert_ne!(orig_passwd, encoded_passwd);
+        assert_eq!(orig_passwd, usr.decode_password());
+    }
+
+    #[test]
+    fn ser_user() {
+        let user = User::new("Test Paul", "2000.01.01", "klik0000001");
+
+        let user_toml = "\
+username = \"Test Paul\"
+password = \"MjAwMC4wMS4wMQ==\"
+school_id = \"klik0000001\"
+";
+
+        assert_eq!(Ok(user_toml.to_owned()), toml::to_string(&user));
+    }
+
+    #[test]
     fn deser_user() {
         let user = toml::from_str(
             r#"
             username = "Test Paul"
-            password = "2000.01.01"
+            password = "MjAwMC4wMS4wMQ=="
             school_id = "klik0000001"
             "#,
         );
@@ -626,18 +662,6 @@ mod tests {
             Ok(User::new("Test Paul", "2000.01.01", "klik0000001")),
             user
         );
-    }
-
-    #[test]
-    fn ser_user() {
-        let user = User::new("Test Paul", "2000.01.01", "klik0000001");
-
-        let user_toml = r#"username = "Test Paul"
-password = "2000.01.01"
-school_id = "klik0000001"
-"#;
-
-        assert_eq!(Ok(user_toml.to_owned()), toml::to_string(&user));
     }
 
     #[test]
@@ -650,12 +674,12 @@ school_id = "klik0000001"
 
         let user_toml = r#"[[users]]
 username = "Test Paul"
-password = "2000.01.01"
+password = "MjAwMC4wMS4wMQ=="
 school_id = "klik0000001"
 
 [[users]]
 username = "Test Paulina"
-password = "2000.01.02"
+password = "MjAwMC4wMS4wMg=="
 school_id = "klik0000002"
 "#;
 
@@ -672,12 +696,12 @@ school_id = "klik0000002"
 
         let user_toml = r#"[[users]]
 username = "Test Paul"
-password = "2000.01.01"
+password = "MjAwMC4wMS4wMQ=="
 school_id = "klik0000001"
 
 [[users]]
 username = "Test Paulina"
-password = "2000.01.02"
+password = "MjAwMC4wMS4wMg=="
 school_id = "klik0000002"
 "#;
 
