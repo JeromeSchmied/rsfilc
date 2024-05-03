@@ -53,7 +53,7 @@ fn main() -> Res<()> {
             "created dummy user, as it's not needed for {:?} command",
             cli_args.command
         );
-        User::new("", "", "") // dummy user
+        User::dummy() // dummy user
     };
 
     match cli_args.command {

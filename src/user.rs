@@ -36,11 +36,6 @@ pub struct User {
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
     school_id: String,
 }
-impl Default for User {
-    fn default() -> Self {
-        Self::new("", "", "")
-    }
-}
 impl User {
     /// get name of [`User`]
     pub fn name(&self) -> Res<String> {
@@ -54,6 +49,10 @@ impl User {
             password: password.to_string(),
             school_id: school_id.to_string(),
         }
+    }
+    /// creates dummy [`User`], that won't be saved
+    pub fn dummy() -> Self {
+        Self::new("", "", "")
     }
 
     /// create a [`User`] from cli and save it!
