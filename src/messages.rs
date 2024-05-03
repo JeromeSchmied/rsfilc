@@ -94,10 +94,9 @@ pub struct Msg {
     // /// is deleted
     // #[serde(rename(deserialize = "isToroltElem"))]
     // is_torolt_elem: bool,
-
-    // /// kind
-    // #[serde(rename(deserialize = "tipus"))]
-    // tipus: HashMap<String, Value>,
+    /// kind
+    #[serde(rename(deserialize = "tipus"))]
+    kind: HashMap<String, Value>,
     /// the message itself
     #[serde(rename(deserialize = "uzenet"))]
     msg: HashMap<String, Value>,
@@ -118,7 +117,7 @@ impl Msg {
     /// - message doesn't contain `kuldesDatum` key.
     /// - which contains invalid date-time value.
     pub fn time_sent(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&format!("{}Z", self.msg_kv("kuldesDatum")))
+        DateTime::parse_from_rfc3339(&format!("{}Z", self.msg_kv("kuldesDatum").unwrap()))
             .unwrap()
             .into()
     }
@@ -128,13 +127,13 @@ impl Msg {
     /// # Panics
     ///
     /// Panics if data doesn't contain `k`ey.
-    fn msg_kv(&self, k: &str) -> String {
-        self.msg
-            .get(k)
-            .expect("couldn't find key")
-            .to_string()
-            .trim_matches('"')
-            .to_string()
+    fn msg_kv(&self, k: &str) -> Option<String> {
+        Some(self.msg.get(k)?.to_string().trim_matches('"').to_string())
+    }
+
+    /// Returns the kind of this [`Msg`].
+    fn kind(&self) -> MsgKind {
+        MsgKind::from(&self.kind.get("kod").unwrap().to_string())
     }
 
     /// Returns the `subject` of this [`Msg`].
@@ -143,14 +142,10 @@ impl Msg {
     ///
     /// Panics if data doesn't contain `subject`.
     pub fn subj(&self) -> String {
-        self.msg_kv("targy")
+        self.msg_kv("targy").unwrap()
     }
-    /// Returns the `text` of this [`Msg`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if data doesn't contain `text`.
-    pub fn text(&self) -> String {
+    /// Returns the `text` of this [`Msg`] if Some.
+    pub fn text(&self) -> Option<String> {
         self.msg_kv("szoveg")
     }
     /// Returns the `sender` of this [`Msg`].
@@ -159,23 +154,24 @@ impl Msg {
     ///
     /// Panics if data doesn't contain `sender`.
     pub fn sender(&self) -> String {
-        self.msg_kv("feladoNev")
+        self.msg_kv("feladoNev").unwrap()
     }
     /// Returns the `sender_title` of this [`Msg`].
     ///
     /// # Panics
     ///
     /// Panics if data doesn't contain `sender_title`.
-    pub fn sender_title(&self) -> String {
+    pub fn sender_title(&self) -> Option<String> {
         self.msg_kv("feladoTitulus")
     }
     /// Returns the [`Attachment`]s of this [`Msg`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if [`Msg`] doesn't contain attachments field.
     pub fn attachments(&self) -> Vec<Attachment> {
-        serde_json::from_str(&self.msg_kv("csatolmanyok")).expect("couldn't find attachments")
+        let attachments = if let Some(ams) = self.msg_kv("csatolmanyok") {
+            ams
+        } else {
+            return vec![];
+        };
+        serde_json::from_str(&attachments).unwrap_or_else(|_| vec![])
     }
 
     /// render html with a [`Rendr`]
@@ -251,11 +247,35 @@ impl fmt::Display for Msg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "| Tárgy: {}", self.subj())?;
         for am in &self.attachments() {
-            writeln!(f, "| Csatolmány: {}", am.download_to().display())?;
+            writeln!(
+                f,
+                "| Csatolmány: \"file://{}\"",
+                am.download_to().display().to_string().replace(' ', "_")
+            )?;
         }
-        writeln!(f, "| Kiküldve: {}", pretty_date(&self.time_sent()))?;
-        writeln!(f, "| Feladó: {} {}", self.sender(), self.sender_title())?;
-        write!(f, "\n{}", Self::render_html(&self.text()).trim())?;
+
+        let head = match self.kind() {
+            MsgKind::Recv => "Beérkezett",
+            MsgKind::Sent => "Elküldve",
+            MsgKind::Del => "Törölve",
+        };
+        writeln!(f, "| {head}: {}", pretty_date(&self.time_sent()))?;
+        writeln!(
+            f,
+            "| Feladó: {} {}",
+            self.sender(),
+            self.sender_title().unwrap_or_default()
+        )?;
+        write!(
+            f,
+            "\n{}",
+            Self::render_html(
+                &self
+                    .text()
+                    .unwrap_or(String::from("<!doctype html>\n<h1>No message found</h1>"))
+            )
+            .trim()
+        )?;
         // if !self.is_elolvasva {
         //     writeln!(f, "Olvasatlan")?;
         // }
@@ -334,7 +354,7 @@ impl fmt::Display for Rendr {
 }
 
 /// kinds of [`Msg`]
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MsgKind {
     /// recieved
     Recv,
@@ -342,6 +362,17 @@ pub enum MsgKind {
     Sent,
     /// deleted/trashed
     Del,
+}
+
+impl From<&String> for MsgKind {
+    fn from(value: &String) -> Self {
+        match value.to_lowercase().trim_matches('"') {
+            "beerkezett" => Self::Recv,
+            "elkuldott" => Self::Sent,
+            "torolt" => Self::Del,
+            v => unreachable!("{v} would be invalid, `Kréta` doesn't do that"),
+        }
+    }
 }
 impl MsgKind {
     /// get value for this [`MsgKind`]
@@ -468,7 +499,8 @@ mod test {
                 id: 1000000
             }]
         );
+        // assert_eq!(msg.kind(), Some(MsgKind::Recv));
         assert_eq!(msg.sender(), "Dudás Attila");
-        assert_eq!(msg.sender_title(), "igazgató h.");
+        assert_eq!(msg.sender_title(), Some("igazgató h.".to_string()));
     }
 }

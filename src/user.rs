@@ -8,7 +8,6 @@ use crate::{
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Local};
 use hmac::{Hmac, Mac};
-use log::{info, warn};
 use reqwest::{
     blocking::{self, Client},
     header::HeaderMap,
@@ -430,6 +429,8 @@ impl User {
             let msg = self.full_msg(&msg_oview)?;
             msgs.push(msg);
         }
+        let mut logf = log_file("messages")?;
+        write!(logf, "{msgs:?}")?;
 
         Ok(msgs)
     }
