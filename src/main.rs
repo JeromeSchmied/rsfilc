@@ -5,6 +5,7 @@ use rsfilc::{Abs, Ancd, Eval, School, User, *};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
+    process,
 };
 
 fn main() -> Res<()> {
@@ -45,7 +46,7 @@ fn main() -> Res<()> {
         } else if let Some(created) = User::create() {
             created
         } else {
-            return Err("couldn't find valid user".into());
+            process::exit(1);
         }
     } else {
         info!(
