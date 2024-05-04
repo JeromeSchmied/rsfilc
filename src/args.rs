@@ -97,6 +97,9 @@ pub enum Commands {
         /// reverse the output
         #[arg(short, long, default_value_t = false)]
         reverse: bool,
+        /// show tests from the past as well
+        #[arg(short, long, default_value_t = false)]
+        past: bool,
     },
 
     /// managing users of this program

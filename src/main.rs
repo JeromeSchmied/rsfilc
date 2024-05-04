@@ -225,8 +225,10 @@ fn main() -> Res<()> {
             number,
             subject,
             reverse,
+            past,
         } => {
-            let mut all_announced = user.all_announced(None, None)?;
+            let from = if past { None } else { Some(Local::now()) };
+            let mut all_announced = user.all_announced(from, None)?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }
