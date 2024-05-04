@@ -21,6 +21,8 @@ use std::{
     time::Duration,
 };
 
+use self::messages::NaughtyMsg;
+
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
 
@@ -89,7 +91,7 @@ impl User {
         }
         info!("recieved username {username} from cli");
 
-        let password = rpassword::prompt_password("password: ").unwrap();
+        let password = rpassword::prompt_password("password: ").unwrap_or_default();
         if password.is_empty() {
             println!("password is required");
             return None;
@@ -400,7 +402,7 @@ impl User {
         Ok(msg)
     }
 
-    /// get all [`MsgOview`]s, of any [`MsgKind`]
+    /// get up `n` [`MsgOview`]s, of any [`MsgKind`]
     pub fn msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
             self.msg_oviews_of_kind(MsgKind::Recv)?,
@@ -566,6 +568,13 @@ impl User {
         let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
         // let all_announced = serde_json::from_str(&text)?;
         Ok(txt)
+    }
+
+    /// get notes: additional messages the [`User`] recieved.
+    pub fn note_msgs(&self) -> Res<Vec<NaughtyMsg>> {
+        let txt = self.fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])?;
+        let note_msgs = serde_json::from_str(&txt)?;
+        Ok(note_msgs)
     }
 
     /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
