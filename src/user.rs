@@ -371,32 +371,22 @@ impl User {
     /// get [`User`] info
     pub fn info(&self) -> Res<Info> {
         info!("recieved information about user");
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + user::ep())
-            .headers(self.headers()?)
-            .send()?;
-        let text = res.text()?;
-        let mut logf = log_file("info")?;
-        write!(logf, "{text}")?;
 
-        let info = serde_json::from_str(&text)?;
+        let txt = self.fetch(&(base(&self.school_id) + user::ep()), "user_info", &[])?;
+
+        let info = serde_json::from_str(&txt)?;
         Ok(info)
     }
 
     /// get all [`MsgOview`]s of a [`MsgKind`]
     pub fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> Res<Vec<MsgOview>> {
-        let client = Client::new();
-        let res = client
-            .get(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val()))
-            .headers(self.headers()?)
-            .send()?;
+        let txt = self.fetch(
+            &(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val())),
+            "message_overviews",
+            &[],
+        )?;
 
-        let text = res.text()?;
-        let mut logf = log_file("message_overviews")?;
-        write!(logf, "{text}")?;
-
-        let msg = serde_json::from_str(&text)?;
+        let msg = serde_json::from_str(&txt)?;
         info!("recieved message overviews of kind: {:?}", msg_kind);
         Ok(msg)
     }
@@ -417,17 +407,13 @@ impl User {
 
     /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
     pub fn full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
-        let client = Client::new();
-        let res = client
-            .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id))
-            .headers(self.headers()?)
-            .send()?;
+        let txt = self.fetch(
+            &(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id)),
+            "full_message",
+            &[],
+        )?;
 
-        let text = res.text()?;
-        let mut logf = log_file("full_message")?;
-        write!(logf, "{text}")?;
-
-        let msg = serde_json::from_str(&text)?;
+        let msg = serde_json::from_str(&txt)?;
         info!("recieved full message: {:?}", msg);
         Ok(msg)
     }
@@ -468,18 +454,10 @@ impl User {
         if let Some(to) = to {
             query.push(("datumIg", to.to_rfc3339()));
         }
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + evals::ep())
-            .query(&query)
-            .headers(self.headers()?)
-            .send()?;
 
-        let text = res.text()?;
-        let mut logf = log_file("evals")?;
-        write!(logf, "{text}")?;
+        let txt = self.fetch(&(base(&self.school_id) + evals::ep()), "evals", &query)?;
 
-        let mut evals = serde_json::from_str::<Vec<Eval>>(&text)?;
+        let mut evals = serde_json::from_str::<Vec<Eval>>(&txt)?;
         info!("recieved evals");
 
         evals.sort_by(|a, b| {
