@@ -8,57 +8,26 @@ use std::{
 };
 
 fn main() -> Res<()> {
-    // set up logger
-    fern::Dispatch::new()
-        // Perform allocation-free log formatting
-        .format(|out, message, record| {
-            out.finish(format_args!(
-                "{} [{}] {} {}",
-                Local::now(),
-                record.level(),
-                record.target(),
-                message
-            ))
-        })
-        // Add blanket level filter -
-        .level(log::LevelFilter::Info)
-        // Output to stdout, files, and other Dispatch configurations
-        .chain(
-            OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(log_path("rsfilc"))?,
-        )
-        // Apply globally
-        .apply()?;
+    // set up fern
+    set_up_logger()?;
 
     // parse
     let cli_args = Args::parse();
 
     // have a valid user
-    let user = if cli_args.command.user_needed() {
-        let users = User::load_all(); // load every saved user
-        if let Some(default_user) = User::load_conf() {
-            default_user // if specified, load preferred user
-        } else if let Some(loaded_user) = users.first() {
-            loaded_user.clone() // load first user
-        } else if let Some(created) = User::create() {
-            created
-        } else {
-            return Err("couldn't find valid user".into());
-        }
-    } else {
-        info!(
-            "created dummy user, as it's not needed for {:?} command",
-            cli_args.command
-        );
-        User::dummy() // dummy user
-    };
+    let user = create_user(&cli_args)?;
 
+    // handle cli args and execute program
+    run(cli_args, &user)?;
+
+    Ok(())
+}
+
+fn run(cli_args: Args, user: &User) -> Res<()> {
     match cli_args.command {
         Commands::Tui {} => {
             warn!("TUI is not yet written");
-            todo!("TUI is to be written (soon)")
+            todo!("TUI is to be written (soon)");
         }
         Commands::Completions { shell } => {
             info!("creating shell completions for {}", shell);
@@ -292,7 +261,53 @@ fn main() -> Res<()> {
                 }
             }
         }
-    }
+    };
+    Ok(())
+}
 
+fn create_user(cli_args: &Args) -> Res<User> {
+    if cli_args.command.user_needed() {
+        let users = User::load_all(); // load every saved user
+        if let Some(default_user) = User::load_conf() {
+            Ok(default_user) // if specified, load preferred user
+        } else if let Some(loaded_user) = users.first() {
+            Ok(loaded_user.clone()) // load first user
+        } else if let Some(created) = User::create() {
+            Ok(created)
+        } else {
+            return Err("couldn't find valid user".into());
+        }
+    } else {
+        info!(
+            "created dummy user, as it's not needed for {:?} command",
+            cli_args.command
+        );
+        Ok(User::dummy()) // dummy user
+    }
+}
+
+fn set_up_logger() -> Res<()> {
+    fern::Dispatch::new()
+        // Perform allocation-free log formatting
+        .format(|out, message, record| {
+            out.finish(format_args!(
+                "{} [{}] {} {}",
+                Local::now(),
+                record.level(),
+                record.target(),
+                message
+            ))
+        })
+        // Add blanket level filter -
+        .level(log::LevelFilter::Info)
+        // Output to stdout, files, and other Dispatch configurations
+        .chain(
+            OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(log_path("rsfilc"))?,
+        )
+        // Apply globally
+        .apply()?;
     Ok(())
 }
