@@ -1,4 +1,4 @@
-use chrono::{Datelike, Local};
+use chrono::Local;
 use clap::{CommandFactory, Parser};
 use log::*;
 use rsfilc::{Abs, Ancd, Eval, School, User, *};
@@ -93,9 +93,9 @@ fn main() -> Res<()> {
 
             if lessons.is_empty() {
                 println!(
-                    "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
-                    // pretty_date(day)
-                    day_of_week(day.weekday().number_from_monday().try_into().unwrap())
+                    "{} ({}) nincs rögzített órád, juhé!",
+                    from.pretty(),
+                    from.hun_day_of_week()
                 );
                 return Ok(());
             }
