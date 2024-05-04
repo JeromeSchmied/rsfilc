@@ -21,13 +21,13 @@ pub fn parse_day(day: &Option<String>) -> NaiveDate {
             ndate
         } else if date.starts_with('+') || date.ends_with('-') {
             let day_shift = if date.starts_with('+') {
-                date.parse::<i64>().expect("invalid +day shifter")
+                date.parse::<i16>().expect("invalid +day shifter")
             } else {
                 let date = &date[0..date.len() - 1];
-                -date.parse::<i64>().expect("invalid day- shifter")
+                -date.parse::<i16>().expect("invalid day- shifter")
             };
             Local::now()
-                .checked_add_signed(Duration::days(day_shift))
+                .checked_add_signed(Duration::days(day_shift.into()))
                 .expect("invalid datetime")
                 .date_naive()
         } else {

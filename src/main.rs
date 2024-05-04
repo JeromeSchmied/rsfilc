@@ -78,24 +78,25 @@ fn main() -> Res<()> {
             // parse day
             let day = timetable::parse_day(&day);
 
-            let from = day
+            let day_start = day
                 .and_hms_opt(0, 0, 0)
                 .expect("couldn't make from")
                 .and_local_timezone(Local)
                 .unwrap();
-            let to = day
+            let day_end = day
                 .and_hms_opt(23, 59, 59)
                 .expect("couldn't make to")
                 .and_local_timezone(Local)
                 .unwrap();
 
-            let lessons = user.timetable(from, to)?;
+            let lessons = user.timetable(day_start, day_end)?;
 
+            // nice output if no lessons, couldn't be possible in print_day()
             if lessons.is_empty() {
                 println!(
                     "{} ({}) nincs rögzített órád, juhé!",
-                    from.pretty(),
-                    from.hun_day_of_week()
+                    day_start.pretty(),
+                    day_start.hun_day_of_week()
                 );
                 return Ok(());
             }
