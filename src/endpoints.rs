@@ -1,11 +1,5 @@
 //! `Kréta` API
 
-/// base url of school with `school_id`
-/// "https://{school_id}.e-kreta.hu"
-pub fn base(school_id: &str) -> String {
-    format!("https://{school_id}.e-kreta.hu")
-}
-
 /// kreta idp base Url
 pub const IDP: &str = "https://idp.e-kreta.hu";
 /// kreta admin base Url

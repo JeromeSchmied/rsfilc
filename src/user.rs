@@ -1,5 +1,4 @@
 use crate::{
-    endpoints::base,
     information::Info,
     messages::{Msg, MsgKind, MsgOview},
     token::Token,
@@ -280,6 +279,11 @@ impl User {
 
 // interacting with API
 impl User {
+    /// base url of school with `school_id`
+    /// "https://{school_id}.e-kreta.hu"
+    fn base(&self) -> String {
+        format!("https://{}.e-kreta.hu", self.school_id)
+    }
     /// get headers which are necessary for making certain requests
     fn headers(&self) -> Res<HeaderMap> {
         let mut headers = HeaderMap::new();
@@ -372,7 +376,7 @@ impl User {
     pub fn info(&self) -> Res<Info> {
         info!("recieved information about user");
 
-        let txt = self.fetch(&(base(&self.school_id) + user::ep()), "user_info", &[])?;
+        let txt = self.fetch(&(self.base() + user::ep()), "user_info", &[])?;
 
         let info = serde_json::from_str(&txt)?;
         Ok(info)
@@ -455,7 +459,7 @@ impl User {
             query.push(("datumIg", to.to_rfc3339()));
         }
 
-        let txt = self.fetch(&(base(&self.school_id) + evals::ep()), "evals", &query)?;
+        let txt = self.fetch(&(self.base() + evals::ep()), "evals", &query)?;
 
         let mut evals = serde_json::from_str::<Vec<Eval>>(&txt)?;
         info!("recieved evals");
@@ -471,7 +475,7 @@ impl User {
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
     pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
         let txt = self.fetch(
-            &(base(&self.school_id) + timetable::ep()),
+            &(self.base() + timetable::ep()),
             "timetable",
             &[("datumTol", from.to_string()), ("datumIg", to.to_string())],
         )?;
@@ -494,11 +498,7 @@ impl User {
             vec![]
         };
 
-        let txt = self.fetch(
-            &(base(&self.school_id) + announced::ep()),
-            "announced",
-            &query,
-        )?;
+        let txt = self.fetch(&(self.base() + announced::ep()), "announced", &query)?;
 
         let mut all_announced: Vec<Ancd> = serde_json::from_str(&txt)?;
         info!("recieved all announced tests");
@@ -541,11 +541,7 @@ impl User {
         if let Some(to) = to {
             query.push(("datumIg", to.to_rfc3339()));
         }
-        let txt = self.fetch(
-            &(base(&self.school_id) + absences::ep()),
-            "absences",
-            &query,
-        )?;
+        let txt = self.fetch(&(self.base() + absences::ep()), "absences", &query)?;
 
         let mut abss: Vec<Abs> = serde_json::from_str(&txt)?;
         info!("recieved absences");
@@ -555,7 +551,7 @@ impl User {
 
     /// get groups the [`User`] is a member of
     pub fn groups(&self) -> Res<String> {
-        let txt = self.fetch(&(base(&self.school_id) + endpoints::CLASSES), "groups", &[])?;
+        let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
         // let all_announced = serde_json::from_str(&text)?;
         Ok(txt)
     }
