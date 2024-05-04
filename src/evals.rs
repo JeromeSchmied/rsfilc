@@ -174,6 +174,12 @@ impl fmt::Display for Eval {
         if let Some(kind) = &self.kind() {
             writeln!(f, "| {kind}")?;
         }
+        if self.half_year() {
+            writeln!(f, "| Félévi értékelés")?;
+        }
+        if self.end_year() {
+            writeln!(f, "| Év végi értékelés")?;
+        }
         if let Some(teacher) = &self.teacher {
             writeln!(f, "| {teacher}")?;
         }
