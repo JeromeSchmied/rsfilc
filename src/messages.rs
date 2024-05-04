@@ -254,7 +254,7 @@ impl fmt::Display for Msg {
             )?;
         }
 
-        writeln!(f, "| {}: {}", self.kind(), pretty_date(&self.time_sent()))?;
+        writeln!(f, "| {}: {}", self.kind(), &self.time_sent().pretty())?;
         writeln!(
             f,
             "| Feladó: {} {}",

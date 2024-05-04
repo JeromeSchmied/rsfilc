@@ -73,81 +73,91 @@ pub fn download_dir() -> PathBuf {
     dl_dir
 }
 
-/// format date so it looks pretty with hungarian text
-pub fn pretty_date(date: &DateTime<Local>) -> String {
-    let this_year = date.year() == Local::now().year();
-    let day_diff = date.num_days_from_ce() - Local::now().num_days_from_ce();
+/// DateTime methods needed for RsFilc
+pub trait MyDate {
+    /// Practical date format.
+    fn pretty(&self) -> String;
+    /// Get hungarian month.
+    fn hun_month<'a>(&self) -> &'a str;
+    /// Get hungarian day of week.
+    fn hun_day_of_week<'a>(&self) -> &'a str;
+}
+impl MyDate for DateTime<Local> {
+    fn pretty(&self) -> String {
+        let this_year = self.year() == Local::now().year();
+        let day_diff = self.num_days_from_ce() - Local::now().num_days_from_ce();
 
-    if !this_year {
-        format!("{}", date.format("%Y.%m.%d"))
-    } else if day_diff == -1 {
-        format!(
-            "tegnap{}",
-            date.format(if date.hour() == 0 && date.minute() == 0 {
-                ""
-            } else {
-                " %H:%M"
-            })
-        )
-    } else if day_diff == 1 {
-        format!(
-            "holnap{}",
-            date.format(if date.hour() == 0 && date.minute() == 0 {
-                ""
-            } else {
-                " %H:%M"
-            })
-        )
-    } else if day_diff == 0 {
-        format!(
-            "ma{}",
-            date.format(if date.hour() == 0 && date.minute() == 0 {
-                ""
-            } else {
-                " %H:%M"
-            })
-        )
-    } else {
-        format!(
-            "{} {}",
-            month(date.month().try_into().unwrap()),
-            date.format(if date.hour() == 0 && date.minute() == 0 {
-                "%d."
-            } else {
-                "%d. %H:%M"
-            })
-        )
+        if !this_year {
+            format!("{}", self.format("%Y.%m.%d"))
+        } else if day_diff == -1 {
+            format!(
+                "tegnap{}",
+                self.format(if self.hour() == 0 && self.minute() == 0 {
+                    ""
+                } else {
+                    " %H:%M"
+                })
+            )
+        } else if day_diff == 1 {
+            format!(
+                "holnap{}",
+                self.format(if self.hour() == 0 && self.minute() == 0 {
+                    ""
+                } else {
+                    " %H:%M"
+                })
+            )
+        } else if day_diff == 0 {
+            format!(
+                "ma{}",
+                self.format(if self.hour() == 0 && self.minute() == 0 {
+                    ""
+                } else {
+                    " %H:%M"
+                })
+            )
+        } else {
+            format!(
+                "{} {}",
+                self.hun_month(),
+                self.format(if self.hour() == 0 && self.minute() == 0 {
+                    "%d."
+                } else {
+                    "%d. %H:%M"
+                })
+            )
+        }
     }
-}
-/// converts from month as number to month as hungarian text
-pub fn month<'a>(m: u8) -> &'a str {
-    match m {
-        1 => "jan.",
-        2 => "feb.",
-        3 => "már.",
-        4 => "ápr.",
-        5 => "máj.",
-        6 => "jún.",
-        7 => "júl.",
-        8 => "aug.",
-        9 => "szep.",
-        10 => "okt.",
-        11 => "nov.",
-        12 => "dec.",
-        _ => unreachable!("invalid month"),
+
+    fn hun_month<'a>(&self) -> &'a str {
+        match self.month() {
+            1 => "jan.",
+            2 => "feb.",
+            3 => "már.",
+            4 => "ápr.",
+            5 => "máj.",
+            6 => "jún.",
+            7 => "júl.",
+            8 => "aug.",
+            9 => "szep.",
+            10 => "okt.",
+            11 => "nov.",
+            12 => "dec.",
+            _ => unreachable!("invalid month"),
+        }
     }
-}
-/// converts from day as number of week to day as hungarian text
-pub fn day_of_week<'a>(d: u8) -> &'a str {
-    match d {
-        1 => "hétfő",
-        2 => "kedd",
-        3 => "szerda",
-        4 => "csütörtök",
-        5 => "péntek",
-        6 => "szombat",
-        7 => "vasárnap",
-        _ => unreachable!("invalid day of week"),
+
+    fn hun_day_of_week<'a>(&self) -> &'a str {
+        match self.weekday().number_from_monday() {
+            1 => "hétfő",
+            2 => "kedd",
+            3 => "szerda",
+            4 => "csütörtök",
+            5 => "péntek",
+            6 => "szombat",
+            7 => "vasárnap",
+            _ => unreachable!("invalid day of week"),
+        }
     }
 }
 

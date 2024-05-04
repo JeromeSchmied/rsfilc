@@ -94,7 +94,8 @@ fn main() -> Res<()> {
             if lessons.is_empty() {
                 println!(
                     "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
-                    day.weekday()
+                    // pretty_date(day)
+                    day_of_week(day.weekday().number_from_monday().try_into().unwrap())
                 );
                 return Ok(());
             }

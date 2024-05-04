@@ -323,15 +323,8 @@ impl User {
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "    {} ({})",
-                pretty_date(&first_lesson.start()),
-                day_of_week(
-                    first_lesson
-                        .start()
-                        .weekday()
-                        .number_from_monday()
-                        .try_into()
-                        .unwrap()
-                )
+                &first_lesson.start().pretty(),
+                first_lesson.start().hun_day_of_week()
             );
             if first_lesson.shite() {
                 print!("{}", first_lesson);

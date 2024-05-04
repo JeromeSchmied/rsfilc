@@ -171,7 +171,7 @@ impl fmt::Display for Eval {
         if let Some(teacher) = &self.teacher {
             writeln!(f, "| {teacher}")?;
         }
-        write!(f, "| Időpont: {}", pretty_date(&self.earned()))?;
+        write!(f, "| Időpont: {}", &self.earned().pretty())?;
 
         Ok(())
     }

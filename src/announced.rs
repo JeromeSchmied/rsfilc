@@ -1,11 +1,12 @@
 //! Announced tests
 
-use crate::pretty_date;
 use chrono::{DateTime, Local};
 use log::info;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
+
+use crate::MyDate;
 
 /// endpoint
 /// "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
@@ -91,11 +92,11 @@ impl Ancd {
 impl fmt::Display for Ancd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "| {}", self.kind())?;
-        writeln!(f, ", {}", pretty_date(&self.day()))?;
+        writeln!(f, ", {}", &self.day().pretty())?;
         write!(f, "| {}", self.subject)?;
         writeln!(f, ": {}", self.topic)?;
         writeln!(f, "| {}", self.teacher_entered)?;
-        write!(f, "| Rögzítés dátuma: {}", pretty_date(&self.entry_date()))?;
+        write!(f, "| Rögzítés dátuma: {}", &self.entry_date().pretty())?;
 
         Ok(())
     }
