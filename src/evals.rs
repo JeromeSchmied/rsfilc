@@ -125,11 +125,9 @@ impl Eval {
     /// Calculate average of `evals`
     pub fn average(evals: &[Eval]) -> f32 {
         info!("calculating average for evals");
-        let evals = evals.iter().filter(|eval| {
-            !eval
-                .type_id()
-                .is_some_and(|t| t.contains("felevi") || t.contains("evvegi"))
-        });
+        let evals = evals
+            .iter()
+            .filter(|eval| !eval.end_year() && !eval.half_year());
 
         let sum = evals.clone().fold(0, |sum, cur| {
             sum + cur.as_num.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
@@ -152,6 +150,14 @@ impl Eval {
     /// Eg. "evkozi_jegy_ertekeles"
     fn type_id(&self) -> Option<String> {
         Some(self.kind.as_ref()?.get("Nev")?.to_owned())
+    }
+    /// Returns whether this [`Eval`] is half year eval.
+    fn half_year(&self) -> bool {
+        self.type_id().is_some_and(|t| t == "felevi_jegy_ertekeles")
+    }
+    /// Returns whether this [`Eval`] is end of year eval.
+    fn end_year(&self) -> bool {
+        self.type_id().is_some_and(|t| t == "evvegi_jegy_ertekeles")
     }
 }
 
