@@ -37,6 +37,7 @@ pub struct User {
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
     school_id: String,
 }
+// basic stuff
 impl User {
     /// get name of [`User`]
     pub fn name(&self) -> Res<String> {
@@ -228,6 +229,57 @@ impl User {
         Self::load(&config.default_username)
     }
 
+    /// print all lessons of a day
+    pub fn print_day(&self, lessons: &[Lesson]) {
+        if let Some(first_lesson) = lessons.first() {
+            println!(
+                "    {} ({})",
+                &first_lesson.start().pretty(),
+                first_lesson.start().hun_day_of_week()
+            );
+            if first_lesson.shite() {
+                print!("{}", first_lesson);
+                fill_under(&first_lesson.to_string(), '|');
+            }
+            let todays_tests = self
+                .all_announced(
+                    Some(first_lesson.start()),
+                    Some(lessons.last().unwrap().end()),
+                )
+                .expect("couldn't fetch announced tests");
+
+            // number of lessons at the same time
+            let mut same_count = 0;
+
+            for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
+                // calculate `n`. this lesson is
+                let n = if let Some(prev) = lessons.get((i as isize - 1) as usize) {
+                    if prev.same_time(lesson) {
+                        same_count += 1;
+                    }
+                    i + 1 - same_count
+                } else {
+                    i + 1 - same_count
+                };
+                // so fill_under() works fine
+                let mut printer = format!("\n\n{n}. {lesson}");
+
+                if let Some(test) = todays_tests
+                    .iter()
+                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
+                {
+                    printer += &format!("\n| {}: {}", test.kind(), test.topic);
+                }
+                print!("{printer}");
+
+                fill_under(&printer, if lesson.happening() { '$' } else { '-' });
+            }
+        }
+    }
+}
+
+// interacting with API
+impl User {
     /// get headers which are necessary for making certain requests
     fn headers(&self) -> Res<HeaderMap> {
         let mut headers = HeaderMap::new();
@@ -314,54 +366,6 @@ impl User {
         let token = serde_json::from_str(&text)?;
         info!("recieved token");
         Ok(token)
-    }
-
-    /// print all lessons of a day
-    pub fn print_day(&self, lessons: &[Lesson]) {
-        if let Some(first_lesson) = lessons.first() {
-            println!(
-                "    {} ({})",
-                &first_lesson.start().pretty(),
-                first_lesson.start().hun_day_of_week()
-            );
-            if first_lesson.shite() {
-                print!("{}", first_lesson);
-                fill_under(&first_lesson.to_string(), '|');
-            }
-            let todays_tests = self
-                .all_announced(
-                    Some(first_lesson.start()),
-                    Some(lessons.last().unwrap().end()),
-                )
-                .expect("couldn't fetch announced tests");
-
-            // number of lessons at the same time
-            let mut same_count = 0;
-
-            for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
-                // calculate `n`. this lesson is
-                let n = if let Some(prev) = lessons.get((i as isize - 1) as usize) {
-                    if prev.same_time(lesson) {
-                        same_count += 1;
-                    }
-                    i + 1 - same_count
-                } else {
-                    i + 1 - same_count
-                };
-                // so fill_under() works fine
-                let mut printer = format!("\n\n{n}. {lesson}");
-
-                if let Some(test) = todays_tests
-                    .iter()
-                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
-                {
-                    printer += &format!("\n| {}: {}", test.kind(), test.topic);
-                }
-                print!("{printer}");
-
-                fill_under(&printer, if lesson.happening() { '$' } else { '-' });
-            }
-        }
     }
 
     /// get [`User`] info
@@ -488,18 +492,13 @@ impl User {
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
     pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + timetable::ep())
-            .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
-            .headers(self.headers()?)
-            .send()?;
-        let text = res.text()?;
+        let txt = self.fetch(
+            &(base(&self.school_id) + timetable::ep()),
+            "timetable",
+            &[("datumTol", from.to_string()), ("datumIg", to.to_string())],
+        )?;
 
-        let mut logf = log_file("timetable")?;
-        write!(logf, "{text}")?;
-
-        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&text)?;
+        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
         info!("recieved lessons");
         lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
         Ok(lessons)
@@ -516,18 +515,14 @@ impl User {
         } else {
             vec![]
         };
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + announced::ep())
-            .query(&query)
-            .headers(self.headers()?)
-            .send()?;
 
-        let text = res.text()?;
-        let mut logf = log_file("announced")?;
-        write!(logf, "{text}")?;
+        let txt = self.fetch(
+            &(base(&self.school_id) + announced::ep()),
+            "announced",
+            &query,
+        )?;
 
-        let mut all_announced: Vec<Ancd> = serde_json::from_str(&text)?;
+        let mut all_announced: Vec<Ancd> = serde_json::from_str(&txt)?;
         info!("recieved all announced tests");
 
         all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
@@ -568,18 +563,13 @@ impl User {
         if let Some(to) = to {
             query.push(("datumIg", to.to_rfc3339()));
         }
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + absences::ep())
-            .query(&query)
-            .headers(self.headers()?)
-            .send()?;
+        let txt = self.fetch(
+            &(base(&self.school_id) + absences::ep()),
+            "absences",
+            &query,
+        )?;
 
-        let text = res.text()?;
-        let mut logf = log_file("absences")?;
-        write!(logf, "{text}")?;
-
-        let mut abss: Vec<Abs> = serde_json::from_str(&text)?;
+        let mut abss: Vec<Abs> = serde_json::from_str(&txt)?;
         info!("recieved absences");
         abss.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
         Ok(abss)
@@ -587,17 +577,25 @@ impl User {
 
     /// get groups the [`User`] is a member of
     pub fn groups(&self) -> Res<String> {
+        let txt = self.fetch(&(base(&self.school_id) + endpoints::CLASSES), "groups", &[])?;
+        // let all_announced = serde_json::from_str(&text)?;
+        Ok(txt)
+    }
+
+    /// Fetch data.
+    fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
+        // let query = if let Some(q) = query { query } else { vec![] };
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::CLASSES)
+            .get(url)
+            .query(&query)
             .headers(self.headers()?)
             .send()?;
 
         let text = res.text()?;
-        let mut logf = log_file("groups")?;
+        let mut logf = log_file(log)?;
         write!(logf, "{text}")?;
 
-        // let all_announced = serde_json::from_str(&text)?;
         Ok(text)
     }
 }
