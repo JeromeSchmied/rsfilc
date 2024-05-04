@@ -139,9 +139,29 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             }
         }
 
-        Commands::Messages { number, reverse } => {
-            let msgs = user.msgs(None, None, Some(number))?;
+        Commands::Messages {
+            number,
+            reverse,
+            notes,
+        } => {
+            if notes {
+                let notes = user.note_msgs()?;
+                if !reverse {
+                    for note in notes.iter().take(number) {
+                        println!("\n\n\n\n{note}");
+                        fill_under(&note.to_string(), '-');
+                    }
+                } else {
+                    for note in notes.iter().take(number).rev() {
+                        println!("\n\n\n\n{note}");
+                        fill_under(&note.to_string(), '-');
+                    }
+                }
 
+                return Ok(());
+            }
+
+            let msgs = user.msgs(None, None, Some(number))?;
             if !reverse {
                 for msg in msgs.iter() {
                     println!("\n\n\n\n{msg}");

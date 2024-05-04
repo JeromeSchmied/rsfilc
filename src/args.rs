@@ -68,6 +68,9 @@ pub enum Commands {
         /// reverse the output
         #[arg(short, long, default_value_t = false)]
         reverse: bool,
+        /// show additional notes/system messages
+        #[arg(long, default_value_t = false)]
+        notes: bool,
     },
 
     /// information about lessons the user missed
