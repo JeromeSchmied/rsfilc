@@ -61,7 +61,7 @@ impl User {
         let decoded_password = STANDARD.decode(&self.password).unwrap();
         String::from_utf8(decoded_password).unwrap()
     }
-    /// creates dummy [`User`], that won't be saved
+    /// creates dummy [`User`], that won't be saved and shouldn't be used
     pub fn dummy() -> Self {
         info!("created dummy user");
         Self::new("", "", "")
@@ -174,9 +174,9 @@ impl User {
         .expect("couldn't save user");
     }
 
-    /// load [`User`] with [`User::username`] or [`User::name()`] and save it to [`config_path()`]
+    /// load [`User`] with [`User::username`] or [`User::name()`] from [`cred_path()`] and save it to [`config_path()`]
     pub fn load(username: &str) -> Option<Self> {
-        info!("loading user with {}", username);
+        info!("loading user with {username}");
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
@@ -191,7 +191,6 @@ impl User {
             }
         }
         let user = matching_users.first()?;
-
         user.save_to_conf();
 
         Some(user.clone())
@@ -263,9 +262,8 @@ impl User {
 
         // Define the message
         let message = format!(
-            "{}{}{}",
+            "{}{nonce}{}",
             self.school_id.to_uppercase(),
-            nonce,
             self.username.to_uppercase()
         );
 
@@ -391,7 +389,7 @@ impl User {
             .send()?;
 
         let text = res.text()?;
-        let mut logf = log_file("messages")?;
+        let mut logf = log_file("message_overviews")?;
         write!(logf, "{text}")?;
 
         let msg = serde_json::from_str(&text)?;
