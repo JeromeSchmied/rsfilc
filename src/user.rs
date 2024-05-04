@@ -560,17 +560,16 @@ impl User {
         Ok(txt)
     }
 
-    /// Fetch data.
+    /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
     fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
-        // let query = if let Some(q) = query { query } else { vec![] };
         let client = Client::new();
         let res = client
             .get(url)
             .query(&query)
             .headers(self.headers()?)
             .send()?;
-
         let text = res.text()?;
+
         let mut logf = log_file(log)?;
         write!(logf, "{text}")?;
 
