@@ -371,7 +371,7 @@ impl From<&String> for MsgKind {
 }
 impl fmt::Display for MsgKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(
+        write!(
             f,
             "{}",
             match self {

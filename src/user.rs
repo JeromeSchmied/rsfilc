@@ -396,7 +396,7 @@ impl User {
     }
 
     /// get all [`MsgOview`]s, of any [`MsgKind`]
-    pub fn all_msg_oviews(&self) -> Res<Vec<MsgOview>> {
+    pub fn all_msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
             self.msg_oviews_of_kind(MsgKind::Recv)?,
             self.msg_oviews_of_kind(MsgKind::Sent)?,
@@ -405,6 +405,7 @@ impl User {
         .concat();
 
         msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+        let msg_oviews = msg_oviews.drain(0..n).collect();
         info!("recieved every message overview");
         Ok(msg_oviews)
     }
@@ -426,10 +427,13 @@ impl User {
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
+        num: Option<usize>,
     ) -> Res<Vec<Msg>> {
         let mut msgs = Vec::new();
 
-        for msg_oview in self.all_msg_oviews()? {
+        let n = if let Some(n) = num { n } else { usize::MAX };
+
+        for msg_oview in self.all_msg_oviews(n)? {
             // if isn't between `from`-`to`
             if from.is_some_and(|from| msg_oview.sent() < from)
                 || to.is_some_and(|to| msg_oview.sent() > to)
