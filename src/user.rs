@@ -568,6 +568,13 @@ impl User {
         Ok(txt)
     }
 
+    /// get notes the [`User`].
+    pub fn notes(&self) -> Res<String> {
+        let txt = self.fetch(&(self.base() + endpoints::NOTES), "notes", &[])?;
+        // let all_announced = serde_json::from_str(&text)?;
+        Ok(txt)
+    }
+
     /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
     fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
         let client = Client::new();
