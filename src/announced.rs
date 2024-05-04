@@ -91,10 +91,11 @@ impl Ancd {
 }
 impl fmt::Display for Ancd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "| {}", self.kind())?;
-        writeln!(f, ", {}", &self.day().pretty())?;
-        write!(f, "| {}", self.subject)?;
+        write!(f, "| {}", &self.day().pretty())?;
+        write!(f, " {}", self.subject)?;
         writeln!(f, ": {}", self.topic)?;
+
+        writeln!(f, "| {}", self.kind())?;
         writeln!(f, "| {}", self.teacher_entered)?;
         write!(f, "| Rögzítés dátuma: {}", &self.entry_date().pretty())?;
 
