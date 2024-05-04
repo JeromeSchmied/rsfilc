@@ -570,7 +570,7 @@ impl User {
         Ok(txt)
     }
 
-    /// get notes the [`User`].
+    /// get notes: additional messages the [`User`] recieved.
     pub fn note_msgs(&self) -> Res<Vec<NaughtyMsg>> {
         let txt = self.fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])?;
         let note_msgs = serde_json::from_str(&txt)?;
