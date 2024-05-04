@@ -107,8 +107,8 @@ impl fmt::Display for Abs {
         writeln!(
             f,
             "| {} -> {}",
-            pretty_date(&self.start()),
-            pretty_date(&self.end()),
+            &self.start().pretty(),
+            &self.end().pretty(),
         )?;
         if let Some(late) = &self.mins_late {
             writeln!(f, "| Késtél {} percet", late)?;

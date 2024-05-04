@@ -1,4 +1,4 @@
-use chrono::{Datelike, Local};
+use chrono::Local;
 use clap::{CommandFactory, Parser};
 use log::*;
 use rsfilc::{Abs, Ancd, Eval, School, User, *};
@@ -93,8 +93,9 @@ fn main() -> Res<()> {
 
             if lessons.is_empty() {
                 println!(
-                    "Ezen a napon {day} ({}) nincs rögzített órád, juhé!",
-                    day.weekday()
+                    "{} ({}) nincs rögzített órád, juhé!",
+                    from.pretty(),
+                    from.hun_day_of_week()
                 );
                 return Ok(());
             }
@@ -224,8 +225,10 @@ fn main() -> Res<()> {
             number,
             subject,
             reverse,
+            past,
         } => {
-            let mut all_announced = user.all_announced(None, None)?;
+            let from = if past { None } else { Some(Local::now()) };
+            let mut all_announced = user.all_announced(from, None)?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }

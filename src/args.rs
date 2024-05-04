@@ -97,6 +97,9 @@ pub enum Commands {
         /// reverse the output
         #[arg(short, long, default_value_t = false)]
         reverse: bool,
+        /// show tests from the past as well
+        #[arg(short, long, default_value_t = false)]
+        past: bool,
     },
 
     /// managing users of this program
@@ -125,6 +128,17 @@ pub enum Commands {
 impl Commands {
     pub fn user_needed(&self) -> bool {
         info!("checking whether user is needed for task");
+        if let Commands::User {
+            delete,
+            create,
+            switch,
+            list,
+        } = &self
+        {
+            if !delete && !create && switch.is_none() && !list {
+                return true;
+            }
+        }
         !matches!(
             self,
             Commands::Tui {}

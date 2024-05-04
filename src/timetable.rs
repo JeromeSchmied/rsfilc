@@ -71,7 +71,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 }
 
 /// a lesson
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Lesson {
     // subject of the lesson
     #[serde(rename(deserialize = "Nev"))]
@@ -114,7 +114,12 @@ pub struct Lesson {
     #[serde(flatten)]
     _extra: HashMap<String, serde_json::Value>,
 }
+
 impl Lesson {
+    /// The two goddamn [`Lesson`]s should happen in the same time.
+    pub fn same_time(&self, other: &Self) -> bool {
+        self.start() == other.start() && self.end() == other.end()
+    }
     /// Returns whether this [`Lesson`] has been/will be cancelled.
     pub fn cancelled(&self) -> bool {
         self.status
@@ -176,7 +181,7 @@ impl Lesson {
 }
 impl fmt::Display for Lesson {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "| {}", self.subject)?;
+        write!(f, "{}", self.subject)?;
         if let Some(room) = &self.room {
             writeln!(f, ", {}", room.replace("terem", "").trim())?;
         }

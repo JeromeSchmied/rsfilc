@@ -2,6 +2,8 @@
 
 > [English README](README.md)
 
+[![dependency status](https://deps.rs/repo/codeberg/jark/rsfilc/status.svg)](https://deps.rs/repo/codeberg/jark/rsfilc)
+
 > # FONTOS!
 >
 > Ha `v0.5.21`-ről frissítéshez újra kell csinálni a bejelentkezéseket.
@@ -142,7 +144,7 @@
     -   [ ] hiányzások
     -   [ ] bejelentett számonkérések
     -   [ ] üzenetek
--   [ ] jelszavak titkosítása mentéshez
+-   [x] jelszavak titkosítása mentéshez
 -   [ ] jelszavak módosítása
 -   [ ] ...
 

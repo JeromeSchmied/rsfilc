@@ -323,15 +323,8 @@ impl User {
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "    {} ({})",
-                pretty_date(&first_lesson.start()),
-                day_of_week(
-                    first_lesson
-                        .start()
-                        .weekday()
-                        .number_from_monday()
-                        .try_into()
-                        .unwrap()
-                )
+                &first_lesson.start().pretty(),
+                first_lesson.start().hun_day_of_week()
             );
             if first_lesson.shite() {
                 print!("{}", first_lesson);
@@ -343,20 +336,28 @@ impl User {
                     Some(lessons.last().unwrap().end()),
                 )
                 .expect("couldn't fetch announced tests");
+            let mut same_count = 0;
+
             for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
-                print!("\n\n{lesson}");
+                let n = if let Some(prev) = lessons.get((i as isize - 1) as usize) {
+                    if prev.same_time(lesson) {
+                        same_count += 1;
+                    }
+                    i + 1 - same_count
+                } else {
+                    i + 1 - same_count
+                };
+                let mut printer = format!("\n\n{n}. {lesson}");
 
                 if let Some(test) = todays_tests
                     .iter()
-                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == i + 1))
+                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
                 {
-                    print!("\n| {}: {}", test.kind(), test.topic);
+                    printer += &format!("\n| {}: {}", test.kind(), test.topic);
                 }
+                print!("{printer}");
 
-                fill_under(
-                    &lesson.to_string(),
-                    if lesson.happening() { '$' } else { '-' },
-                );
+                fill_under(&printer, if lesson.happening() { '$' } else { '-' });
             }
         }
     }
