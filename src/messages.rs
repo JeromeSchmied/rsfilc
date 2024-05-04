@@ -174,6 +174,93 @@ impl Msg {
         };
         serde_json::from_str(&attachments).unwrap_or_else(|_| vec![])
     }
+}
+impl fmt::Display for Msg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "| Tárgy: {}", self.subj())?;
+        for am in &self.attachments() {
+            writeln!(f, "| Csatolmány: \"file://{}\"", am.download_to().display())?;
+        }
+
+        writeln!(f, "| {}: {}", self.kind(), &self.time_sent().pretty())?;
+        writeln!(
+            f,
+            "| Feladó: {} {}",
+            self.sender(),
+            self.sender_title().unwrap_or_default()
+        )?;
+        write!(
+            f,
+            "\n{}",
+            Rendr::render_html(
+                &self
+                    .text()
+                    .unwrap_or(String::from("<!doctype html>\n<h1>No message found</h1>"))
+            )
+            .trim()
+        )?;
+        // if !self.is_elolvasva {
+        //     writeln!(f, "Olvasatlan")?;
+        // }
+        Ok(())
+    }
+}
+
+/// supported external programs that can render html
+enum Rendr {
+    W3m,
+    Lynx,
+}
+impl Rendr {
+    /// Returns the child process needed for this [`Rendr`].
+    fn child(&self) -> Res<Child> {
+        match self {
+            Rendr::W3m => {
+                let mut w3m_cmd = Command::new("w3m");
+                Ok(w3m_cmd
+                    .args([
+                        "-I",
+                        "utf-8",
+                        "-T",
+                        "text/html",
+                        "-o",
+                        "display_link=true",
+                        "-o",
+                        "display_link_number=true",
+                        "-dump",
+                    ])
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .spawn()?)
+            }
+            Rendr::Lynx => {
+                let mut lynx_cmd = Command::new("lynx");
+                Ok(lynx_cmd
+                    .args([
+                        "-stdin",
+                        "-dump",
+                        "-assume_charset",
+                        "utf-8",
+                        "--display_charset",
+                        "utf-8",
+                    ])
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .spawn()?)
+            }
+        }
+    }
+    /// Returns the other [`Rendr`].
+    fn other(&self) -> Self {
+        match self {
+            Self::W3m => Self::Lynx,
+            Self::Lynx => Self::W3m,
+        }
+    }
+    /// Returns both [`Rendr`]'s name.
+    fn both_name() -> &'static str {
+        "w3m/lynx"
+    }
 
     /// render html with a [`Rendr`]
     fn render_with_external(html: &str, pref: Option<Rendr>) -> Option<String> {
@@ -242,93 +329,6 @@ impl Msg {
         } else {
             Self::vvbhrwi22loc(html)
         }
-    }
-}
-impl fmt::Display for Msg {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "| Tárgy: {}", self.subj())?;
-        for am in &self.attachments() {
-            writeln!(f, "| Csatolmány: \"file://{}\"", am.download_to().display())?;
-        }
-
-        writeln!(f, "| {}: {}", self.kind(), &self.time_sent().pretty())?;
-        writeln!(
-            f,
-            "| Feladó: {} {}",
-            self.sender(),
-            self.sender_title().unwrap_or_default()
-        )?;
-        write!(
-            f,
-            "\n{}",
-            Self::render_html(
-                &self
-                    .text()
-                    .unwrap_or(String::from("<!doctype html>\n<h1>No message found</h1>"))
-            )
-            .trim()
-        )?;
-        // if !self.is_elolvasva {
-        //     writeln!(f, "Olvasatlan")?;
-        // }
-        Ok(())
-    }
-}
-
-/// supported external programs that can render html
-enum Rendr {
-    W3m,
-    Lynx,
-}
-impl Rendr {
-    /// Returns the child process needed for this [`Rendr`].
-    fn child(&self) -> Res<Child> {
-        match self {
-            Rendr::W3m => {
-                let mut w3m_cmd = Command::new("w3m");
-                Ok(w3m_cmd
-                    .args([
-                        "-I",
-                        "utf-8",
-                        "-T",
-                        "text/html",
-                        "-o",
-                        "display_link=true",
-                        "-o",
-                        "display_link_number=true",
-                        "-dump",
-                    ])
-                    .stdin(Stdio::piped())
-                    .stdout(Stdio::piped())
-                    .spawn()?)
-            }
-            Rendr::Lynx => {
-                let mut lynx_cmd = Command::new("lynx");
-                Ok(lynx_cmd
-                    .args([
-                        "-stdin",
-                        "-dump",
-                        "-assume_charset",
-                        "utf-8",
-                        "--display_charset",
-                        "utf-8",
-                    ])
-                    .stdin(Stdio::piped())
-                    .stdout(Stdio::piped())
-                    .spawn()?)
-            }
-        }
-    }
-    /// Returns the other [`Rendr`].
-    fn other(&self) -> Self {
-        match self {
-            Self::W3m => Self::Lynx,
-            Self::Lynx => Self::W3m,
-        }
-    }
-    /// Returns both [`Rendr`]'s name.
-    fn both_name() -> &'static str {
-        "w3m/lynx"
     }
 }
 impl fmt::Display for Rendr {
