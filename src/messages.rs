@@ -410,5 +410,11 @@ pub struct NaughtyMsg {
     _extra: HashMap<String, Value>,
 }
 
+impl NaughtyMsg {
+    pub fn date(&self) -> DateTime<Local> {
+        DateTime::parse_from_rfc3339(&self.date).unwrap().into()
+    }
+}
+
 #[cfg(test)]
 mod tests;
