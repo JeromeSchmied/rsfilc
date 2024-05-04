@@ -336,9 +336,12 @@ impl User {
                     Some(lessons.last().unwrap().end()),
                 )
                 .expect("couldn't fetch announced tests");
+
+            // number of lessons at the same time
             let mut same_count = 0;
 
             for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
+                // calculate `n`. this lesson is
                 let n = if let Some(prev) = lessons.get((i as isize - 1) as usize) {
                     if prev.same_time(lesson) {
                         same_count += 1;
@@ -347,6 +350,7 @@ impl User {
                 } else {
                     i + 1 - same_count
                 };
+                // so fill_under() works fine
                 let mut printer = format!("\n\n{n}. {lesson}");
 
                 if let Some(test) = todays_tests
