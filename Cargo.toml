@@ -1,6 +1,6 @@
 [package]
 name = "rsfilc"
-version = "0.5.26"
+version = "0.5.27"
 edition = "2021"
 authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
 description = "A Kréta API and console client: cli and todo!(\"TUI\"), written entirely in Rust from the ground up."

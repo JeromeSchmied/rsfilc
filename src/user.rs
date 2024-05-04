@@ -396,7 +396,7 @@ impl User {
     }
 
     /// get all [`MsgOview`]s, of any [`MsgKind`]
-    pub fn all_msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
+    pub fn msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
             self.msg_oviews_of_kind(MsgKind::Recv)?,
             self.msg_oviews_of_kind(MsgKind::Sent)?,
@@ -405,6 +405,9 @@ impl User {
         .concat();
 
         msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+        let max_n = msg_oviews.len();
+        // don't exceed the lenght of msg_oviews
+        let n = if n < max_n { n } else { max_n };
         let msg_oviews = msg_oviews.drain(0..n).collect();
         info!("recieved every message overview");
         Ok(msg_oviews)
@@ -422,18 +425,17 @@ impl User {
         info!("recieved full message: {:?}", msg);
         Ok(msg)
     }
-    /// Fetch all [`Msg`]s between `from` and `to`.
+    /// Fetch max `n` [`Msg`]s between `from` and `to`.
     pub fn msgs(
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
         num: Option<usize>,
     ) -> Res<Vec<Msg>> {
+        let n = if let Some(n) = num { n } else { usize::MAX };
         let mut msgs = Vec::new();
 
-        let n = if let Some(n) = num { n } else { usize::MAX };
-
-        for msg_oview in self.all_msg_oviews(n)? {
+        for msg_oview in self.msg_oviews(n)? {
             // if isn't between `from`-`to`
             if from.is_some_and(|from| msg_oview.sent() < from)
                 || to.is_some_and(|to| msg_oview.sent() > to)
@@ -518,7 +520,7 @@ impl User {
     pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
         for am in msg.attachments() {
             info!("downloading file://{}", am.download_to().display());
-            let mut f = File::create(download_dir().join(&am.file_name))?;
+            let mut f = File::create(am.download_to())?;
 
             let client = Client::new();
             client
