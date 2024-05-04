@@ -410,6 +410,7 @@ pub struct NaughtyMsg {
     _extra: HashMap<String, Value>,
 }
 
+/// additional notes/system messages
 impl NaughtyMsg {
     pub fn date(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.date).unwrap().into()
@@ -417,8 +418,9 @@ impl NaughtyMsg {
 }
 impl fmt::Display for NaughtyMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "| {}: {}", self.title, &self.date().pretty())?;
-        writeln!(f, "| Feladó: {}", self.teacher,)?;
+        writeln!(f, "| {}", self.title)?;
+        writeln!(f, "| Időpont: {}", self.date().pretty())?;
+        writeln!(f, "| {}", self.teacher,)?;
         write!(f, "\n{}", Rendr::render_html(&self.msg).trim())?;
         Ok(())
     }
