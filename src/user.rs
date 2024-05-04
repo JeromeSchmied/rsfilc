@@ -21,6 +21,8 @@ use std::{
     time::Duration,
 };
 
+use self::messages::NaughtyMsg;
+
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
 
@@ -400,7 +402,7 @@ impl User {
         Ok(msg)
     }
 
-    /// get all [`MsgOview`]s, of any [`MsgKind`]
+    /// get up `n` [`MsgOview`]s, of any [`MsgKind`]
     pub fn msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
             self.msg_oviews_of_kind(MsgKind::Recv)?,
@@ -569,10 +571,10 @@ impl User {
     }
 
     /// get notes the [`User`].
-    pub fn notes(&self) -> Res<String> {
-        let txt = self.fetch(&(self.base() + endpoints::NOTES), "notes", &[])?;
-        // let all_announced = serde_json::from_str(&text)?;
-        Ok(txt)
+    pub fn note_msgs(&self) -> Res<Vec<NaughtyMsg>> {
+        let txt = self.fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])?;
+        let note_msgs = serde_json::from_str(&txt)?;
+        Ok(note_msgs)
     }
 
     /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].

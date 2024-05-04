@@ -13,7 +13,7 @@ pub const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
 /// nonce
 pub const NONCE: &str = "/nonce";
-/// what are these?
+/// system messages
 pub const NOTES: &str = "/ellenorzo/V3/Sajat/Feljegyzesek";
 /// what are these?
 pub const EVENTS: &str = "/ellenorzo/V3/Sajat/FaliujsagElemek";

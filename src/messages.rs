@@ -391,5 +391,24 @@ impl MsgKind {
     }
 }
 
+/// the message itself
+#[derive(Debug, Deserialize, Clone)]
+pub struct NaughtyMsg {
+    #[serde(rename(deserialize = "Cim"))]
+    title: String,
+
+    #[serde(rename(deserialize = "Datum"))]
+    date: String,
+
+    #[serde(rename(deserialize = "KeszitoTanarNeve"))]
+    teacher: String,
+
+    #[serde(rename(deserialize = "TartalomFormazott"))]
+    msg: String,
+
+    #[serde(flatten)]
+    _extra: HashMap<String, Value>,
+}
+
 #[cfg(test)]
 mod tests;
