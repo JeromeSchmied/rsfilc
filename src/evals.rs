@@ -129,14 +129,17 @@ impl Eval {
             .iter()
             .filter(|eval| !eval.end_year() && !eval.half_year());
 
+        // filter it, so only valid grades retain
+        let ghosts = ghosts.iter().filter(|g| *g > &0 && *g <= &5);
+
         let sum = evals.clone().fold(0, |sum, cur| {
             sum + cur.as_num.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
-        }) + ghosts.iter().fold(0u16, |sum, num| sum + *num as u16);
+        }) + ghosts.clone().fold(0u16, |sum, num| sum + *num as u16);
 
         let count = evals
             .clone()
             .fold(0, |sum, cur| sum + cur.multi_from_percent() as usize)
-            + ghosts.len();
+            + ghosts.count();
 
         sum as f32 / count as f32
     }
