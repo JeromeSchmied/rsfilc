@@ -18,7 +18,11 @@ use std::{
     fmt::Debug,
     fs::{self, File, OpenOptions},
     io::{self, Write},
+    time::Duration,
 };
+
+/// default timeout for api requests
+const TIMEOUT: Duration = Duration::new(24, 0);
 
 /// endpoint
 pub const fn ep() -> &'static str {
@@ -361,6 +365,7 @@ impl User {
             .post([endpoints::IDP, token::ep()].concat())
             .headers(headers)
             .form(&data)
+            .timeout(TIMEOUT)
             .send()?;
 
         let text = res.text()?;
@@ -526,6 +531,7 @@ impl User {
             client
                 .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
                 .headers(self.headers()?)
+                .timeout(TIMEOUT)
                 .send()?
                 .copy_to(&mut f)?;
 
@@ -569,6 +575,7 @@ impl User {
             .get(url)
             .query(&query)
             .headers(self.headers()?)
+            .timeout(TIMEOUT)
             .send()?;
         let text = res.text()?;
 

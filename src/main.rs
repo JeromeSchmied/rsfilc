@@ -91,6 +91,7 @@ fn main() -> Res<()> {
 
             let lessons = user.timetable(day_start, day_end)?;
 
+            // nice output if no lessons, couldn't be possible in print_day()
             if lessons.is_empty() {
                 println!(
                     "{} ({}) nincs rögzített órád, juhé!",
