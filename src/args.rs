@@ -58,6 +58,9 @@ pub enum Commands {
         /// number of entries to show
         #[arg(short, long, default_value_t = NUM)]
         number: usize,
+        /// ghost evals, requires `--average`
+        // #[arg(short, long)]
+        ghost: Vec<u8>,
     },
 
     /// messages the user either recieved or sent

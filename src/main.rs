@@ -107,6 +107,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             number,
             average,
             reverse,
+            ghost,
         } => {
             let mut evals = user.evals(None, None)?;
             info!("got evals");
@@ -120,8 +121,14 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             let mut logf = log_file("evals_filtered")?;
             write!(logf, "{:?}", evals)?;
 
+            // ghost without average has no effect
+            if !ghost.is_empty() && !average {
+                return Err("Oyy! Didn't I tell you to use `ghost` with `average`?".into());
+            }
+
             if average {
-                println!("Average: {}", Eval::average(&evals));
+                let avg = Eval::average(&evals, &ghost);
+                println!("Average: {avg}");
 
                 return Ok(());
             }
