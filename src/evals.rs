@@ -122,8 +122,8 @@ impl Eval {
         });
     }
 
-    /// Calculate average of `evals`
-    pub fn average(evals: &[Eval]) -> f32 {
+    /// Calculate average of `evals` and `ghosts` evals
+    pub fn average(evals: &[Eval], ghosts: &[u8]) -> f32 {
         info!("calculating average for evals");
         let evals = evals
             .iter()
@@ -131,11 +131,12 @@ impl Eval {
 
         let sum = evals.clone().fold(0, |sum, cur| {
             sum + cur.as_num.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
-        });
+        }) + ghosts.iter().fold(0u16, |sum, num| sum + *num as u16);
 
         let count = evals
             .clone()
-            .fold(0, |sum, cur| sum + cur.multi_from_percent() as u16);
+            .fold(0, |sum, cur| sum + cur.multi_from_percent() as usize)
+            + ghosts.len();
 
         sum as f32 / count as f32
     }
