@@ -337,14 +337,15 @@ impl User {
                 )
                 .expect("couldn't fetch announced tests");
             for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
-                print!("\n\n{lesson}");
+                let mut printer = format!("\n\n{lesson}");
 
                 if let Some(test) = todays_tests
                     .iter()
                     .find(|ancd| ancd.nth.is_some_and(|x| x as usize == i + 1))
                 {
-                    print!("\n| {}: {}", test.kind(), test.topic);
+                    printer += &format!("\n| {}: {}", test.kind(), test.topic);
                 }
+                print!("{printer}");
 
                 fill_under(
                     &lesson.to_string(),
