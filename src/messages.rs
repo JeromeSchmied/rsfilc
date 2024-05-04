@@ -415,6 +415,14 @@ impl NaughtyMsg {
         DateTime::parse_from_rfc3339(&self.date).unwrap().into()
     }
 }
+impl fmt::Display for NaughtyMsg {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "| {}: {}", self.title, &self.date().pretty())?;
+        writeln!(f, "| Feladó: {}", self.teacher,)?;
+        write!(f, "\n{}", Rendr::render_html(&self.msg).trim())?;
+        Ok(())
+    }
+}
 
 #[cfg(test)]
 mod tests;
