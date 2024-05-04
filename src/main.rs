@@ -171,16 +171,16 @@ fn main() -> Res<()> {
         }
 
         Commands::Messages { number, reverse } => {
-            let msgs = user.msgs(None, None)?;
+            let msgs = user.msgs(None, None, Some(number))?;
 
             if !reverse {
-                for msg in msgs.iter().take(number) {
+                for msg in msgs.iter() {
                     println!("\n\n\n\n{msg}");
                     fill_under(&msg.to_string(), '-');
                     user.download_attachments(msg)?;
                 }
             } else {
-                for msg in msgs.iter().take(number).rev() {
+                for msg in msgs.iter().rev() {
                     println!("\n\n\n\n{msg}");
                     fill_under(&msg.to_string(), '-');
                     user.download_attachments(msg)?;

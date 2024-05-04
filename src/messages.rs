@@ -4,6 +4,7 @@ use crate::*;
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
+    char,
     collections::HashMap,
     fmt,
     io::{Read, Write},
@@ -77,7 +78,7 @@ pub struct Attachment {
 impl Attachment {
     /// Returns the path where this [`Attachment`] shall be downloaded.
     pub fn download_to(&self) -> PathBuf {
-        download_dir().join(&self.file_name)
+        download_dir().join(self.file_name.replace(char::is_whitespace, "_"))
     }
 }
 
@@ -247,11 +248,7 @@ impl fmt::Display for Msg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "| Tárgy: {}", self.subj())?;
         for am in &self.attachments() {
-            writeln!(
-                f,
-                "| Csatolmány: \"file://{}\"",
-                am.download_to().display().to_string().replace(' ', "_")
-            )?;
+            writeln!(f, "| Csatolmány: \"file://{}\"", am.download_to().display())?;
         }
 
         writeln!(f, "| {}: {}", self.kind(), &self.time_sent().pretty())?;
@@ -371,7 +368,7 @@ impl From<&String> for MsgKind {
 }
 impl fmt::Display for MsgKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(
+        write!(
             f,
             "{}",
             match self {
@@ -511,5 +508,16 @@ mod test {
         // assert_eq!(msg.kind(), Some(MsgKind::Recv));
         assert_eq!(msg.sender(), "Dudás Attila");
         assert_eq!(msg.sender_title(), Some("igazgató h.".to_string()));
+    }
+    #[test]
+    fn fix_file_name() {
+        let f = Attachment {
+            file_name: "ain't a good filename is it ted? .txt .doksi .docx".to_string(),
+            id: 38,
+        };
+        assert_eq!(
+            download_dir().join("ain't_a_good_filename_is_it_ted?_.txt_.doksi_.docx"),
+            f.download_to()
+        );
     }
 }

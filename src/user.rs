@@ -1,5 +1,4 @@
 use crate::{
-    endpoints::base,
     information::Info,
     messages::{Msg, MsgKind, MsgOview},
     token::Token,
@@ -37,6 +36,7 @@ pub struct User {
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
     school_id: String,
 }
+// basic stuff
 impl User {
     /// get name of [`User`]
     pub fn name(&self) -> Res<String> {
@@ -61,7 +61,7 @@ impl User {
         let decoded_password = STANDARD.decode(&self.password).unwrap();
         String::from_utf8(decoded_password).unwrap()
     }
-    /// creates dummy [`User`], that won't be saved
+    /// creates dummy [`User`], that won't be saved and shouldn't be used
     pub fn dummy() -> Self {
         info!("created dummy user");
         Self::new("", "", "")
@@ -174,9 +174,9 @@ impl User {
         .expect("couldn't save user");
     }
 
-    /// load [`User`] with [`User::username`] or [`User::name()`] and save it to [`config_path()`]
+    /// load [`User`] with [`User::username`] or [`User::name()`] from [`cred_path()`] and save it to [`config_path()`]
     pub fn load(username: &str) -> Option<Self> {
-        info!("loading user with {}", username);
+        info!("loading user with {username}");
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
@@ -191,7 +191,6 @@ impl User {
             }
         }
         let user = matching_users.first()?;
-
         user.save_to_conf();
 
         Some(user.clone())
@@ -229,6 +228,62 @@ impl User {
         Self::load(&config.default_username)
     }
 
+    /// print all lessons of a day
+    pub fn print_day(&self, lessons: &[Lesson]) {
+        if let Some(first_lesson) = lessons.first() {
+            println!(
+                "    {} ({})",
+                &first_lesson.start().pretty(),
+                first_lesson.start().hun_day_of_week()
+            );
+            if first_lesson.shite() {
+                print!("{}", first_lesson);
+                fill_under(&first_lesson.to_string(), '|');
+            }
+            let todays_tests = self
+                .all_announced(
+                    Some(first_lesson.start()),
+                    Some(lessons.last().unwrap().end()),
+                )
+                .expect("couldn't fetch announced tests");
+
+            // number of lessons at the same time
+            let mut same_count = 0;
+
+            for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
+                // calculate `n`. this lesson is
+                let n = if let Some(prev) = lessons.get((i as isize - 1) as usize) {
+                    if prev.same_time(lesson) {
+                        same_count += 1;
+                    }
+                    i + 1 - same_count
+                } else {
+                    i + 1 - same_count
+                };
+                // so fill_under() works fine
+                let mut printer = format!("\n\n{n}. {lesson}");
+
+                if let Some(test) = todays_tests
+                    .iter()
+                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
+                {
+                    printer += &format!("\n| {}: {}", test.kind(), test.topic);
+                }
+                print!("{printer}");
+
+                fill_under(&printer, if lesson.happening() { '$' } else { '-' });
+            }
+        }
+    }
+}
+
+// interacting with API
+impl User {
+    /// base url of school with `school_id`
+    /// "https://{school_id}.e-kreta.hu"
+    fn base(&self) -> String {
+        format!("https://{}.e-kreta.hu", self.school_id)
+    }
     /// get headers which are necessary for making certain requests
     fn headers(&self) -> Res<HeaderMap> {
         let mut headers = HeaderMap::new();
@@ -263,9 +318,8 @@ impl User {
 
         // Define the message
         let message = format!(
-            "{}{}{}",
+            "{}{nonce}{}",
             self.school_id.to_uppercase(),
-            nonce,
             self.username.to_uppercase()
         );
 
@@ -318,85 +372,31 @@ impl User {
         Ok(token)
     }
 
-    /// print all lessons of a day
-    pub fn print_day(&self, lessons: &[Lesson]) {
-        if let Some(first_lesson) = lessons.first() {
-            println!(
-                "    {} ({})",
-                &first_lesson.start().pretty(),
-                first_lesson.start().hun_day_of_week()
-            );
-            if first_lesson.shite() {
-                print!("{}", first_lesson);
-                fill_under(&first_lesson.to_string(), '|');
-            }
-            let todays_tests = self
-                .all_announced(
-                    Some(first_lesson.start()),
-                    Some(lessons.last().unwrap().end()),
-                )
-                .expect("couldn't fetch announced tests");
-            let mut same_count = 0;
-
-            for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
-                let n = if let Some(prev) = lessons.get((i as isize - 1) as usize) {
-                    if prev.same_time(lesson) {
-                        same_count += 1;
-                    }
-                    i + 1 - same_count
-                } else {
-                    i + 1 - same_count
-                };
-                let mut printer = format!("\n\n{n}. {lesson}");
-
-                if let Some(test) = todays_tests
-                    .iter()
-                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
-                {
-                    printer += &format!("\n| {}: {}", test.kind(), test.topic);
-                }
-                print!("{printer}");
-
-                fill_under(&printer, if lesson.happening() { '$' } else { '-' });
-            }
-        }
-    }
-
     /// get [`User`] info
     pub fn info(&self) -> Res<Info> {
         info!("recieved information about user");
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + user::ep())
-            .headers(self.headers()?)
-            .send()?;
-        let text = res.text()?;
-        let mut logf = log_file("info")?;
-        write!(logf, "{text}")?;
 
-        let info = serde_json::from_str(&text)?;
+        let txt = self.fetch(&(self.base() + user::ep()), "user_info", &[])?;
+
+        let info = serde_json::from_str(&txt)?;
         Ok(info)
     }
 
     /// get all [`MsgOview`]s of a [`MsgKind`]
     pub fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> Res<Vec<MsgOview>> {
-        let client = Client::new();
-        let res = client
-            .get(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val()))
-            .headers(self.headers()?)
-            .send()?;
+        let txt = self.fetch(
+            &(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val())),
+            "message_overviews",
+            &[],
+        )?;
 
-        let text = res.text()?;
-        let mut logf = log_file("messages")?;
-        write!(logf, "{text}")?;
-
-        let msg = serde_json::from_str(&text)?;
+        let msg = serde_json::from_str(&txt)?;
         info!("recieved message overviews of kind: {:?}", msg_kind);
         Ok(msg)
     }
 
     /// get all [`MsgOview`]s, of any [`MsgKind`]
-    pub fn all_msg_oviews(&self) -> Res<Vec<MsgOview>> {
+    pub fn msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
             self.msg_oviews_of_kind(MsgKind::Recv)?,
             self.msg_oviews_of_kind(MsgKind::Sent)?,
@@ -405,35 +405,37 @@ impl User {
         .concat();
 
         msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+        let max_n = msg_oviews.len();
+        // don't exceed the lenght of msg_oviews
+        let n = if n < max_n { n } else { max_n };
+        let msg_oviews = msg_oviews.drain(0..n).collect();
         info!("recieved every message overview");
         Ok(msg_oviews)
     }
 
     /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
     pub fn full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
-        let client = Client::new();
-        let res = client
-            .get(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id))
-            .headers(self.headers()?)
-            .send()?;
+        let txt = self.fetch(
+            &(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id)),
+            "full_message",
+            &[],
+        )?;
 
-        let text = res.text()?;
-        let mut logf = log_file("full_message")?;
-        write!(logf, "{text}")?;
-
-        let msg = serde_json::from_str(&text)?;
+        let msg = serde_json::from_str(&txt)?;
         info!("recieved full message: {:?}", msg);
         Ok(msg)
     }
-    /// Fetch all [`Msg`]s between `from` and `to`.
+    /// Fetch max `n` [`Msg`]s between `from` and `to`.
     pub fn msgs(
         &self,
         from: Option<DateTime<Local>>,
         to: Option<DateTime<Local>>,
+        num: Option<usize>,
     ) -> Res<Vec<Msg>> {
+        let n = if let Some(n) = num { n } else { usize::MAX };
         let mut msgs = Vec::new();
 
-        for msg_oview in self.all_msg_oviews()? {
+        for msg_oview in self.msg_oviews(n)? {
             // if isn't between `from`-`to`
             if from.is_some_and(|from| msg_oview.sent() < from)
                 || to.is_some_and(|to| msg_oview.sent() > to)
@@ -462,18 +464,10 @@ impl User {
         if let Some(to) = to {
             query.push(("datumIg", to.to_rfc3339()));
         }
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + evals::ep())
-            .query(&query)
-            .headers(self.headers()?)
-            .send()?;
 
-        let text = res.text()?;
-        let mut logf = log_file("evals")?;
-        write!(logf, "{text}")?;
+        let txt = self.fetch(&(self.base() + evals::ep()), "evals", &query)?;
 
-        let mut evals = serde_json::from_str::<Vec<Eval>>(&text)?;
+        let mut evals = serde_json::from_str::<Vec<Eval>>(&txt)?;
         info!("recieved evals");
 
         evals.sort_by(|a, b| {
@@ -486,18 +480,13 @@ impl User {
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
     pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + timetable::ep())
-            .query(&[("datumTol", from.to_string()), ("datumIg", to.to_string())])
-            .headers(self.headers()?)
-            .send()?;
-        let text = res.text()?;
+        let txt = self.fetch(
+            &(self.base() + timetable::ep()),
+            "timetable",
+            &[("datumTol", from.to_string()), ("datumIg", to.to_string())],
+        )?;
 
-        let mut logf = log_file("timetable")?;
-        write!(logf, "{text}")?;
-
-        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&text)?;
+        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
         info!("recieved lessons");
         lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
         Ok(lessons)
@@ -514,18 +503,10 @@ impl User {
         } else {
             vec![]
         };
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + announced::ep())
-            .query(&query)
-            .headers(self.headers()?)
-            .send()?;
 
-        let text = res.text()?;
-        let mut logf = log_file("announced")?;
-        write!(logf, "{text}")?;
+        let txt = self.fetch(&(self.base() + announced::ep()), "announced", &query)?;
 
-        let mut all_announced: Vec<Ancd> = serde_json::from_str(&text)?;
+        let mut all_announced: Vec<Ancd> = serde_json::from_str(&txt)?;
         info!("recieved all announced tests");
 
         all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
@@ -539,7 +520,7 @@ impl User {
     pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
         for am in msg.attachments() {
             info!("downloading file://{}", am.download_to().display());
-            let mut f = File::create(download_dir().join(&am.file_name))?;
+            let mut f = File::create(am.download_to())?;
 
             let client = Client::new();
             client
@@ -566,18 +547,9 @@ impl User {
         if let Some(to) = to {
             query.push(("datumIg", to.to_rfc3339()));
         }
-        let client = Client::new();
-        let res = client
-            .get(base(&self.school_id) + absences::ep())
-            .query(&query)
-            .headers(self.headers()?)
-            .send()?;
+        let txt = self.fetch(&(self.base() + absences::ep()), "absences", &query)?;
 
-        let text = res.text()?;
-        let mut logf = log_file("absences")?;
-        write!(logf, "{text}")?;
-
-        let mut abss: Vec<Abs> = serde_json::from_str(&text)?;
+        let mut abss: Vec<Abs> = serde_json::from_str(&txt)?;
         info!("recieved absences");
         abss.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
         Ok(abss)
@@ -585,17 +557,24 @@ impl User {
 
     /// get groups the [`User`] is a member of
     pub fn groups(&self) -> Res<String> {
+        let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
+        // let all_announced = serde_json::from_str(&text)?;
+        Ok(txt)
+    }
+
+    /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
+    fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
         let client = Client::new();
         let res = client
-            .get(base(&self.school_id) + endpoints::CLASSES)
+            .get(url)
+            .query(&query)
             .headers(self.headers()?)
             .send()?;
-
         let text = res.text()?;
-        let mut logf = log_file("groups")?;
+
+        let mut logf = log_file(log)?;
         write!(logf, "{text}")?;
 
-        // let all_announced = serde_json::from_str(&text)?;
         Ok(text)
     }
 }
