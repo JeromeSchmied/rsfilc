@@ -89,7 +89,7 @@ impl User {
         }
         info!("recieved username {username} from cli");
 
-        let password = rpassword::prompt_password("password: ").unwrap();
+        let password = rpassword::prompt_password("password: ").unwrap_or_default();
         if password.is_empty() {
             println!("password is required");
             return None;
