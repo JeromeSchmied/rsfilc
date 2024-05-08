@@ -264,7 +264,7 @@ impl Rendr {
 
     /// render html with a [`Rendr`]
     fn render_with_external(html: &str, pref: Option<Rendr>) -> Option<String> {
-        let pref = if let Some(pr) = pref { pr } else { Rendr::W3m };
+        let pref = if let Some(pr) = pref { pr } else { Rendr::Lynx };
 
         let proc = if let Ok(pref_proc) = pref.child() {
             // eprintln!("rendering with {}", pref);

@@ -25,8 +25,8 @@
 
 #### opcionális, ajánlott
 
--   [w3m](https://w3m.sourceforge.net/): az élvezhetőbb üzenet-megjelenítés érdekében
 -   [lynx](https://lynx.browser.org/): az élvezhetőbb üzenet-megjelenítés érdekében
+-   [w3m](https://w3m.sourceforge.net/): az élvezhetőbb üzenet-megjelenítés érdekében
 
 ### autókitöltés:
 
