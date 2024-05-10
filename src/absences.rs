@@ -111,7 +111,7 @@ impl fmt::Display for Abs {
             &self.end().pretty(),
         )?;
         if let Some(late) = &self.mins_late {
-            writeln!(f, "| Késtél {} percet", late)?;
+            writeln!(f, "| Késtél {late} percet")?;
         }
 
         if self.verified() {

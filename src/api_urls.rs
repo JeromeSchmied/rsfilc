@@ -16,13 +16,13 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 pub struct ApiUrls {
     #[serde(rename = "GlobalMobileApiUrlDEV")]
-    global_mobile_api_url_dev: String,
+    dev: String,
     #[serde(rename = "GlobalMobileApiUrlTEST")]
-    global_mobile_api_url_test: String,
+    test: String,
     #[serde(rename = "GlobalMobileApiUrlUAT")]
-    global_mobile_api_url_uat: String,
+    uat: String,
     #[serde(rename = "GlobalMobileApiUrlPROD")]
-    global_mobile_api_url_prod: String,
+    prod: String,
 }
 impl ApiUrls {
     pub fn api_url() -> &'static str {
@@ -51,19 +51,19 @@ pub mod tests {
         let apiurls: ApiUrls = serde_json::from_str(correct).unwrap();
 
         assert_eq!(
-            apiurls.global_mobile_api_url_dev,
+            apiurls.dev,
             String::from("https://kretaglobalmobileapidev.ekreta.hu/")
         );
         assert_eq!(
-            apiurls.global_mobile_api_url_test,
+            apiurls.test,
             String::from("https://kretaglobalmobileapitest.ekreta.hu")
         );
         assert_eq!(
-            apiurls.global_mobile_api_url_uat,
+            apiurls.uat,
             String::from("https://kretaglobalmobileapiuat.ekreta.hu")
         );
         assert_eq!(
-            apiurls.global_mobile_api_url_prod,
+            apiurls.prod,
             String::from("https://kretaglobalmobileapi2.ekreta.hu")
         );
     }

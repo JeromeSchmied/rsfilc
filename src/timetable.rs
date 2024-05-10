@@ -228,10 +228,10 @@ impl fmt::Display for Lesson {
 
         if self.cancelled() {
             writeln!(f, "| Ez az óra elmarad{}.", {
-                if !self.forecoming() {
-                    "t"
-                } else {
+                if self.forecoming() {
                     ""
+                } else {
+                    "t"
                 }
             })?;
         }
@@ -251,7 +251,7 @@ impl fmt::Display for Lesson {
     }
 }
 
-/// get the number_from_monday from `value`
+/// get the `number_from_monday` from `value`
 /// if day is invalid, return `None`
 fn day_as_num_from_str(value: &str) -> Option<u8> {
     match value.to_lowercase().as_str() {

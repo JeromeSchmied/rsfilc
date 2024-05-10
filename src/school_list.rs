@@ -15,6 +15,10 @@ pub struct School {
 }
 impl School {
     /// get [`School`] list from refilc api
+    ///
+    /// # Errors
+    ///
+    /// reqwest
     pub fn get_from_refilc() -> Res<Vec<School>> {
         let res = reqwest::blocking::get("https://api.refilc.hu/v1/public/school-list")?;
 
@@ -27,9 +31,9 @@ impl School {
         let mut matching_schools = Vec::new();
         for school in schools {
             if [
-                school.name.to_owned(),
-                school.city.to_owned(),
-                school.institute_code.to_owned(),
+                school.name.clone(),
+                school.city.clone(),
+                school.institute_code.clone(),
             ]
             .iter()
             .any(|j| j.to_lowercase().contains(&find_school.to_lowercase()))

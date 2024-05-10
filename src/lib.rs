@@ -1,4 +1,4 @@
-//! RsFilc: `Kréta` API and client
+//! `RsFilc`: `Kréta` API and client
 
 use chrono::{DateTime, Datelike, Local, Timelike};
 use log::*;
@@ -41,6 +41,10 @@ pub fn config_path() -> Option<PathBuf> {
     Some(dirs::config_dir()?.join("rsfilc").join("config.toml"))
 }
 /// get path for cache dir
+///
+/// # Panics
+///
+/// `cache_dir` creation
 pub fn cache_path() -> Option<PathBuf> {
     let cache_path = dirs::cache_dir()?.join("rsfilc");
     if !cache_path.exists() {
@@ -53,12 +57,20 @@ pub fn log_file(kind: &str) -> Res<File> {
     Ok(File::create(log_path(kind))?)
 }
 /// get log path for `kind`: `kind`.log
+///
+/// # Panics
+///
+/// no `cache_path`
 pub fn log_path(kind: &str) -> PathBuf {
     cache_path()
         .expect("couldn't find cache path")
         .join([kind, ".log"].concat())
 }
 /// get path for `Downloads/rsfilc`, and create it if doesn't exist yet
+///
+/// # Panics
+///
+/// no `Downloads`
 pub fn download_dir() -> PathBuf {
     let dl_dir = if let Some(default_dl) = dirs::download_dir() {
         default_dl.join("rsfilc")
@@ -73,7 +85,7 @@ pub fn download_dir() -> PathBuf {
     dl_dir
 }
 
-/// DateTime methods needed for RsFilc
+/// `DateTime` methods needed for `RsFilc`
 pub trait MyDate {
     /// Practical date format.
     fn pretty(&self) -> String;

@@ -30,7 +30,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             todo!("TUI is to be written (soon)");
         }
         Commands::Completions { shell } => {
-            info!("creating shell completions for {}", shell);
+            info!("creating shell completions for {shell}");
             clap_complete::generate(
                 shell,
                 &mut Args::command(),
@@ -95,7 +95,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 info!("exported timetable to json");
                 let mut f = File::create(export_json_to)?;
                 let content = serde_json::to_string(&lessons)?;
-                write!(f, "{}", content)?;
+                write!(f, "{content}")?;
             }
 
             user.print_day(&lessons);
@@ -119,7 +119,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             }
 
             let mut logf = log_file("evals_filtered")?;
-            write!(logf, "{:?}", evals)?;
+            write!(logf, "{evals:?}")?;
 
             // ghost without average has no effect
             if !ghost.is_empty() && !average {
@@ -133,13 +133,13 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 return Ok(());
             }
 
-            if !reverse {
-                for eval in evals.iter().take(number) {
+            if reverse {
+                for eval in evals.iter().take(number).rev() {
                     print!("\n\n{eval}");
                     fill_under(&eval.to_string(), '-');
                 }
             } else {
-                for eval in evals.iter().take(number).rev() {
+                for eval in evals.iter().take(number) {
                     print!("\n\n{eval}");
                     fill_under(&eval.to_string(), '-');
                 }
@@ -153,13 +153,13 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
         } => {
             if notes {
                 let notes = user.note_msgs()?;
-                if !reverse {
-                    for note in notes.iter().take(number) {
+                if reverse {
+                    for note in notes.iter().take(number).rev() {
                         println!("\n\n\n\n{note}");
                         fill_under(&note.to_string(), '-');
                     }
                 } else {
-                    for note in notes.iter().take(number).rev() {
+                    for note in notes.iter().take(number) {
                         println!("\n\n\n\n{note}");
                         fill_under(&note.to_string(), '-');
                     }
@@ -169,14 +169,14 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             }
 
             let msgs = user.msgs(None, None, Some(number))?;
-            if !reverse {
-                for msg in msgs.iter() {
+            if reverse {
+                for msg in msgs.iter().rev() {
                     println!("\n\n\n\n{msg}");
                     fill_under(&msg.to_string(), '-');
                     user.download_attachments(msg)?;
                 }
             } else {
-                for msg in msgs.iter().rev() {
+                for msg in &msgs {
                     println!("\n\n\n\n{msg}");
                     fill_under(&msg.to_string(), '-');
                     user.download_attachments(msg)?;
@@ -204,13 +204,13 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 return Ok(());
             }
 
-            if !reverse {
-                for absence in absences.iter().take(number) {
+            if reverse {
+                for absence in absences.iter().take(number).rev() {
                     print!("\n\n{absence}");
                     fill_under(&absence.to_string(), '-');
                 }
             } else {
-                for absence in absences.iter().take(number).rev() {
+                for absence in absences.iter().take(number) {
                     print!("\n\n{absence}");
                     fill_under(&absence.to_string(), '-');
                 }
@@ -229,14 +229,14 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }
 
-            if !reverse {
-                for announced in all_announced.iter().take(number) {
-                    print!("\n\n{}", announced);
+            if reverse {
+                for announced in all_announced.iter().take(number).rev() {
+                    print!("\n\n{announced}");
                     fill_under(&announced.to_string(), '-');
                 }
             } else {
-                for announced in all_announced.iter().take(number).rev() {
-                    print!("\n\n{}", announced);
+                for announced in all_announced.iter().take(number) {
+                    print!("\n\n{announced}");
                     fill_under(&announced.to_string(), '-');
                 }
             }
@@ -318,12 +318,11 @@ fn set_up_logger() -> Res<()> {
         // Perform allocation-free log formatting
         .format(|out, message, record| {
             out.finish(format_args!(
-                "{} [{}] {} {}",
+                "{} [{}] {} {message}",
                 Local::now(),
                 record.level(),
                 record.target(),
-                message
-            ))
+            ));
         })
         // Add blanket level filter -
         .level(log::LevelFilter::Info)
