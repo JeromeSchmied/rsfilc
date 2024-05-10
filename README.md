@@ -99,6 +99,8 @@
 
 `rsfilc --help`
 
+![demo](./rsfilc_demo.gif "using rsfilc")
+
 ## Features
 
 ### cross-platform: not tested thoroughly but should run on

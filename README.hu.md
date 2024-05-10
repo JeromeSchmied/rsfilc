@@ -89,6 +89,8 @@
 
 `rsfilc --help`
 
+![demo](./rsfilc_demo.gif "using rsfilc")
+
 ## Finomságok
 
 ### nem rendszerhez kötött: nincs különösebben letesztelve, de elvileg fut
