@@ -11,7 +11,7 @@ fn main() -> Res<()> {
     // set up fern
     set_up_logger()?;
 
-    // parse
+    // parse args
     let cli_args = Args::parse();
 
     // have a valid user
