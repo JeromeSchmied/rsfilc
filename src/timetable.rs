@@ -251,7 +251,8 @@ impl fmt::Display for Lesson {
     }
 }
 
-// (7 - today as num) + (7 - other as num)
+/// get the number_from_monday from `value`
+/// if day is invalid, return `None`
 fn day_as_num_from_str(value: &str) -> Option<u8> {
     match value.to_lowercase().as_str() {
         "hétfő" | "hé" | "mon" | "monday" => Some(1),
