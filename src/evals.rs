@@ -59,7 +59,7 @@ pub struct Eval {
 }
 impl Eval {
     /// Returns the subject of this [`Eval`].
-    /// Eg. "magyar_nyelv_es_irodalom"
+    /// Eg. `magyar_nyelv_es_irodalom`
     pub fn subject_id(&self) -> Option<String> {
         Some(
             self.subject
@@ -151,7 +151,7 @@ impl Eval {
     }
 
     /// Returns the type id of this [`Eval`].
-    /// Eg. "evkozi_jegy_ertekeles"
+    /// Eg. `evkozi_jegy_ertekeles`
     fn type_id(&self) -> Option<String> {
         Some(self.kind.as_ref()?.get("Nev")?.to_owned())
     }

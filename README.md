@@ -1,4 +1,4 @@
-# [RsFilc](https://codeberg.org/jark/rsfilc): [`E-Kréta`](https://www.e-kreta.hu/) console client in [Rust](https://rust-lang.org)
+# [RozsdásFilc](https://codeberg.org/jark/rsfilc): [`E-Kréta`](https://www.e-kreta.hu/) console client in [Rust](https://rust-lang.org)
 
 > `E-Kréta` is an awful Hungarian electronic school administration system
 
@@ -28,8 +28,8 @@
 
 #### optional, recommended
 
--   [w3m](https://w3m.sourceforge.net/): for enjoyable (html) message previews
 -   [lynx](https://lynx.browser.org/): for enjoyable (html) message previews
+-   [w3m](https://w3m.sourceforge.net/): for enjoyable (html) message previews
 
 ### Shell completions:
 
@@ -98,6 +98,8 @@
 ## Usage
 
 `rsfilc --help`
+
+![demo](./rsfilc_demo.gif "using rsfilc")
 
 ## Features
 

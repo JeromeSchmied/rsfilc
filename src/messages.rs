@@ -167,9 +167,7 @@ impl Msg {
     }
     /// Returns the [`Attachment`]s of this [`Msg`].
     pub fn attachments(&self) -> Vec<Attachment> {
-        let attachments = if let Some(ams) = self.msg_kv("csatolmanyok") {
-            ams
-        } else {
+        let Some(attachments) = self.msg_kv("csatolmanyok") else {
             return vec![];
         };
         serde_json::from_str(&attachments).unwrap_or_else(|_| vec![])
@@ -264,7 +262,7 @@ impl Rendr {
 
     /// render html with a [`Rendr`]
     fn render_with_external(html: &str, pref: Option<Rendr>) -> Option<String> {
-        let pref = if let Some(pr) = pref { pr } else { Rendr::W3m };
+        let pref = if let Some(pr) = pref { pr } else { Rendr::Lynx };
 
         let proc = if let Ok(pref_proc) = pref.child() {
             // eprintln!("rendering with {}", pref);
@@ -412,6 +410,11 @@ pub struct NaughtyMsg {
 
 /// additional notes/system messages
 impl NaughtyMsg {
+    /// get `date`
+    ///
+    /// # Panics
+    ///
+    /// if [`NaughtyMsg`] doesn't contain `date`
     pub fn date(&self) -> DateTime<Local> {
         DateTime::parse_from_rfc3339(&self.date).unwrap().into()
     }

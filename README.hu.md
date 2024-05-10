@@ -1,4 +1,4 @@
-# [RsFilc](https://codeberg.org/jark/rsfilc): [E-Kréta](https://www.e-kreta.hu/) konzol kliens [Rust](https://rust-lang.org)ban
+# [RozsdásFilc](https://codeberg.org/jark/rsfilc): [E-Kréta](https://www.e-kreta.hu/) konzol kliens [Rust](https://rust-lang.org)ban
 
 > [English README](README.md)
 
@@ -25,8 +25,8 @@
 
 #### opcionális, ajánlott
 
--   [w3m](https://w3m.sourceforge.net/): az élvezhetőbb üzenet-megjelenítés érdekében
 -   [lynx](https://lynx.browser.org/): az élvezhetőbb üzenet-megjelenítés érdekében
+-   [w3m](https://w3m.sourceforge.net/): az élvezhetőbb üzenet-megjelenítés érdekében
 
 ### autókitöltés:
 
@@ -88,6 +88,8 @@
 ## Használat
 
 `rsfilc --help`
+
+![demo](./rsfilc_demo.gif "using rsfilc")
 
 ## Finomságok
 

@@ -45,6 +45,10 @@ pub struct User {
 // basic stuff
 impl User {
     /// get name of [`User`]
+    ///
+    /// # Errors
+    ///
+    /// net
     pub fn name(&self) -> Res<String> {
         Ok(self.info()?.name)
     }
@@ -74,6 +78,10 @@ impl User {
     }
 
     /// create a [`User`] from cli and save it!
+    ///
+    /// # Panics
+    ///
+    /// `std::io::std(in/out)`
     pub fn create() -> Option<Self> {
         info!("creating user from cli");
 
@@ -202,6 +210,13 @@ impl User {
         Some(user.clone())
     }
     /// save [`User`] as default to config.toml
+    ///
+    /// # Panics
+    ///
+    /// - no config path
+    /// - no parent dir
+    /// - deser
+    /// - writeln
     fn save_to_conf(&self) {
         info!("saving preferred user's name to config");
         let conf_path = config_path().expect("couldn't find config path");
@@ -221,7 +236,12 @@ impl User {
         )
         .expect("couldn't save user");
     }
-    /// load [`User`] configured in [`config_path()`]
+    /// load `] configured in [`config_path()`]
+    ///
+    /// # Panics
+    ///
+    /// - can't read config content
+    /// - invalid config
     pub fn load_conf() -> Option<Self> {
         info!("loading config");
         let conf_path = config_path()?;
@@ -243,7 +263,7 @@ impl User {
                 first_lesson.start().hun_day_of_week()
             );
             if first_lesson.shite() {
-                print!("{}", first_lesson);
+                print!("{first_lesson}");
                 fill_under(&first_lesson.to_string(), '|');
             }
             let todays_tests = self
@@ -286,7 +306,7 @@ impl User {
 // interacting with API
 impl User {
     /// base url of school with `school_id`
-    /// "https://{school_id}.e-kreta.hu"
+    /// <https://{school_id}.e-kreta.hu>
     fn base(&self) -> String {
         format!("https://{}.e-kreta.hu", self.school_id)
     }
@@ -390,7 +410,11 @@ impl User {
     }
 
     /// get all [`MsgOview`]s of a [`MsgKind`]
-    pub fn msg_oviews_of_kind(&self, msg_kind: MsgKind) -> Res<Vec<MsgOview>> {
+    ///
+    /// # Errors
+    ///
+    /// net
+    pub fn msg_oviews_of_kind(&self, msg_kind: &MsgKind) -> Res<Vec<MsgOview>> {
         let txt = self.fetch(
             &(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val())),
             "message_overviews",
@@ -402,12 +426,16 @@ impl User {
         Ok(msg)
     }
 
-    /// get up `n` [`MsgOview`]s, of any [`MsgKind`]
+    /// get up to `n` [`MsgOview`]s, of any [`MsgKind`]
+    ///
+    /// # Panics
+    ///
+    /// - sorting
     pub fn msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
-            self.msg_oviews_of_kind(MsgKind::Recv)?,
-            self.msg_oviews_of_kind(MsgKind::Sent)?,
-            self.msg_oviews_of_kind(MsgKind::Del)?,
+            self.msg_oviews_of_kind(&MsgKind::Recv)?,
+            self.msg_oviews_of_kind(&MsgKind::Sent)?,
+            self.msg_oviews_of_kind(&MsgKind::Del)?,
         ]
         .concat();
 
@@ -421,6 +449,10 @@ impl User {
     }
 
     /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
+    ///
+    /// # Errors
+    ///
+    /// net
     pub fn full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
         let txt = self.fetch(
             &(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id)),
@@ -433,6 +465,10 @@ impl User {
         Ok(msg)
     }
     /// Fetch max `n` [`Msg`]s between `from` and `to`.
+    ///
+    /// # Errors
+    ///
+    /// - net
     pub fn msgs(
         &self,
         from: Option<DateTime<Local>>,
@@ -459,6 +495,14 @@ impl User {
     }
 
     /// get all [`Eval`]s with `from` `to` or all
+    ///
+    /// # Panics
+    ///
+    /// sorting
+    ///
+    /// # Errors
+    ///
+    /// net
     pub fn evals(
         &self,
         from: Option<DateTime<Local>>,
@@ -486,6 +530,14 @@ impl User {
     }
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// - sorting
     pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
         let txt = self.fetch(
             &(self.base() + timetable::ep()),
@@ -500,6 +552,14 @@ impl User {
     }
 
     /// get [`Announced`] tests `from` `to` or all
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// sorting
     pub fn all_announced(
         &self,
         from: Option<DateTime<Local>>,
@@ -543,6 +603,14 @@ impl User {
     }
 
     /// get information about being [`Abs`]ent `from` `to` or all
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// sorting
     pub fn absences(
         &self,
         from: Option<DateTime<Local>>,
@@ -564,6 +632,10 @@ impl User {
     }
 
     /// get groups the [`User`] is a member of
+    ///
+    /// # Errors
+    ///
+    /// - net
     pub fn groups(&self) -> Res<String> {
         let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
         // let all_announced = serde_json::from_str(&text)?;
@@ -571,6 +643,10 @@ impl User {
     }
 
     /// get notes: additional messages the [`User`] recieved.
+    ///
+    /// # Errors
+    ///
+    /// - net
     pub fn note_msgs(&self) -> Res<Vec<NaughtyMsg>> {
         let txt = self.fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])?;
         let note_msgs = serde_json::from_str(&txt)?;

@@ -1,6 +1,6 @@
 //! lessons the student has
 
-use chrono::{DateTime, Duration, Local, NaiveDate};
+use chrono::{DateTime, Datelike, Duration, Local, NaiveDate};
 use log::info;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -17,23 +17,46 @@ pub fn parse_day(day: &Option<String>) -> NaiveDate {
     info!("parsing day");
     if let Some(date) = day {
         let date = date.replace(['/', '.'], "-");
+        info!("date: {date}");
         if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
+            info!("valid as: {ndate}");
             ndate
         } else if date.starts_with('+') || date.ends_with('-') {
+            info!("day_shift!");
             let day_shift = if date.starts_with('+') {
+                info!("day_shift: +");
                 date.parse::<i16>().expect("invalid +day shifter")
             } else {
                 let date = &date[0..date.len() - 1];
+                info!("day_shift: -");
                 -date.parse::<i16>().expect("invalid day- shifter")
             };
             Local::now()
                 .checked_add_signed(Duration::days(day_shift.into()))
                 .expect("invalid datetime")
                 .date_naive()
+        } else if let Some(day) = day_as_num_from_str(&date) {
+            /* eg.:
+            today == thursday == 4
+            looking_for == tuesday == 2
+            (7 - today) + looking_for
+            */
+            let today_as_num = Local::now().weekday().number_from_monday() as u8;
+            info!("today_as_num: {today_as_num}");
+            let other_as_num = day;
+            info!("other_as_num: {other_as_num}");
+            let diff = 7 - today_as_num + other_as_num;
+            info!("diff: {diff}");
+            Local::now()
+                .checked_add_signed(Duration::days(diff.into()))
+                .expect("invalid datetime")
+                .date_naive()
         } else {
+            info!("fallback: today");
             Local::now().date_naive()
         }
     } else {
+        info!("fallback: today");
         Local::now().date_naive()
     }
 }
@@ -205,10 +228,10 @@ impl fmt::Display for Lesson {
 
         if self.cancelled() {
             writeln!(f, "| Ez az óra elmarad{}.", {
-                if !self.forecoming() {
-                    "t"
-                } else {
+                if self.forecoming() {
                     ""
+                } else {
+                    "t"
                 }
             })?;
         }
@@ -225,6 +248,19 @@ impl fmt::Display for Lesson {
         }
 
         Ok(())
+    }
+}
+
+/// get the `number_from_monday` from `value`
+/// if day is invalid, return `None`
+fn day_as_num_from_str(value: &str) -> Option<u8> {
+    match value.to_lowercase().as_str() {
+        "hétfő" | "hé" | "mon" | "monday" => Some(1),
+        "kedd" | "ke" | "tue" | "tuesday" => Some(2),
+        "szerda" | "sze" | "wed" | "wednesday" => Some(3),
+        "csütörtök" | "csüt" | "thu" | "thursday" => Some(4),
+        "péntek" | "pé" | "fri" | "friday" => Some(5),
+        _ => None,
     }
 }
 
