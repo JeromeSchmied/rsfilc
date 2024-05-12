@@ -7,7 +7,7 @@
 > # FONTOS!
 >
 > Ha `v0.5.21`-ről frissítéshez újra kell csinálni a bejelentkezéseket.
-> Ez azért szükséges, mivel a `v0.5.22`-től kezdve `base64` titkosítással vannak tárolva a kódok.
+> Ez azért szükséges, mivel a `v0.5.22`-től kezdve titkosítással vannak tárolva a kódok.
 >
 > 1. Ki kell törölni a régi bejelentkezéseket. Alice ezeket erre találná meg:
 >     - linux: `/home/alice/.config/rsfilc/credentials.toml`

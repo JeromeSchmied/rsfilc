@@ -28,7 +28,7 @@ pub struct Abs {
 
     /// minutes of being late
     #[serde(rename(deserialize = "KesesPercben"))]
-    mins_late: Option<String>,
+    mins_late: Option<u8>,
     /// whether it's already verified
     #[serde(rename(deserialize = "IgazolasAllapota"))]
     verification_status: String,
