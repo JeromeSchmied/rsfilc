@@ -147,7 +147,10 @@
     -   [ ] bejelentett számonkérések
     -   [ ] üzenetek
 -   [x] jelszavak titkosítása mentéshez
--   [ ] jelszavak módosítása
+-   [ ] üzenetek küldése
+-   [ ] osztályátlagok
+-   [ ] ügyintézések lekérése
+-   [ ] ügyintézések indítása
 -   [ ] ...
 
 ## TUI

@@ -157,7 +157,10 @@
     -   [ ] announced tests
     -   [ ] messages
 -   [x] encoding passwords
--   [ ] changing passwords
+-   [ ] sending messages
+-   [ ] class averages
+-   [ ] fetching administrational processes
+-   [ ] starting new administrational processes
 
 ## TUI
 
