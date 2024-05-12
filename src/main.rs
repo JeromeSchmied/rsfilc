@@ -306,7 +306,7 @@ fn create_user(cli_args: &Args) -> Res<User> {
         }
     } else {
         info!(
-            "created dummy user, as it's not needed for {:?} command",
+            "created dummy user, as it's not needed for {:?}",
             cli_args.command
         );
         Ok(User::dummy()) // dummy user
