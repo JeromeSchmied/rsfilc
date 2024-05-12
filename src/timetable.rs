@@ -1,7 +1,7 @@
 //! lessons the student has
 
 use chrono::{DateTime, Datelike, Duration, Local, NaiveDate};
-use log::info;
+use log::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
@@ -35,18 +35,12 @@ pub fn parse_day(day: &Option<String>) -> NaiveDate {
                 .checked_add_signed(Duration::days(day_shift.into()))
                 .expect("invalid datetime")
                 .date_naive()
-        } else if let Some(day) = day_as_num_from_str(&date) {
+        } else if let Some(diff) = day_diff(&date) {
             /* eg.:
             today == thursday == 4
             looking_for == tuesday == 2
             (7 - today) + looking_for
             */
-            let today_as_num = Local::now().weekday().number_from_monday() as u8;
-            info!("today_as_num: {today_as_num}");
-            let other_as_num = day;
-            info!("other_as_num: {other_as_num}");
-            let diff = 7 - today_as_num + other_as_num;
-            info!("diff: {diff}");
             Local::now()
                 .checked_add_signed(Duration::days(diff.into()))
                 .expect("invalid datetime")
@@ -251,17 +245,40 @@ impl fmt::Display for Lesson {
     }
 }
 
-/// get the `number_from_monday` from `value`
-/// if day is invalid, return `None`
-fn day_as_num_from_str(value: &str) -> Option<u8> {
-    match value.to_lowercase().as_str() {
+/// get the number of days difference from today to `value`
+/// if `value` is invalid, return `None`
+fn day_diff(value: &str) -> Option<i8> {
+    let value = value.to_lowercase();
+    let num_from_mon = match value.as_str() {
         "hétfő" | "hé" | "mon" | "monday" => Some(1),
         "kedd" | "ke" | "tue" | "tuesday" => Some(2),
         "szerda" | "sze" | "wed" | "wednesday" => Some(3),
         "csütörtök" | "csüt" | "thu" | "thursday" => Some(4),
         "péntek" | "pé" | "fri" | "friday" => Some(5),
-        _ => None,
-    }
+        _ => {
+            warn!("\"{value}\" not valid as a day of week");
+            None
+        }
+    };
+    let today_as_num = Local::now().weekday().number_from_monday() as u8;
+    info!("today_as_num: {today_as_num}");
+    info!("other_as_num: {num_from_mon:?}");
+    let diff = if let Some(from_mon) = num_from_mon {
+        7i8 - today_as_num as i8 + from_mon
+    } else {
+        match value.as_str() {
+            "ma" | "today" => 0,
+            "holnap" | "tomorrow" => 1,
+            "tegnap" | "yesterday" => -1,
+            _ => {
+                warn!("\"{value}\" not valid as a day shifter word");
+                return None;
+            }
+        }
+    };
+
+    info!("day diff: {diff}");
+    Some(diff)
 }
 
 #[cfg(test)]
