@@ -109,7 +109,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             reverse,
             ghost,
         } => {
-            let mut evals = user.evals(None, None)?;
+            let mut evals = user.evals((None, None))?;
             info!("got evals");
             if let Some(kind) = kind {
                 Eval::filter_by_kind(&mut evals, &kind);
@@ -168,7 +168,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 return Ok(());
             }
 
-            let msgs = user.msgs(None, None, Some(number))?;
+            let msgs = user.msgs((None, None), Some(number))?;
             if reverse {
                 for msg in msgs.iter().rev() {
                     println!("\n\n\n\n{msg}");
@@ -190,7 +190,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             subject,
             reverse,
         } => {
-            let mut absences = user.absences(None, None)?;
+            let mut absences = user.absences((None, None))?;
             if let Some(subject) = subject {
                 Abs::filter_by_subject(&mut absences, &subject);
             }
@@ -224,7 +224,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             past,
         } => {
             let from = if past { None } else { Some(Local::now()) };
-            let mut all_announced = user.all_announced(from, None)?;
+            let mut all_announced = user.all_announced((from, None))?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }

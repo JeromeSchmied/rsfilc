@@ -26,6 +26,9 @@ use self::messages::NaughtyMsg;
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
 
+/// `(from, to)` interval
+pub type Interval = (Option<DateTime<Local>>, Option<DateTime<Local>>);
+
 /// endpoint
 pub const fn ep() -> &'static str {
     "/ellenorzo/V3/Sajat/TanuloAdatlap"
@@ -267,10 +270,10 @@ impl User {
                 fill_under(&first_lesson.to_string(), '|');
             }
             let todays_tests = self
-                .all_announced(
+                .all_announced((
                     Some(first_lesson.start()),
                     Some(lessons.last().unwrap().end()),
-                )
+                ))
                 .expect("couldn't fetch announced tests");
 
             // number of lessons at the same time
@@ -469,19 +472,14 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn msgs(
-        &self,
-        from: Option<DateTime<Local>>,
-        to: Option<DateTime<Local>>,
-        num: Option<usize>,
-    ) -> Res<Vec<Msg>> {
+    pub fn msgs(&self, interval: Interval, num: Option<usize>) -> Res<Vec<Msg>> {
         let n = if let Some(n) = num { n } else { usize::MAX };
         let mut msgs = Vec::new();
 
         for msg_oview in self.msg_oviews(n)? {
             // if isn't between `from`-`to`
-            if from.is_some_and(|from| msg_oview.sent() < from)
-                || to.is_some_and(|to| msg_oview.sent() > to)
+            if interval.0.is_some_and(|from| msg_oview.sent() < from)
+                || interval.1.is_some_and(|to| msg_oview.sent() > to)
             {
                 continue;
             }
@@ -503,16 +501,12 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn evals(
-        &self,
-        from: Option<DateTime<Local>>,
-        to: Option<DateTime<Local>>,
-    ) -> Res<Vec<Eval>> {
+    pub fn evals(&self, interval: Interval) -> Res<Vec<Eval>> {
         let mut query = vec![];
-        if let Some(from) = from {
+        if let Some(from) = interval.0 {
             query.push(("datumTol", from.to_rfc3339()));
         }
-        if let Some(to) = to {
+        if let Some(to) = interval.1 {
             query.push(("datumIg", to.to_rfc3339()));
         }
 
@@ -560,12 +554,8 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn all_announced(
-        &self,
-        from: Option<DateTime<Local>>,
-        to: Option<DateTime<Local>>,
-    ) -> Res<Vec<Ancd>> {
-        let query = if let Some(from) = from {
+    pub fn all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
+        let query = if let Some(from) = interval.0 {
             vec![("datumTol", from.to_rfc3339())]
         } else {
             vec![]
@@ -577,7 +567,7 @@ impl User {
         info!("recieved all announced tests");
 
         all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
-        if let Some(to) = to {
+        if let Some(to) = interval.1 {
             all_announced.retain(|ancd| ancd.day() <= to);
         }
         Ok(all_announced)
@@ -611,16 +601,12 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn absences(
-        &self,
-        from: Option<DateTime<Local>>,
-        to: Option<DateTime<Local>>,
-    ) -> Res<Vec<Abs>> {
+    pub fn absences(&self, interval: Interval) -> Res<Vec<Abs>> {
         let mut query = vec![];
-        if let Some(from) = from {
+        if let Some(from) = interval.0 {
             query.push(("datumTol", from.to_rfc3339()));
         }
-        if let Some(to) = to {
+        if let Some(to) = interval.1 {
             query.push(("datumIg", to.to_rfc3339()));
         }
         let txt = self.fetch(&(self.base() + absences::ep()), "absences", &query)?;
