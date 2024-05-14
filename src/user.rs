@@ -577,6 +577,11 @@ impl User {
     pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
         for am in msg.attachments() {
             info!("downloading file://{}", am.download_to().display());
+            // don't download if already exists
+            if am.download_to().exists() {
+                info!("not downloading, already done");
+                continue;
+            }
             let mut f = File::create(am.download_to())?;
 
             let client = Client::new();
