@@ -53,7 +53,7 @@ impl User {
     ///
     /// net
     pub fn name(&self) -> Res<String> {
-        Ok(self.info()?.name)
+        Ok(self.fetch_info()?.name)
     }
 
     /// create new instance of [`User`]
@@ -270,7 +270,7 @@ impl User {
                 fill_under(&first_lesson.to_string(), '|');
             }
             let todays_tests = self
-                .all_announced((
+                .fetch_all_announced((
                     Some(first_lesson.start()),
                     Some(lessons.last().unwrap().end()),
                 ))
@@ -318,7 +318,7 @@ impl User {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
-            format!("Bearer {}", self.token()?.access_token).parse()?,
+            format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
         );
         headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
         Ok(headers)
@@ -338,7 +338,7 @@ impl User {
     ///         &grant_type=password \
     ///         &client_id=kreta-ellenorzo-mobile-android"
     /// ```
-    fn token(&self) -> Res<Token> {
+    fn fetch_token(&self) -> Res<Token> {
         // Define the key as bytes
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
 
@@ -403,7 +403,7 @@ impl User {
     }
 
     /// get [`User`] info
-    pub fn info(&self) -> Res<Info> {
+    pub fn fetch_info(&self) -> Res<Info> {
         info!("recieved information about user");
 
         let txt = self.fetch(&(self.base() + user::ep()), "user_info", &[])?;
@@ -417,7 +417,7 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn msg_oviews_of_kind(&self, msg_kind: &MsgKind) -> Res<Vec<MsgOview>> {
+    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: &MsgKind) -> Res<Vec<MsgOview>> {
         let txt = self.fetch(
             &(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val())),
             "message_overviews",
@@ -436,9 +436,9 @@ impl User {
     /// - sorting
     pub fn msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
-            self.msg_oviews_of_kind(&MsgKind::Recv)?,
-            self.msg_oviews_of_kind(&MsgKind::Sent)?,
-            self.msg_oviews_of_kind(&MsgKind::Del)?,
+            self.fetch_msg_oviews_of_kind(&MsgKind::Recv)?,
+            self.fetch_msg_oviews_of_kind(&MsgKind::Sent)?,
+            self.fetch_msg_oviews_of_kind(&MsgKind::Del)?,
         ]
         .concat();
 
@@ -456,7 +456,7 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
+    pub fn fetch_full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
         let txt = self.fetch(
             &(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id)),
             "full_message",
@@ -483,7 +483,7 @@ impl User {
             {
                 continue;
             }
-            let msg = self.full_msg(&msg_oview)?;
+            let msg = self.fetch_full_msg(&msg_oview)?;
             msgs.push(msg);
         }
         let mut logf = log_file("messages")?;
@@ -501,7 +501,7 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn evals(&self, interval: Interval) -> Res<Vec<Eval>> {
+    pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
         let mut query = vec![];
         if let Some(from) = interval.0 {
             query.push(("datumTol", from.to_rfc3339()));
@@ -532,7 +532,7 @@ impl User {
     /// # Panics
     ///
     /// - sorting
-    pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
+    pub fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
         let txt = self.fetch(
             &(self.base() + timetable::ep()),
             "timetable",
@@ -554,7 +554,7 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
+    pub fn fetch_all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
         let query = if let Some(from) = interval.0 {
             vec![("datumTol", from.to_rfc3339())]
         } else {
@@ -601,7 +601,7 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn absences(&self, interval: Interval) -> Res<Vec<Abs>> {
+    pub fn fetch_absences(&self, interval: Interval) -> Res<Vec<Abs>> {
         let mut query = vec![];
         if let Some(from) = interval.0 {
             query.push(("datumTol", from.to_rfc3339()));
@@ -622,7 +622,7 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn groups(&self) -> Res<String> {
+    pub fn fetch_groups(&self) -> Res<String> {
         let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
         // let all_announced = serde_json::from_str(&text)?;
         Ok(txt)
@@ -633,7 +633,7 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn note_msgs(&self) -> Res<Vec<NaughtyMsg>> {
+    pub fn fetch_note_msgs(&self) -> Res<Vec<NaughtyMsg>> {
         let txt = self.fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])?;
         let note_msgs = serde_json::from_str(&txt)?;
         Ok(note_msgs)

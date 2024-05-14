@@ -57,7 +57,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 .and_local_timezone(Local)
                 .unwrap();
 
-            let lessons = user.timetable(day_start, day_end)?;
+            let lessons = user.fetch_timetable(day_start, day_end)?;
 
             // nice output if no lessons, couldn't be possible in print_day()
             if lessons.is_empty() {
@@ -109,7 +109,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             reverse,
             ghost,
         } => {
-            let mut evals = user.evals((None, None))?;
+            let mut evals = user.fetch_evals((None, None))?;
             info!("got evals");
             if let Some(kind) = filter {
                 Eval::filter_by_kind_or_title(&mut evals, &kind);
@@ -152,7 +152,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             notes,
         } => {
             if notes {
-                let notes = user.note_msgs()?;
+                let notes = user.fetch_note_msgs()?;
                 if reverse {
                     for note in notes.iter().take(number).rev() {
                         println!("\n\n\n\n{note}");
@@ -190,7 +190,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             subject,
             reverse,
         } => {
-            let mut absences = user.absences((None, None))?;
+            let mut absences = user.fetch_absences((None, None))?;
             if let Some(subject) = subject {
                 Abs::filter_by_subject(&mut absences, &subject);
             }
@@ -224,7 +224,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             past,
         } => {
             let from = if past { None } else { Some(Local::now()) };
-            let mut all_announced = user.all_announced((from, None))?;
+            let mut all_announced = user.fetch_all_announced((from, None))?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }
@@ -263,12 +263,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
-                    let user_info = current_user.info()?;
+                    let user_info = current_user.fetch_info()?;
                     print!("\n\n{user_info}");
                     fill_under(&user_info.to_string(), '-');
                 }
             } else {
-                println!("{}", user.info()?);
+                println!("{}", user.fetch_info()?);
             }
         }
 
