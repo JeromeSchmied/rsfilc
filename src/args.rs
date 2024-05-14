@@ -36,7 +36,7 @@ pub enum Commands {
         current: bool,
 
         /// export as json
-        #[arg(short, long)]
+        #[arg(short, long, name = "FILENAME.json")]
         export_day: Option<PathBuf>,
     },
 
