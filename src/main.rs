@@ -103,7 +103,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
         Commands::Evals {
             subject,
-            kind,
+            filter,
             number,
             average,
             reverse,
@@ -111,8 +111,8 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
         } => {
             let mut evals = user.evals((None, None))?;
             info!("got evals");
-            if let Some(kind) = kind {
-                Eval::filter_by_kind(&mut evals, &kind);
+            if let Some(kind) = filter {
+                Eval::filter_by_kind_or_title(&mut evals, &kind);
             }
             if let Some(subject) = subject {
                 Eval::filter_by_subject(&mut evals, &subject);

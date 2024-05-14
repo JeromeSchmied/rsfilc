@@ -102,11 +102,16 @@ impl Eval {
     }
 
     /// Filter `evals` by `kind`
-    pub fn filter_by_kind(evals: &mut Vec<Eval>, kind: &str) {
-        info!("filtering evals by kind: {}", kind);
+    pub fn filter_by_kind_or_title(evals: &mut Vec<Eval>, filter: &str) {
+        let filter = filter.to_lowercase();
+        info!("filtering evals by kind: {}", filter);
         evals.retain(|eval| {
             eval.kind()
-                .is_some_and(|kd| kd.to_lowercase().contains(&kind.to_lowercase()))
+                .is_some_and(|kd| kd.to_lowercase().contains(&filter))
+                || eval
+                    .topic
+                    .as_ref()
+                    .is_some_and(|t| t.to_lowercase().contains(&filter))
         });
     }
 

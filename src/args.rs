@@ -42,12 +42,12 @@ pub enum Commands {
 
     /// evaluations/grades the user recieved
     Evals {
-        /// filter the subject to show
+        /// filter by `subject`
         #[arg(short, long)]
         subject: Option<String>,
-        /// filter the kind to show
+        /// filter by `kind` eg. témazáró, or `title`
         #[arg(short, long)]
-        kind: Option<String>,
+        filter: Option<String>,
         /// calculate average
         #[arg(short, long, default_value_t = false)]
         average: bool,
@@ -58,7 +58,6 @@ pub enum Commands {
         #[arg(short, long, default_value_t = NUM)]
         number: usize,
         /// ghost evals, requires `--average`
-        // #[arg(short, long)]
         ghost: Vec<u8>,
     },
 
