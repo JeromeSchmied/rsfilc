@@ -475,6 +475,7 @@ impl User {
     pub fn msgs(&self, interval: Interval, num: Option<usize>) -> Res<Vec<Msg>> {
         let n = if let Some(n) = num { n } else { usize::MAX };
         let mut msgs = Vec::new();
+        let mut handles = Vec::new();
 
         for msg_oview in self.msg_oviews(n)? {
             // if isn't between `from`-`to`
@@ -483,12 +484,21 @@ impl User {
             {
                 continue;
             }
-            let msg = self.fetch_full_msg(&msg_oview)?;
-            msgs.push(msg);
+            let s = self.clone();
+            let h = std::thread::spawn(move || s.fetch_full_msg(&msg_oview).unwrap());
+            handles.push(h);
         }
         let mut logf = log_file("messages")?;
         write!(logf, "{msgs:?}")?;
 
+        for h in handles {
+            let j = h.join();
+            if let Ok(h) = j {
+                msgs.push(h);
+            } else {
+                let _ = j.map_err(|e| *e.downcast::<String>().unwrap())?;
+            }
+        }
         Ok(msgs)
     }
 
