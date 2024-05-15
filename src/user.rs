@@ -519,15 +519,13 @@ impl User {
         } else {
             vec![]
         };
-        info!("cached evals got: {cached_evals:?}");
+        // info!("cached evals got: {cached_evals:?}");
 
         let mut query = vec![];
 
-        // from: (latest_cache_t, from).min()
         if let Some(cache_t) = latest_cache_t {
             info!("from cached");
             query.push(("datumTol", cache_t.make_kreta_valid()));
-            // query.push(("datumTol", Local::now().with_hour(0).unwrap().to_string()));
         } else if let Some(from) = interval.0 {
             query.push(("datumTol", from.make_kreta_valid()));
         }
@@ -585,7 +583,7 @@ impl User {
     /// sorting
     pub fn fetch_all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
         let query = if let Some(from) = interval.0 {
-            vec![("datumTol", from.to_rfc3339())]
+            vec![("datumTol", from.make_kreta_valid())]
         } else {
             vec![]
         };
@@ -638,10 +636,10 @@ impl User {
     pub fn fetch_absences(&self, interval: Interval) -> Res<Vec<Abs>> {
         let mut query = vec![];
         if let Some(from) = interval.0 {
-            query.push(("datumTol", from.to_rfc3339()));
+            query.push(("datumTol", from.make_kreta_valid()));
         }
         if let Some(to) = interval.1 {
-            query.push(("datumIg", to.to_rfc3339()));
+            query.push(("datumIg", to.make_kreta_valid()));
         }
         let txt = self.fetch(&(self.base() + absences::ep()), "absences", &query)?;
 
