@@ -83,7 +83,7 @@ impl Attachment {
 }
 
 /// the message itself
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct Msg {
     // /// id
     // #[serde(rename(deserialize = "azonosito"))]
@@ -96,10 +96,10 @@ pub struct Msg {
     // #[serde(rename(deserialize = "isToroltElem"))]
     // is_torolt_elem: bool,
     /// kind
-    #[serde(rename(deserialize = "tipus"))]
+    #[serde(rename(deserialize = "tipus", serialize = "tipus"))]
     kind: HashMap<String, Value>,
     /// the message itself
-    #[serde(rename(deserialize = "uzenet"))]
+    #[serde(rename(deserialize = "uzenet", serialize = "uzenet"))]
     msg: HashMap<String, Value>,
 
     // /// attachments

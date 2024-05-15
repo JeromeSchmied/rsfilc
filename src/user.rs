@@ -474,12 +474,25 @@ impl User {
     /// - net
     pub fn msgs(&self, interval: Interval, num: Option<usize>) -> Res<Vec<Msg>> {
         let n = if let Some(n) = num { n } else { usize::MAX };
-        let mut msgs = Vec::new();
+        let mut fetched_msgs = Vec::new();
         let mut handles = Vec::new();
+
+        let (latest_cache_t, cache_content) = uncache("messages").unzip();
+        let mut cached_msgs = if let Some(cached) = &cache_content {
+            info!("cached: {:?}", cached);
+            serde_json::from_str::<Vec<Msg>>(cached)?
+        } else {
+            vec![]
+        };
+        let from = if let Some(cache_t) = latest_cache_t {
+            Some(cache_t)
+        } else {
+            interval.0
+        };
 
         for msg_oview in self.msg_oviews(n)? {
             // if isn't between `from`-`to`
-            if interval.0.is_some_and(|from| msg_oview.sent() < from)
+            if from.is_some_and(|fm| msg_oview.sent() < fm)
                 || interval.1.is_some_and(|to| msg_oview.sent() > to)
             {
                 continue;
@@ -489,17 +502,22 @@ impl User {
             handles.push(h);
         }
         let mut logf = log_file("messages")?;
-        write!(logf, "{msgs:?}")?;
+        write!(logf, "{fetched_msgs:?}")?;
 
         for h in handles {
             let j = h.join();
             if let Ok(h) = j {
-                msgs.push(h);
+                fetched_msgs.push(h);
             } else {
                 let _ = j.map_err(|e| *e.downcast::<String>().unwrap())?;
             }
         }
-        Ok(msgs)
+
+        cached_msgs.extend(fetched_msgs);
+        if interval.0.is_none() {
+            cache("messages", &serde_json::to_string(&cached_msgs)?)?;
+        }
+        Ok(cached_msgs)
     }
 
     /// get all [`Eval`]s with `from` `to` or all
