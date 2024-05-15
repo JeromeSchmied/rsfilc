@@ -479,7 +479,7 @@ impl User {
         let mut handles = Vec::new();
 
         let (latest_cache_t, cache_content) = uncache("messages").unzip();
-        let mut cached_msgs = if let Some(cached) = &cache_content {
+        let mut msgs = if let Some(cached) = &cache_content {
             // info!("cached: {:?}", cached);
             serde_json::from_str::<Vec<Msg>>(cached)?
         } else {
@@ -511,23 +511,26 @@ impl User {
             let j = h.join();
             if let Ok(msg) = j {
                 fetched_msgs.push(msg.clone());
-                let s = self.clone();
-                let xl = std::thread::spawn(move || s.download_attachments(&msg).unwrap());
-                am_handles.push(xl);
             } else {
                 let _ = j.map_err(|e| *e.downcast::<String>().unwrap())?;
             }
+        }
+
+        msgs.extend(fetched_msgs);
+        for msg in msgs.clone() {
+            let s = self.clone();
+            let xl = std::thread::spawn(move || s.download_attachments(&msg).unwrap());
+            // info!("attachment handle: {xl:?}");
+            am_handles.push(xl);
         }
         for h in am_handles {
             let j = h.join();
             j.map_err(|e| *e.downcast::<String>().unwrap())?;
         }
-
-        cached_msgs.extend(fetched_msgs);
         if interval.0.is_none() {
-            cache("messages", &serde_json::to_string(&cached_msgs)?)?;
+            cache("messages", &serde_json::to_string(&msgs)?)?;
         }
-        Ok(cached_msgs)
+        Ok(msgs)
     }
 
     /// get all [`Eval`]s with `from` `to` or all
