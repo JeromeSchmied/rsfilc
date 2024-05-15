@@ -480,7 +480,7 @@ impl User {
 
         let (latest_cache_t, cache_content) = uncache("messages").unzip();
         let mut cached_msgs = if let Some(cached) = &cache_content {
-            info!("cached: {:?}", cached);
+            // info!("cached: {:?}", cached);
             serde_json::from_str::<Vec<Msg>>(cached)?
         } else {
             vec![]
@@ -542,7 +542,7 @@ impl User {
     pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
         let (latest_cache_t, cache_content) = uncache("evals").unzip();
         let mut cached_evals = if let Some(cached) = &cache_content {
-            info!("cached: {:?}", cached);
+            // info!("cached: {:?}", cached);
             serde_json::from_str::<Vec<Eval>>(cached)?
         } else {
             vec![]
