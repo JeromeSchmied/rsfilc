@@ -130,7 +130,7 @@ pub trait MyDate {
     fn hun_month<'a>(&self) -> &'a str;
     /// Get hungarian day of week.
     fn hun_day_of_week<'a>(&self) -> &'a str;
-    fn make_kreta_valid_start(&self) -> String;
+    fn make_kreta_valid(&self) -> String;
 }
 impl MyDate for DateTime<Local> {
     fn pretty(&self) -> String {
@@ -210,7 +210,7 @@ impl MyDate for DateTime<Local> {
         }
     }
 
-    fn make_kreta_valid_start(&self) -> String {
+    fn make_kreta_valid(&self) -> String {
         self.date_naive().and_hms_opt(0, 0, 0).unwrap().to_string()
     }
 }

@@ -526,14 +526,14 @@ impl User {
         // from: (latest_cache_t, from).min()
         if let Some(cache_t) = latest_cache_t {
             info!("from cached");
-            query.push(("datumTol", cache_t.make_kreta_valid_start()));
+            query.push(("datumTol", cache_t.make_kreta_valid()));
             // query.push(("datumTol", Local::now().with_hour(0).unwrap().to_string()));
         } else if let Some(from) = interval.0 {
-            query.push(("datumTol", from.make_kreta_valid_start()));
+            query.push(("datumTol", from.make_kreta_valid()));
         }
-        // if let Some(to) = interval.1 {
-        //     query.push(("datumIg", to.));
-        // }
+        if let Some(to) = interval.1 {
+            query.push(("datumIg", to.make_kreta_valid()));
+        }
 
         let txt = self.fetch(&(self.base() + evals::ep()), "evals", &query)?;
 
