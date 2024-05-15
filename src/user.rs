@@ -468,6 +468,7 @@ impl User {
         Ok(msg)
     }
     /// Fetch max `n` [`Msg`]s between `from` and `to`.
+    /// Also download all `[Attachment]`s each [`Msg`] has.
     ///
     /// # Errors
     ///
@@ -504,13 +505,22 @@ impl User {
         let mut logf = log_file("messages")?;
         write!(logf, "{fetched_msgs:?}")?;
 
+        let mut am_handles = Vec::new();
+
         for h in handles {
             let j = h.join();
-            if let Ok(h) = j {
-                fetched_msgs.push(h);
+            if let Ok(msg) = j {
+                fetched_msgs.push(msg.clone());
+                let s = self.clone();
+                let xl = std::thread::spawn(move || s.download_attachments(&msg).unwrap());
+                am_handles.push(xl);
             } else {
                 let _ = j.map_err(|e| *e.downcast::<String>().unwrap())?;
             }
+        }
+        for h in am_handles {
+            let j = h.join();
+            j.map_err(|e| *e.downcast::<String>().unwrap())?;
         }
 
         cached_msgs.extend(fetched_msgs);

@@ -173,13 +173,11 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 for msg in msgs.iter().rev() {
                     println!("\n\n\n\n{msg}");
                     fill_under(&msg.to_string(), '-');
-                    user.download_attachments(msg)?;
                 }
             } else {
                 for msg in &msgs {
                     println!("\n\n\n\n{msg}");
                     fill_under(&msg.to_string(), '-');
-                    user.download_attachments(msg)?;
                 }
             }
         }
