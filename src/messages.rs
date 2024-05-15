@@ -239,7 +239,7 @@ impl Rendr {
                         "-dump",
                         "-assume_charset",
                         "utf-8",
-                        "--display_charset",
+                        "-display_charset",
                         "utf-8",
                     ])
                     .stdin(Stdio::piped())
