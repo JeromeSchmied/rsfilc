@@ -2,8 +2,10 @@
 
 use chrono::{DateTime, Datelike, Local, Timelike};
 use log::*;
+use serde::Serialize;
 use std::{
     fs::{self, File},
+    io::Write,
     path::PathBuf,
 };
 
@@ -45,12 +47,47 @@ pub fn config_path() -> Option<PathBuf> {
 /// # Panics
 ///
 /// `cache_dir` creation
-pub fn cache_path() -> Option<PathBuf> {
+pub fn cache_dir() -> Option<PathBuf> {
     let cache_path = dirs::cache_dir()?.join("rsfilc");
     if !cache_path.exists() {
         fs::create_dir_all(cache_path).expect("couldn't create cache dir");
     }
     Some(dirs::cache_dir()?.join("rsfilc"))
+}
+pub fn cache_path(kind: &str) -> PathBuf {
+    cache_dir().unwrap().join(format!("{}_cache.json", kind))
+}
+pub fn cache(kind: &str, content: &str) -> Res<()> {
+    let cp = cache_path(kind);
+    // let mut f = OpenOptions::new().create(true).append(true).open(&cp)?;
+    let mut f = File::create(&cp)?;
+    info!("caching to {cp:?}");
+
+    // let content = serde_json::to_string(content)?;
+    writeln!(f, "{}", Local::now().to_rfc3339())?;
+    // f.write_all(content.as_bytes())?;
+    writeln!(f, "{}", content)?;
+
+    Ok(())
+}
+pub fn uncache(kind: &str) -> Option<(DateTime<Local>, String)> {
+    let cp = cache_path(kind);
+    if !cp.exists() {
+        return None;
+    }
+    let content = if let Ok(cont) = fs::read_to_string(cp) {
+        cont
+    } else {
+        String::new()
+    };
+    let mut cl = content.lines().collect::<Vec<&str>>();
+    let t = cl.remove(0);
+    let t = DateTime::parse_from_rfc3339(t).ok()?;
+
+    let c = cl.iter().fold(String::new(), |all, cur| all + cur);
+    // let x = serde_json::from_str(&c)?;
+
+    Some((t.into(), c))
 }
 /// get log file with the help of [`log_path()`]
 pub fn log_file(kind: &str) -> Res<File> {
@@ -62,7 +99,7 @@ pub fn log_file(kind: &str) -> Res<File> {
 ///
 /// no `cache_path`
 pub fn log_path(kind: &str) -> PathBuf {
-    cache_path()
+    cache_dir()
         .expect("couldn't find cache path")
         .join([kind, ".log"].concat())
 }
@@ -93,6 +130,7 @@ pub trait MyDate {
     fn hun_month<'a>(&self) -> &'a str;
     /// Get hungarian day of week.
     fn hun_day_of_week<'a>(&self) -> &'a str;
+    fn make_kreta_valid_start(&self) -> String;
 }
 impl MyDate for DateTime<Local> {
     fn pretty(&self) -> String {
@@ -170,6 +208,10 @@ impl MyDate for DateTime<Local> {
             7 => "vasárnap",
             _ => unreachable!("invalid day of week"),
         }
+    }
+
+    fn make_kreta_valid_start(&self) -> String {
+        self.date_naive().and_hms_opt(0, 0, 0).unwrap().to_string()
     }
 }
 

@@ -512,25 +512,44 @@ impl User {
     ///
     /// net
     pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
+        let (latest_cache_t, cache_content) = uncache("evals").unzip();
+        let mut cached_evals = if let Some(cached) = &cache_content {
+            info!("cached: {:?}", cached);
+            serde_json::from_str::<Vec<Eval>>(cached)?
+        } else {
+            vec![]
+        };
+        info!("cached evals got: {cached_evals:?}");
+
         let mut query = vec![];
-        if let Some(from) = interval.0 {
-            query.push(("datumTol", from.to_rfc3339()));
+
+        // from: (latest_cache_t, from).min()
+        if let Some(cache_t) = latest_cache_t {
+            info!("from cached");
+            query.push(("datumTol", cache_t.make_kreta_valid_start()));
+            // query.push(("datumTol", Local::now().with_hour(0).unwrap().to_string()));
+        } else if let Some(from) = interval.0 {
+            query.push(("datumTol", from.make_kreta_valid_start()));
         }
-        if let Some(to) = interval.1 {
-            query.push(("datumIg", to.to_rfc3339()));
-        }
+        // if let Some(to) = interval.1 {
+        //     query.push(("datumIg", to.));
+        // }
 
         let txt = self.fetch(&(self.base() + evals::ep()), "evals", &query)?;
 
-        let mut evals = serde_json::from_str::<Vec<Eval>>(&txt)?;
+        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt)?;
         info!("recieved evals");
 
-        evals.sort_by(|a, b| {
+        cached_evals.extend(fetched_evals);
+        cached_evals.sort_by(|a, b| {
             b.earned()
                 .partial_cmp(&a.earned())
                 .expect("couldn't compare")
         });
-        Ok(evals)
+        if interval.0.is_none() {
+            cache("evals", &serde_json::to_string(&cached_evals)?)?;
+        }
+        Ok(cached_evals)
     }
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
@@ -667,6 +686,8 @@ impl User {
 
         let mut logf = log_file(log)?;
         write!(logf, "{text}")?;
+        // cache(log, &text)?;
+        // info!("cached.");
 
         Ok(text)
     }
