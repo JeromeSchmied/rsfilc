@@ -1,6 +1,7 @@
 use crate::{
     information::Info,
     messages::{Msg, MsgKind, MsgOview},
+    timetable::next_lesson,
     token::Token,
     *,
 };
@@ -300,7 +301,16 @@ impl User {
                 }
                 print!("{printer}");
 
-                fill_under(&printer, if lesson.happening() { '$' } else { '-' });
+                fill_under(
+                    &printer,
+                    if lesson.happening() {
+                        '$'
+                    } else if next_lesson(lessons).is_some_and(|j| j == lesson) {
+                        '>'
+                    } else {
+                        '-'
+                    },
+                );
             }
         }
     }

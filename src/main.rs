@@ -71,14 +71,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if current {
                 let current_lessons = timetable::current_lessons(&lessons);
-                if current_lessons.is_empty() {
-                    if let Some(nxt) = timetable::next_lesson(&lessons) {
-                        println!(
-                            "{}m -> {}",
-                            (nxt.start() - Local::now()).num_minutes(), // minutes remaining
-                            nxt.subject
-                        );
-                    }
+                if let Some(nxt) = timetable::next_lesson(&lessons) {
+                    println!(
+                        "{}m -> {}",
+                        (nxt.start() - Local::now()).num_minutes(), // minutes remaining
+                        nxt.subject
+                    );
                 }
                 for current_lesson in current_lessons {
                     println!(

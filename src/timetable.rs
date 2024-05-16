@@ -77,7 +77,11 @@ pub fn current_lessons(lessons: &[Lesson]) -> Vec<&Lesson> {
 /// # Warning
 ///
 /// There might accidentally be more next [`Lesson`]s. In this case only one of them is returned.
+/// Also, if there is any current_lesson, None is returned
 pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
+    if !current_lessons(lessons).is_empty() {
+        return None;
+    }
     info!("searching for next lesson");
     lessons
         .iter()
@@ -88,7 +92,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 }
 
 /// a lesson
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Lesson {
     // subject of the lesson
     #[serde(rename(deserialize = "Nev"))]
