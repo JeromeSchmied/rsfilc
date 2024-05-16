@@ -85,7 +85,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     info!("searching for next lesson");
     lessons
         .iter()
-        .filter(|lsn| lsn.forecoming() && !lsn.shite())
+        .filter(|lsn| lsn.forecoming() && !lsn.shite() && !lsn.cancelled())
         .collect::<Vec<_>>()
         .first()
         .copied()

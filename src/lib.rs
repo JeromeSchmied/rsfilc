@@ -75,6 +75,7 @@ pub fn uncache(kind: &str) -> Option<(DateTime<Local>, String)> {
     if !cp.exists() {
         return None;
     }
+    info!("loading cache from {cp:?}");
     let content = if let Ok(cont) = fs::read_to_string(cp) {
         cont
     } else {
@@ -93,7 +94,9 @@ pub fn uncache(kind: &str) -> Option<(DateTime<Local>, String)> {
 pub fn delete_cache_dir() -> Res<()> {
     if let Some(cd) = cache_dir() {
         if cd.exists() {
+            warn!("deleting cache dir");
             fs::remove_dir_all(cd)?;
+            info!("done");
         }
     }
     Ok(())

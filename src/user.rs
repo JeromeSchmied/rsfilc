@@ -528,7 +528,6 @@ impl User {
 
         msgs.extend(fetched_msgs);
         msgs.dedup_by(|a, b| a == b);
-        msgs.drain(n..);
         for msg in msgs.clone() {
             let s = self.clone();
             let xl = std::thread::spawn(move || s.download_attachments(&msg).unwrap());
@@ -541,6 +540,10 @@ impl User {
         }
         if interval.0.is_none() {
             cache("messages", &serde_json::to_string(&msgs)?)?;
+        }
+        info!("n: {n}");
+        if n < msgs.len() {
+            msgs.drain(n..);
         }
         Ok(msgs)
     }
