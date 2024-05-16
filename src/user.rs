@@ -517,6 +517,7 @@ impl User {
         }
 
         msgs.extend(fetched_msgs);
+        msgs.dedup_by(|a, b| a == b);
         for msg in msgs.clone() {
             let s = self.clone();
             let xl = std::thread::spawn(move || s.download_attachments(&msg).unwrap());
@@ -544,7 +545,7 @@ impl User {
     /// net
     pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
         let (latest_cache_t, cache_content) = uncache("evals").unzip();
-        let mut cached_evals = if let Some(cached) = &cache_content {
+        let mut evals = if let Some(cached) = &cache_content {
             // info!("cached: {:?}", cached);
             serde_json::from_str::<Vec<Eval>>(cached)?
         } else {
@@ -569,16 +570,17 @@ impl User {
         let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt)?;
         info!("recieved evals");
 
-        cached_evals.extend(fetched_evals);
-        cached_evals.sort_by(|a, b| {
+        evals.extend(fetched_evals);
+        evals.dedup_by(|a, b| a == b);
+        evals.sort_by(|a, b| {
             b.earned()
                 .partial_cmp(&a.earned())
                 .expect("couldn't compare")
         });
         if interval.0.is_none() {
-            cache("evals", &serde_json::to_string(&cached_evals)?)?;
+            cache("evals", &serde_json::to_string(&evals)?)?;
         }
-        Ok(cached_evals)
+        Ok(evals)
     }
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable

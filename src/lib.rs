@@ -210,6 +210,11 @@ impl MyDate for DateTime<Local> {
         }
     }
 
+    /// make [`DateTime<Local>`] valid for `Datum(Ig|Tol)` for `Kréta`
+    ///
+    /// # warning
+    ///
+    /// only day start: 00:00:00 is valid for `Kréta` feck it
     fn make_kreta_valid(&self) -> String {
         self.date_naive().and_hms_opt(0, 0, 0).unwrap().to_string()
     }

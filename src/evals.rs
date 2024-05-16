@@ -11,7 +11,7 @@ pub const fn ep() -> &'static str {
 }
 
 /// evaluation/grade
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Eval {
     // /// the time it was saved to `Kréta`?
     // #[serde(rename(deserialize = "RogzitesDatuma"))]

@@ -83,7 +83,7 @@ impl Attachment {
 }
 
 /// the message itself
-#[derive(Debug, Deserialize, Clone, Serialize)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq)]
 pub struct Msg {
     // /// id
     // #[serde(rename(deserialize = "azonosito"))]
