@@ -89,6 +89,15 @@ pub fn uncache(kind: &str) -> Option<(DateTime<Local>, String)> {
 
     Some((t.into(), c))
 }
+/// delete all cache and logs as well
+pub fn delete_cache_dir() -> Res<()> {
+    if let Some(cd) = cache_dir() {
+        if cd.exists() {
+            fs::remove_dir_all(cd)?;
+        }
+    }
+    Ok(())
+}
 /// get log file with the help of [`log_path()`]
 pub fn log_file(kind: &str) -> Res<File> {
     Ok(File::create(log_path(kind))?)

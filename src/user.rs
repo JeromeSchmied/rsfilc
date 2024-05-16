@@ -528,6 +528,7 @@ impl User {
 
         msgs.extend(fetched_msgs);
         msgs.dedup_by(|a, b| a == b);
+        msgs.drain(n..);
         for msg in msgs.clone() {
             let s = self.clone();
             let xl = std::thread::spawn(move || s.download_attachments(&msg).unwrap());

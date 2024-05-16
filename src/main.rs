@@ -245,6 +245,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             list,
         } => {
             if let Some(switch_to) = switch {
+                delete_cache_dir()?;
                 let switched_to = User::load(&switch_to).expect("couldn't load user");
                 info!("switched to user {switch_to}");
                 println!("switched to {switch_to}");
