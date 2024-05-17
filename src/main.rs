@@ -166,14 +166,14 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 return Ok(());
             }
 
-            let msgs = user.msgs((None, None), Some(number))?;
+            let msgs = user.msgs((None, None))?;
             if reverse {
-                for msg in msgs.iter().rev() {
+                for msg in msgs.iter().rev().take(number) {
                     println!("\n\n\n\n{msg}");
                     fill_under(&msg.to_string(), '-');
                 }
             } else {
-                for msg in &msgs {
+                for msg in msgs.iter().take(number) {
                     println!("\n\n\n\n{msg}");
                     fill_under(&msg.to_string(), '-');
                 }

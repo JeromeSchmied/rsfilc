@@ -483,8 +483,7 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn msgs(&self, interval: Interval, num: Option<usize>) -> Res<Vec<Msg>> {
-        let n = if let Some(n) = num { n } else { usize::MAX };
+    pub fn msgs(&self, interval: Interval) -> Res<Vec<Msg>> {
         let mut fetched_msgs = Vec::new();
         let mut handles = Vec::new();
 
@@ -501,7 +500,7 @@ impl User {
             interval.0
         };
 
-        for msg_oview in self.msg_oviews(n)? {
+        for msg_oview in self.msg_oviews(usize::MAX)? {
             // if isn't between `from`-`to`
             if from.is_some_and(|fm| msg_oview.sent() < fm)
                 || interval.1.is_some_and(|to| msg_oview.sent() > to)
@@ -540,10 +539,6 @@ impl User {
         }
         if interval.0.is_none() {
             cache("messages", &serde_json::to_string(&msgs)?)?;
-        }
-        info!("n: {n}");
-        if n < msgs.len() {
-            msgs.drain(n..);
         }
         Ok(msgs)
     }
