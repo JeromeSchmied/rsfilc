@@ -232,10 +232,30 @@ impl MyDate for DateTime<Local> {
     }
 }
 
-/// Fill under `fill` with many `with` [`char`]s.
-pub fn fill_under(fill: &str, with: char) {
-    let longest = fill.lines().max_by_key(|l| l.chars().count()).unwrap_or("");
-    println!("\n{}", with.to_string().repeat(longest.chars().count()));
+/// Fill under `fill` with many `with` [`char`]s, inlaying `hint` if any.
+///
+/// fill:   "123456789" <- len: 9
+/// with:   '#'
+/// hint:   "bab" <- len: 3
+///
+/// so:     "123456789" <- len: 9
+/// result: "12 bab 89" <- len: 9
+pub fn fill_under(fill: &str, with: char, hint: Option<&str>) {
+    let longest = fill.lines().map(|l| l.chars().count()).max().unwrap_or(0);
+    let inlay_hint = if let Some(il_hint) = hint {
+        [" ", il_hint, " "].concat()
+    } else {
+        "".to_owned()
+    };
+
+    let left = (longest - inlay_hint.chars().count()) / 2;
+    println!(
+        "{}{}{}",
+        with.to_string().repeat(left),
+        inlay_hint,
+        with.to_string()
+            .repeat(longest - left - inlay_hint.chars().count())
+    );
 }
 
 #[cfg(test)]

@@ -268,7 +268,7 @@ impl User {
             );
             if first_lesson.shite() {
                 print!("{first_lesson}");
-                fill_under(&first_lesson.to_string(), '|');
+                fill_under(&first_lesson.to_string(), '|', None);
             }
             let todays_tests = self
                 .fetch_all_announced((
@@ -299,18 +299,31 @@ impl User {
                 {
                     printer += &format!("\n| {}: {}", test.kind(), test.topic);
                 }
-                print!("{printer}");
+                println!("{printer}");
 
-                fill_under(
-                    &printer,
-                    if lesson.happening() {
-                        '$'
-                    } else if next_lesson(lessons).is_some_and(|j| j == lesson) {
-                        '>'
-                    } else {
-                        '-'
-                    },
-                );
+                // fill_under(, , )
+                // inline `fill_under()`
+
+                let (with, inlay_hint) = if lesson.happening() {
+                    (
+                        '$',
+                        Some(format!(
+                            "{} perc",
+                            (lesson.end() - Local::now()).num_minutes()
+                        )),
+                    )
+                } else if next_lesson(lessons).is_some_and(|nxt| nxt == lesson) {
+                    (
+                        '>',
+                        Some(format!(
+                            "{} perc",
+                            (lesson.start() - Local::now()).num_minutes()
+                        )),
+                    )
+                } else {
+                    ('-', None)
+                };
+                fill_under(&printer, with, inlay_hint.as_deref());
             }
         }
     }
