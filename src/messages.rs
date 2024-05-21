@@ -390,18 +390,18 @@ impl MsgKind {
 }
 
 /// the message itself
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct NaughtyMsg {
-    #[serde(rename(deserialize = "Cim"))]
+    #[serde(rename(deserialize = "Cim", serialize = "Cim"))]
     title: String,
 
-    #[serde(rename(deserialize = "Datum"))]
+    #[serde(rename(deserialize = "Datum", serialize = "Datum"))]
     date: String,
 
-    #[serde(rename(deserialize = "KeszitoTanarNeve"))]
+    #[serde(rename(deserialize = "KeszitoTanarNeve", serialize = "KeszitoTanarNeve"))]
     teacher: String,
 
-    #[serde(rename(deserialize = "TartalomFormazott"))]
+    #[serde(rename(deserialize = "TartalomFormazott", serialize = "TartalomFormazott"))]
     msg: String,
 
     #[serde(flatten)]

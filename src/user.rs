@@ -567,12 +567,10 @@ impl User {
     pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
         let (latest_cache_t, cache_content) = uncache("evals").unzip();
         let mut evals = if let Some(cached) = &cache_content {
-            // info!("cached: {:?}", cached);
             serde_json::from_str::<Vec<Eval>>(cached)?
         } else {
             vec![]
         };
-        // info!("cached evals got: {cached_evals:?}");
 
         let mut query = vec![];
         if let Some(cache_t) = latest_cache_t {
@@ -738,9 +736,34 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn fetch_note_msgs(&self) -> Res<Vec<NaughtyMsg>> {
-        let txt = self.fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])?;
-        let note_msgs = serde_json::from_str(&txt)?;
+    pub fn fetch_note_msgs(&self, interval: Interval) -> Res<Vec<NaughtyMsg>> {
+        let (latest_cache_t, cache_content) = uncache("note_messages").unzip();
+        let mut note_msgs = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<NaughtyMsg>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let mut query = vec![];
+        if let Some(cache_t) = latest_cache_t {
+            info!("from cached");
+            query.push(("datumTol", cache_t.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            query.push(("datumTol", from.make_kreta_valid()));
+        }
+        if let Some(to) = interval.1 {
+            query.push(("datumIg", to.make_kreta_valid()));
+        }
+
+        let txt = self
+            .fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])
+            .unwrap_or_default();
+        let fetched_note_msgs = serde_json::from_str::<Vec<NaughtyMsg>>(&txt);
+        note_msgs.extend(fetched_note_msgs.unwrap_or_default());
+        if interval.0.is_none() {
+            cache("note_messages", &serde_json::to_string(&note_msgs)?)?;
+        }
+
         Ok(note_msgs)
     }
 

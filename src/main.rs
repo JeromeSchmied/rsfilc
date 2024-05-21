@@ -150,7 +150,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             notes,
         } => {
             if notes {
-                let notes = user.fetch_note_msgs()?;
+                let notes = user.fetch_note_msgs((None, None))?;
                 if reverse {
                     for note in notes.iter().take(number).rev() {
                         println!("\n\n\n\n{note}");
