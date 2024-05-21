@@ -656,7 +656,7 @@ impl User {
         tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
         tests.dedup();
         if let Some(from) = interval.0 {
-            tests.retain(|ancd| ancd.day().num_days_from_ce() == from.num_days_from_ce());
+            tests.retain(|ancd| ancd.day().num_days_from_ce() >= from.num_days_from_ce());
         }
         if let Some(to) = interval.1 {
             tests.retain(|ancd| ancd.day().num_days_from_ce() <= to.num_days_from_ce());
