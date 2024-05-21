@@ -267,7 +267,7 @@ impl User {
                 first_lesson.start().hun_day_of_week()
             );
             if first_lesson.shite() {
-                print!("{first_lesson}");
+                println!("{first_lesson}");
                 fill(&first_lesson.to_string(), '|', None);
             }
             let todays_tests = self
@@ -276,6 +276,7 @@ impl User {
                     Some(lessons.last().unwrap().end()),
                 ))
                 .expect("couldn't fetch announced tests");
+            info!("all announced: {todays_tests:?}");
 
             // number of lessons at the same time
             let mut same_count = 0;
@@ -650,16 +651,15 @@ impl User {
             .unwrap_or_default();
 
         let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt);
-        info!("recieved all announced tests");
 
         tests.extend(fetched_tests.unwrap_or_default());
         tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
         tests.dedup();
-        if let Some(to) = interval.1 {
-            tests.retain(|ancd| ancd.day() <= to);
-        }
         if let Some(from) = interval.0 {
-            tests.retain(|ancd| ancd.day() >= from);
+            tests.retain(|ancd| ancd.day().num_days_from_ce() == from.num_days_from_ce());
+        }
+        if let Some(to) = interval.1 {
+            tests.retain(|ancd| ancd.day().num_days_from_ce() <= to.num_days_from_ce());
         }
         if interval.0.is_none() {
             cache("announced", &serde_json::to_string(&tests)?)?;
