@@ -268,7 +268,7 @@ impl User {
             );
             if first_lesson.shite() {
                 print!("{first_lesson}");
-                fill_under(&first_lesson.to_string(), '|', None);
+                fill(&first_lesson.to_string(), '|', None);
             }
             let todays_tests = self
                 .fetch_all_announced((
@@ -323,7 +323,7 @@ impl User {
                 } else {
                     ('-', None)
                 };
-                fill_under(&printer, with, inlay_hint.as_deref());
+                fill(&printer, with, inlay_hint.as_deref());
             }
         }
     }

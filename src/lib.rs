@@ -232,16 +232,16 @@ impl MyDate for DateTime<Local> {
     }
 }
 
-/// Fill under `fill` with many `with` [`char`]s, inlaying `hint` if any.
+/// Fill under `this` with many `with` [`char`]s, inlaying `hint` if any.
 ///
-/// fill:   "123456789" <- len: 9
+/// this:   "123456789" <- len: 9
 /// with:   '#'
 /// hint:   "bab" <- len: 3
 ///
 /// so:     "123456789" <- len: 9
 /// result: "12 bab 89" <- len: 9
-pub fn fill_under(fill: &str, with: char, hint: Option<&str>) {
-    let longest = fill.lines().map(|l| l.chars().count()).max().unwrap_or(0);
+pub fn fill(this: &str, with: char, hint: Option<&str>) {
+    let longest = this.lines().map(|l| l.chars().count()).max().unwrap_or(0);
     let inlay_hint = if let Some(il_hint) = hint {
         [" ", il_hint, " "].concat()
     } else {

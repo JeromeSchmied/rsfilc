@@ -134,12 +134,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             if reverse {
                 for eval in evals.iter().take(number).rev() {
                     println!("\n\n{eval}");
-                    fill_under(&eval.to_string(), '-', None);
+                    fill(&eval.to_string(), '-', None);
                 }
             } else {
                 for eval in evals.iter().take(number) {
                     println!("\n\n{eval}");
-                    fill_under(&eval.to_string(), '-', None);
+                    fill(&eval.to_string(), '-', None);
                 }
             }
         }
@@ -154,12 +154,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 if reverse {
                     for note in notes.iter().take(number).rev() {
                         println!("\n\n\n\n{note}");
-                        fill_under(&note.to_string(), '-', None);
+                        fill(&note.to_string(), '-', None);
                     }
                 } else {
                     for note in notes.iter().take(number) {
                         println!("\n\n\n\n{note}");
-                        fill_under(&note.to_string(), '-', None);
+                        fill(&note.to_string(), '-', None);
                     }
                 }
 
@@ -170,12 +170,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             if reverse {
                 for msg in msgs.iter().rev().take(number) {
                     println!("\n\n\n\n{msg}");
-                    fill_under(&msg.to_string(), '-', None);
+                    fill(&msg.to_string(), '-', None);
                 }
             } else {
                 for msg in msgs.iter().take(number) {
                     println!("\n\n\n\n{msg}");
-                    fill_under(&msg.to_string(), '-', None);
+                    fill(&msg.to_string(), '-', None);
                 }
             }
         }
@@ -203,12 +203,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             if reverse {
                 for absence in absences.iter().take(number).rev() {
                     println!("\n\n{absence}");
-                    fill_under(&absence.to_string(), '-', None);
+                    fill(&absence.to_string(), '-', None);
                 }
             } else {
                 for absence in absences.iter().take(number) {
                     println!("\n\n{absence}");
-                    fill_under(&absence.to_string(), '-', None);
+                    fill(&absence.to_string(), '-', None);
                 }
             }
         }
@@ -228,12 +228,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             if reverse {
                 for announced in all_announced.iter().take(number).rev() {
                     print!("\n\n{announced}");
-                    fill_under(&announced.to_string(), '-', None);
+                    fill(&announced.to_string(), '-', None);
                 }
             } else {
                 for announced in all_announced.iter().take(number) {
                     print!("\n\n{announced}");
-                    fill_under(&announced.to_string(), '-', None);
+                    fill(&announced.to_string(), '-', None);
                 }
             }
         }
@@ -262,7 +262,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 for current_user in User::load_all() {
                     let user_info = current_user.fetch_info()?;
                     print!("\n\n{user_info}");
-                    fill_under(&user_info.to_string(), '-', None);
+                    fill(&user_info.to_string(), '-', None);
                 }
             } else {
                 println!("{}", user.fetch_info()?);
@@ -275,13 +275,13 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 let found = School::search(&schools, &school_name);
                 for school in found {
                     print!("\n\n{school}");
-                    fill_under(&school.to_string(), '-', None);
+                    fill(&school.to_string(), '-', None);
                 }
             } else {
                 info!("listing schools");
                 for school in schools {
                     print!("\n\n{school}");
-                    fill_under(&school.to_string(), '-', None);
+                    fill(&school.to_string(), '-', None);
                 }
             }
         }
