@@ -462,7 +462,7 @@ impl User {
         ]
         .concat();
 
-        msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+        msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).unwrap());
         let max_n = msg_oviews.len();
         // don't exceed the lenght of msg_oviews
         let n = if n < max_n { n } else { max_n };
@@ -590,11 +590,7 @@ impl User {
         info!("recieved evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
-        evals.sort_by(|a, b| {
-            b.earned()
-                .partial_cmp(&a.earned())
-                .expect("couldn't compare")
-        });
+        evals.sort_by(|a, b| b.earned().partial_cmp(&a.earned()).unwrap());
         evals.dedup();
         if interval.0.is_none() {
             cache("evals", &serde_json::to_string(&evals)?)?;
@@ -620,7 +616,7 @@ impl User {
 
         let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
         info!("recieved lessons");
-        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
+        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).unwrap());
         Ok(lessons)
     }
 
@@ -657,7 +653,7 @@ impl User {
         info!("recieved all announced tests");
 
         tests.extend(fetched_tests.unwrap_or_default());
-        tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
+        tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
         tests.dedup();
         if let Some(to) = interval.1 {
             tests.retain(|ancd| ancd.day() <= to);
@@ -734,7 +730,7 @@ impl User {
         let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default());
         info!("recieved absences");
         absences.extend(fetched_absences.unwrap_or_default());
-        absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
+        absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).unwrap());
 
         Ok(absences)
     }
