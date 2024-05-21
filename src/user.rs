@@ -301,9 +301,6 @@ impl User {
                 }
                 println!("{printer}");
 
-                // fill_under(, , )
-                // inline `fill_under()`
-
                 let (with, inlay_hint) = if lesson.happening() {
                     (
                         '$',
@@ -513,7 +510,7 @@ impl User {
             interval.0
         };
 
-        for msg_oview in self.msg_oviews(usize::MAX)? {
+        for msg_oview in self.msg_oviews(usize::MAX).unwrap_or_default() {
             // if isn't between `from`-`to`
             if from.is_some_and(|fm| msg_oview.sent() < fm)
                 || interval.1.is_some_and(|to| msg_oview.sent() > to)
@@ -521,7 +518,11 @@ impl User {
                 continue;
             }
             let s = self.clone();
-            let h = std::thread::spawn(move || s.fetch_full_msg(&msg_oview).unwrap());
+            let h = std::thread::spawn(move || {
+                s.fetch_full_msg(&msg_oview)
+                    .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"))
+                    .unwrap()
+            });
             handles.push(h);
         }
         let mut logf = log_file("messages")?;
@@ -530,20 +531,18 @@ impl User {
         let mut am_handles = Vec::new();
 
         for h in handles {
-            let j = h.join();
-            if let Ok(msg) = j {
-                fetched_msgs.push(msg.clone());
-            } else {
-                let _ = j.map_err(|e| *e.downcast::<String>().unwrap())?;
-            }
+            fetched_msgs.push(h.join().unwrap());
         }
 
         msgs.extend(fetched_msgs);
         msgs.dedup_by(|a, b| a == b);
         for msg in msgs.clone() {
             let s = self.clone();
-            let xl = std::thread::spawn(move || s.download_attachments(&msg).unwrap());
-            // info!("attachment handle: {xl:?}");
+            let xl = std::thread::spawn(move || {
+                s.download_attachments(&msg)
+                    .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"))
+                    .unwrap()
+            });
             am_handles.push(xl);
         }
         for h in am_handles {
@@ -589,10 +588,7 @@ impl User {
 
         let txt = self
             .fetch(&(self.base() + evals::ep()), "evals", &query)
-            .inspect_err(|e| {
-                warn!("couldn't fetch from E-Kréta server: {e:?}");
-                eprintln!("couldn't fetch from E-Kréta server: {e:?}");
-            });
+            .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
 
         let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default());
         info!("recieved evals");
@@ -661,6 +657,9 @@ impl User {
     }
 
     /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
+    ///
+    /// # Errors
+    /// - net
     pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
         for am in msg.attachments() {
             info!("downloading file://{}", am.download_to().display());
