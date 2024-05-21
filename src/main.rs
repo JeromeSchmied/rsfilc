@@ -126,19 +126,19 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if average {
                 let avg = Eval::average(&evals, &ghost);
-                println!("Average: {avg}");
+                println!("Average: {avg:.2}");
 
                 return Ok(());
             }
 
             if reverse {
                 for eval in evals.iter().take(number).rev() {
-                    print!("\n\n{eval}");
+                    println!("\n\n{eval}");
                     fill_under(&eval.to_string(), '-', None);
                 }
             } else {
                 for eval in evals.iter().take(number) {
-                    print!("\n\n{eval}");
+                    println!("\n\n{eval}");
                     fill_under(&eval.to_string(), '-', None);
                 }
             }
@@ -202,12 +202,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if reverse {
                 for absence in absences.iter().take(number).rev() {
-                    print!("\n\n{absence}");
+                    println!("\n\n{absence}");
                     fill_under(&absence.to_string(), '-', None);
                 }
             } else {
                 for absence in absences.iter().take(number) {
-                    print!("\n\n{absence}");
+                    println!("\n\n{absence}");
                     fill_under(&absence.to_string(), '-', None);
                 }
             }

@@ -587,12 +587,17 @@ impl User {
             query.push(("datumIg", to.make_kreta_valid()));
         }
 
-        let txt = self.fetch(&(self.base() + evals::ep()), "evals", &query)?;
+        let txt = self
+            .fetch(&(self.base() + evals::ep()), "evals", &query)
+            .inspect_err(|e| {
+                warn!("couldn't fetch from E-Kréta server: {e:?}");
+                eprintln!("couldn't fetch from E-Kréta server: {e:?}");
+            });
 
-        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt)?;
+        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default());
         info!("recieved evals");
 
-        evals.extend(fetched_evals);
+        evals.extend(fetched_evals.unwrap_or_default());
         evals.dedup_by(|a, b| a == b);
         evals.sort_by(|a, b| {
             b.earned()
