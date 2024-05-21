@@ -497,15 +497,14 @@ impl User {
         let mut fetched_msgs = Vec::new();
         let mut handles = Vec::new();
 
-        let (latest_cache_t, cache_content) = uncache("messages").unzip();
+        let (cache_t, cache_content) = uncache("messages").unzip();
         let mut msgs = if let Some(cached) = &cache_content {
-            // info!("cached: {:?}", cached);
             serde_json::from_str::<Vec<Msg>>(cached)?
         } else {
             vec![]
         };
-        let from = if let Some(cache_t) = latest_cache_t {
-            Some(cache_t)
+        let from = if let Some(ct) = cache_t {
+            Some(ct)
         } else {
             interval.0
         };
@@ -535,7 +534,7 @@ impl User {
         }
 
         msgs.extend(fetched_msgs);
-        msgs.dedup_by(|a, b| a == b);
+        msgs.dedup();
         for msg in msgs.clone() {
             let s = self.clone();
             let xl = std::thread::spawn(move || {
@@ -565,7 +564,7 @@ impl User {
     ///
     /// net
     pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
-        let (latest_cache_t, cache_content) = uncache("evals").unzip();
+        let (cache_t, cache_content) = uncache("evals").unzip();
         let mut evals = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Eval>>(cached)?
         } else {
@@ -573,9 +572,9 @@ impl User {
         };
 
         let mut query = vec![];
-        if let Some(cache_t) = latest_cache_t {
+        if let Some(ct) = cache_t {
             info!("from cached");
-            query.push(("datumTol", cache_t.make_kreta_valid()));
+            query.push(("datumTol", ct.make_kreta_valid()));
         } else if let Some(from) = interval.0 {
             query.push(("datumTol", from.make_kreta_valid()));
         }
@@ -591,12 +590,12 @@ impl User {
         info!("recieved evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
-        evals.dedup_by(|a, b| a == b);
         evals.sort_by(|a, b| {
             b.earned()
                 .partial_cmp(&a.earned())
                 .expect("couldn't compare")
         });
+        evals.dedup();
         if interval.0.is_none() {
             cache("evals", &serde_json::to_string(&evals)?)?;
         }
@@ -635,22 +634,42 @@ impl User {
     ///
     /// sorting
     pub fn fetch_all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
-        let query = if let Some(from) = interval.0 {
-            vec![("datumTol", from.make_kreta_valid())]
+        let (cache_t, cache_content) = uncache("announced").unzip();
+        let mut tests = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Ancd>>(cached)?
         } else {
             vec![]
         };
 
-        let txt = self.fetch(&(self.base() + announced::ep()), "announced", &query)?;
+        let mut query = vec![];
+        if let Some(ct) = cache_t {
+            info!("from cached");
+            query.push(("datumTol", ct.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            query.push(("datumTol", from.make_kreta_valid()));
+        };
 
-        let mut all_announced: Vec<Ancd> = serde_json::from_str(&txt)?;
+        let txt = self
+            .fetch(&(self.base() + announced::ep()), "announced", &query)
+            .unwrap_or_default();
+
+        let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt);
         info!("recieved all announced tests");
 
-        all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
+        tests.extend(fetched_tests.unwrap_or_default());
+        tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
+        tests.dedup();
         if let Some(to) = interval.1 {
-            all_announced.retain(|ancd| ancd.day() <= to);
+            tests.retain(|ancd| ancd.day() <= to);
         }
-        Ok(all_announced)
+        if let Some(from) = interval.0 {
+            tests.retain(|ancd| ancd.day() >= from);
+        }
+        if interval.0.is_none() {
+            cache("announced", &serde_json::to_string(&tests)?)?;
+        }
+
+        Ok(tests)
     }
 
     /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
@@ -690,7 +709,7 @@ impl User {
     ///
     /// sorting
     pub fn fetch_absences(&self, interval: Interval) -> Res<Vec<Abs>> {
-        let (latest_cache_t, cache_content) = uncache("absences").unzip();
+        let (cache_t, cache_content) = uncache("absences").unzip();
         let mut absences = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Abs>>(cached)?
         } else {
@@ -698,9 +717,9 @@ impl User {
         };
 
         let mut query = vec![];
-        if let Some(cache_t) = latest_cache_t {
+        if let Some(ct) = cache_t {
             info!("from cached");
-            query.push(("datumTol", cache_t.make_kreta_valid()));
+            query.push(("datumTol", ct.make_kreta_valid()));
         } else if let Some(from) = interval.0 {
             query.push(("datumTol", from.make_kreta_valid()));
         }
@@ -737,7 +756,7 @@ impl User {
     ///
     /// - net
     pub fn fetch_note_msgs(&self, interval: Interval) -> Res<Vec<NoteMsg>> {
-        let (latest_cache_t, cache_content) = uncache("note_messages").unzip();
+        let (cache_t, cache_content) = uncache("note_messages").unzip();
         let mut note_msgs = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<NoteMsg>>(cached)?
         } else {
@@ -745,9 +764,9 @@ impl User {
         };
 
         let mut query = vec![];
-        if let Some(cache_t) = latest_cache_t {
+        if let Some(ct) = cache_t {
             info!("from cached");
-            query.push(("datumTol", cache_t.make_kreta_valid()));
+            query.push(("datumTol", ct.make_kreta_valid()));
         } else if let Some(from) = interval.0 {
             query.push(("datumTol", from.make_kreta_valid()));
         }

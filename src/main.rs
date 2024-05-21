@@ -227,12 +227,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if reverse {
                 for announced in all_announced.iter().take(number).rev() {
-                    print!("\n\n{announced}");
+                    println!("\n\n{announced}");
                     fill(&announced.to_string(), '-', None);
                 }
             } else {
                 for announced in all_announced.iter().take(number) {
-                    print!("\n\n{announced}");
+                    println!("\n\n{announced}");
                     fill(&announced.to_string(), '-', None);
                 }
             }
@@ -261,7 +261,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
                     let user_info = current_user.fetch_info()?;
-                    print!("\n\n{user_info}");
+                    println!("\n\n{user_info}");
                     fill(&user_info.to_string(), '-', None);
                 }
             } else {
@@ -274,13 +274,13 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             if let Some(school_name) = search {
                 let found = School::search(&schools, &school_name);
                 for school in found {
-                    print!("\n\n{school}");
+                    println!("\n\n{school}");
                     fill(&school.to_string(), '-', None);
                 }
             } else {
                 info!("listing schools");
                 for school in schools {
-                    print!("\n\n{school}");
+                    println!("\n\n{school}");
                     fill(&school.to_string(), '-', None);
                 }
             }

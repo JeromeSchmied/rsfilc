@@ -151,11 +151,12 @@
 -   [ ] caching everything so that life remains enjoyable
     -   [ ] token
     -   [ ] timetable
-    -   [ ] evals
+    -   [x] evals
     -   [ ] user info
-    -   [ ] absences
+    -   [x] absences
     -   [ ] announced tests
-    -   [ ] messages
+    -   [x] messages
+    -   [x] note messages
 -   [x] encoding passwords
 -   [ ] sending messages
 -   [ ] class averages

@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Local};
 use log::info;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashMap, fmt};
 
@@ -15,40 +15,41 @@ pub const fn ep() -> &'static str {
 }
 
 /// announced test
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Ancd {
     /// date of doing test
-    #[serde(rename(deserialize = "Datum"))]
+    #[serde(rename(deserialize = "Datum", serialize = "Datum"))]
     date: String,
     /// date of entry
-    #[serde(rename(deserialize = "BejelentesDatuma"))]
+    #[serde(rename(deserialize = "BejelentesDatuma", serialize = "BejelentesDatuma"))]
     entry_date: String,
 
     /// teacher who entered it
-    #[serde(rename(deserialize = "RogzitoTanarNeve"))]
+    #[serde(rename(deserialize = "RogzitoTanarNeve", serialize = "RogzitoTanarNeve"))]
     teacher_entered: String,
 
     /// nth lesson of that day
-    #[serde(rename(deserialize = "OrarendiOraOraszama"))]
+    #[serde(rename(deserialize = "OrarendiOraOraszama", serialize = "OrarendiOraOraszama"))]
     pub nth: Option<u8>,
 
     /// name of the subject
-    #[serde(rename(deserialize = "TantargyNeve"))]
+    #[serde(rename(deserialize = "TantargyNeve", serialize = "TantargyNeve"))]
     subject: String,
     /// subject: information about the type of the lesson: eg.: maths, history
-    #[serde(rename(deserialize = "Tantargy"))]
+    #[serde(rename(deserialize = "Tantargy", serialize = "Tantargy"))]
     _subject_details: HashMap<String, Value>,
 
     /// topic of the test
-    #[serde(rename(deserialize = "Temaja"))]
+    #[serde(rename(deserialize = "Temaja", serialize = "Temaja"))]
     pub topic: String,
 
     /// how it'll be done
-    #[serde(rename(deserialize = "Modja"))]
+    #[serde(rename(deserialize = "Modja", serialize = "Modja"))]
     kind: HashMap<String, Value>,
 
     /// not needed
     #[serde(flatten)]
+    #[serde(skip)]
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Ancd {
