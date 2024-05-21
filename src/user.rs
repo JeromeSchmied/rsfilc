@@ -575,7 +575,6 @@ impl User {
         // info!("cached evals got: {cached_evals:?}");
 
         let mut query = vec![];
-
         if let Some(cache_t) = latest_cache_t {
             info!("from cached");
             query.push(("datumTol", cache_t.make_kreta_valid()));
@@ -693,19 +692,34 @@ impl User {
     ///
     /// sorting
     pub fn fetch_absences(&self, interval: Interval) -> Res<Vec<Abs>> {
+        let (latest_cache_t, cache_content) = uncache("absences").unzip();
+        let mut absences = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Abs>>(cached)?
+        } else {
+            vec![]
+        };
+
         let mut query = vec![];
-        if let Some(from) = interval.0 {
+        if let Some(cache_t) = latest_cache_t {
+            info!("from cached");
+            query.push(("datumTol", cache_t.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
             query.push(("datumTol", from.make_kreta_valid()));
         }
         if let Some(to) = interval.1 {
             query.push(("datumIg", to.make_kreta_valid()));
         }
-        let txt = self.fetch(&(self.base() + absences::ep()), "absences", &query)?;
 
-        let mut abss: Vec<Abs> = serde_json::from_str(&txt)?;
+        let txt = self
+            .fetch(&(self.base() + absences::ep()), "absences", &query)
+            .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
+
+        let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default());
         info!("recieved absences");
-        abss.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
-        Ok(abss)
+        absences.extend(fetched_absences.unwrap_or_default());
+        absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
+
+        Ok(absences)
     }
 
     /// get groups the [`User`] is a member of
