@@ -391,7 +391,7 @@ impl MsgKind {
 
 /// the message itself
 #[derive(Debug, Deserialize, Clone, Serialize)]
-pub struct NaughtyMsg {
+pub struct NoteMsg {
     #[serde(rename(deserialize = "Cim", serialize = "Cim"))]
     title: String,
 
@@ -409,7 +409,7 @@ pub struct NaughtyMsg {
 }
 
 /// additional notes/system messages
-impl NaughtyMsg {
+impl NoteMsg {
     /// get `date`
     ///
     /// # Panics
@@ -419,7 +419,7 @@ impl NaughtyMsg {
         DateTime::parse_from_rfc3339(&self.date).unwrap().into()
     }
 }
-impl fmt::Display for NaughtyMsg {
+impl fmt::Display for NoteMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "| {}", self.title)?;
         writeln!(f, "| Időpont: {}", self.date().pretty())?;

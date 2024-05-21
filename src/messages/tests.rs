@@ -145,7 +145,7 @@ fn naughty_msg_deser() {
         }
     }"#;
 
-    let msg = serde_json::from_str::<NaughtyMsg>(msg_s);
+    let msg = serde_json::from_str::<NoteMsg>(msg_s);
     assert!(msg.is_ok());
 
     let msg = msg.unwrap();

@@ -22,7 +22,7 @@ use std::{
     time::Duration,
 };
 
-use self::messages::NaughtyMsg;
+use self::messages::NoteMsg;
 
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
@@ -736,10 +736,10 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn fetch_note_msgs(&self, interval: Interval) -> Res<Vec<NaughtyMsg>> {
+    pub fn fetch_note_msgs(&self, interval: Interval) -> Res<Vec<NoteMsg>> {
         let (latest_cache_t, cache_content) = uncache("note_messages").unzip();
         let mut note_msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<NaughtyMsg>>(cached)?
+            serde_json::from_str::<Vec<NoteMsg>>(cached)?
         } else {
             vec![]
         };
@@ -758,7 +758,7 @@ impl User {
         let txt = self
             .fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])
             .unwrap_or_default();
-        let fetched_note_msgs = serde_json::from_str::<Vec<NaughtyMsg>>(&txt);
+        let fetched_note_msgs = serde_json::from_str::<Vec<NoteMsg>>(&txt);
         note_msgs.extend(fetched_note_msgs.unwrap_or_default());
         if interval.0.is_none() {
             cache("note_messages", &serde_json::to_string(&note_msgs)?)?;
