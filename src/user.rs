@@ -465,7 +465,8 @@ impl User {
             .fetch(&(self.base() + evals::ep()), "evals", &query)
             .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
 
-        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default());
+        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default())
+            .inspect_err(|e| warn!("couldn't deserialize data: {e:?}"));
         info!("recieved evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
@@ -529,7 +530,8 @@ impl User {
             .fetch(&(self.base() + announced::ep()), "announced", &query)
             .inspect_err(|e| warn!("couldn't reach E-Kréta server: {e:?}"));
 
-        let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt.unwrap_or_default());
+        let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt.unwrap_or_default())
+            .inspect_err(|e| warn!("couldn't deserialize data: {e:?}"));
 
         tests.extend(fetched_tests.unwrap_or_default());
         tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
@@ -581,7 +583,8 @@ impl User {
             .fetch(&(self.base() + absences::ep()), "absences", &query)
             .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
 
-        let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default());
+        let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default())
+            .inspect_err(|e| warn!("couldn't deserialize data: {e:?}"));
         info!("recieved absences");
         absences.extend(fetched_absences.unwrap_or_default());
         absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).unwrap());
@@ -798,7 +801,8 @@ impl User {
         let txt = self
             .fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])
             .unwrap_or_default();
-        let fetched_note_msgs = serde_json::from_str::<Vec<NoteMsg>>(&txt);
+        let fetched_note_msgs = serde_json::from_str::<Vec<NoteMsg>>(&txt)
+            .inspect_err(|e| warn!("couldn't deserialize data: {e:?}"));
         note_msgs.extend(fetched_note_msgs.unwrap_or_default());
         if interval.0.is_none() {
             cache("note_messages", &serde_json::to_string(&note_msgs)?)?;
