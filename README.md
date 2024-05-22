@@ -154,7 +154,7 @@
     -   [x] evals
     -   [ ] user info
     -   [x] absences
-    -   [ ] announced tests
+    -   [x] announced tests
     -   [x] messages
     -   [x] note messages
 -   [x] encoding passwords

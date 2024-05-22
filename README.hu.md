@@ -141,11 +141,11 @@
 -   [ ] kb minden cache-elése a valódi élmény érdekében
     -   [ ] token
     -   [ ] órarend
-    -   [ ] jegyek
+    -   [x] jegyek
     -   [ ] felhasználó adatai
-    -   [ ] hiányzások
-    -   [ ] bejelentett számonkérések
-    -   [ ] üzenetek
+    -   [x] hiányzások
+    -   [x] bejelentett számonkérések
+    -   [x] üzenetek
 -   [x] jelszavak titkosítása mentéshez
 -   [ ] üzenetek küldése
 -   [ ] osztályátlagok
