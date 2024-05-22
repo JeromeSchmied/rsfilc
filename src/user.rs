@@ -465,18 +465,25 @@ impl User {
             query.push(("datumIg", to.make_kreta_valid()));
         }
 
+        let mut fetch_err = false;
         let txt = self
             .fetch(&(self.base() + evals::ep()), "evals", &query)
-            .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't fetch from E-Kréta server: {e:?}");
+            });
 
         let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default())
-            .inspect_err(|e| warn!("couldn't deserialize data: {e:?}"));
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't deserialize data: {e:?}")
+            });
         info!("recieved evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
         evals.sort_by(|a, b| b.earned().partial_cmp(&a.earned()).unwrap());
         evals.dedup();
-        if interval.0.is_none() {
+        if interval.0.is_none() && !fetch_err {
             cache("evals", &serde_json::to_string(&evals)?)?;
         }
         Ok(evals)
@@ -530,12 +537,19 @@ impl User {
             query.push(("datumTol", from.make_kreta_valid()));
         };
 
+        let mut fetch_err = false;
         let txt = self
             .fetch(&(self.base() + announced::ep()), "announced", &query)
-            .inspect_err(|e| warn!("couldn't reach E-Kréta server: {e:?}"));
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't reach E-Kréta server: {e:?}");
+            });
 
         let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt.unwrap_or_default())
-            .inspect_err(|e| warn!("couldn't deserialize data: {e:?}"));
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't deserialize data: {e:?}");
+            });
 
         tests.extend(fetched_tests.unwrap_or_default());
         tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
@@ -548,7 +562,7 @@ impl User {
             info!("filtering, to!");
             tests.retain(|ancd| ancd.day().num_days_from_ce() <= to.num_days_from_ce());
         }
-        if interval.0.is_none() {
+        if interval.0.is_none() && !fetch_err {
             cache("announced", &serde_json::to_string(&tests)?)?;
         }
 
@@ -718,9 +732,6 @@ impl User {
     ///
     /// - net
     pub fn msgs(&self, interval: Interval) -> Res<Vec<Msg>> {
-        let mut fetched_msgs = Vec::new();
-        let mut handles = Vec::new();
-
         let (cache_t, cache_content) = uncache("messages").unzip();
         let mut msgs = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Msg>>(cached)?
@@ -733,6 +744,10 @@ impl User {
             interval.0
         };
 
+        let mut fetched_msgs = Vec::new();
+        let mut handles = Vec::new();
+
+        let mut fetch_err = false;
         for msg_oview in self.msg_oviews(usize::MAX).unwrap_or_default() {
             // if isn't between `from`-`to`
             if from.is_some_and(|fm| msg_oview.sent() < fm)
@@ -743,7 +758,10 @@ impl User {
             let s = self.clone();
             let h = std::thread::spawn(move || {
                 s.fetch_full_msg(&msg_oview)
-                    .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"))
+                    .inspect_err(|e| {
+                        fetch_err = true;
+                        warn!("couldn't fetch from E-Kréta server: {e:?}");
+                    })
                     .unwrap()
             });
             handles.push(h);
@@ -772,7 +790,7 @@ impl User {
             let j = h.join();
             j.map_err(|e| *e.downcast::<String>().unwrap())?;
         }
-        if interval.0.is_none() {
+        if interval.0.is_none() && !fetch_err {
             cache("messages", &serde_json::to_string(&msgs)?)?;
         }
         Ok(msgs)
@@ -802,13 +820,21 @@ impl User {
             query.push(("datumIg", to.make_kreta_valid()));
         }
 
+        let mut fetch_err = false;
         let txt = self
             .fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't reach E-Kréta server: {e:?}");
+            })
             .unwrap_or_default();
-        let fetched_note_msgs = serde_json::from_str::<Vec<NoteMsg>>(&txt)
-            .inspect_err(|e| warn!("couldn't deserialize data: {e:?}"));
+        let fetched_note_msgs = serde_json::from_str::<Vec<NoteMsg>>(&txt).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't deserialize data: {e:?}");
+        });
+
         note_msgs.extend(fetched_note_msgs.unwrap_or_default());
-        if interval.0.is_none() {
+        if interval.0.is_none() && !fetch_err {
             cache("note_messages", &serde_json::to_string(&note_msgs)?)?;
         }
 
