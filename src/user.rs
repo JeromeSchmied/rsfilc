@@ -433,6 +433,222 @@ impl User {
         Ok(info)
     }
 
+    /// get all [`Eval`]s with `from` `to` or all
+    ///
+    /// # Panics
+    ///
+    /// sorting
+    ///
+    /// # Errors
+    ///
+    /// net
+    pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
+        let (cache_t, cache_content) = uncache("evals").unzip();
+        let mut evals = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Eval>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let mut query = vec![];
+        if let Some(ct) = cache_t {
+            info!("from cached");
+            query.push(("datumTol", ct.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            query.push(("datumTol", from.make_kreta_valid()));
+        }
+        if let Some(to) = interval.1 {
+            query.push(("datumIg", to.make_kreta_valid()));
+        }
+
+        let txt = self
+            .fetch(&(self.base() + evals::ep()), "evals", &query)
+            .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
+
+        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default());
+        info!("recieved evals");
+
+        evals.extend(fetched_evals.unwrap_or_default());
+        evals.sort_by(|a, b| b.earned().partial_cmp(&a.earned()).unwrap());
+        evals.dedup();
+        if interval.0.is_none() {
+            cache("evals", &serde_json::to_string(&evals)?)?;
+        }
+        Ok(evals)
+    }
+
+    /// get all [`Lesson`]s `from` `to` which makes up a timetable
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// - sorting
+    pub fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
+        let txt = self.fetch(
+            &(self.base() + timetable::ep()),
+            "timetable",
+            &[("datumTol", from.to_string()), ("datumIg", to.to_string())],
+        )?;
+
+        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
+        info!("recieved lessons");
+        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).unwrap());
+        Ok(lessons)
+    }
+
+    /// get [`Announced`] tests `from` `to` or all
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// sorting
+    pub fn fetch_all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
+        let (cache_t, cache_content) = uncache("announced").unzip();
+        let mut tests = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Ancd>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let mut query = vec![];
+        if let Some(ct) = cache_t {
+            info!("from cached");
+            query.push(("datumTol", ct.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            info!("from date: {from:?}");
+            query.push(("datumTol", from.make_kreta_valid()));
+        };
+
+        let txt = self
+            .fetch(&(self.base() + announced::ep()), "announced", &query)
+            .inspect_err(|e| warn!("couldn't reach E-Kréta server: {e:?}"));
+
+        let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt.unwrap_or_default());
+
+        tests.extend(fetched_tests.unwrap_or_default());
+        tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
+        tests.dedup();
+        if let Some(from) = interval.0 {
+            info!("filtering, from!");
+            tests.retain(|ancd| ancd.day().num_days_from_ce() >= from.num_days_from_ce());
+        }
+        if let Some(to) = interval.1 {
+            info!("filtering, to!");
+            tests.retain(|ancd| ancd.day().num_days_from_ce() <= to.num_days_from_ce());
+        }
+        if interval.0.is_none() {
+            cache("announced", &serde_json::to_string(&tests)?)?;
+        }
+
+        Ok(tests)
+    }
+
+    /// get information about being [`Abs`]ent `from` `to` or all
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// sorting
+    pub fn fetch_absences(&self, interval: Interval) -> Res<Vec<Abs>> {
+        let (cache_t, cache_content) = uncache("absences").unzip();
+        let mut absences = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Abs>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let mut query = vec![];
+        if let Some(ct) = cache_t {
+            info!("from cached");
+            query.push(("datumTol", ct.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            query.push(("datumTol", from.make_kreta_valid()));
+        }
+        if let Some(to) = interval.1 {
+            query.push(("datumIg", to.make_kreta_valid()));
+        }
+
+        let txt = self
+            .fetch(&(self.base() + absences::ep()), "absences", &query)
+            .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
+
+        let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default());
+        info!("recieved absences");
+        absences.extend(fetched_absences.unwrap_or_default());
+        absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).unwrap());
+
+        Ok(absences)
+    }
+
+    /// get groups the [`User`] is a member of
+    ///
+    /// # Errors
+    ///
+    /// - net
+    pub fn fetch_groups(&self) -> Res<String> {
+        let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
+        // let all_announced = serde_json::from_str(&text)?;
+        Ok(txt)
+    }
+
+    /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
+    fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
+        let client = Client::new();
+        let res = client
+            .get(url)
+            .query(&query)
+            .headers(self.headers()?)
+            .timeout(TIMEOUT)
+            .send()?;
+        let text = res.text()?;
+
+        let mut logf = log_file(log)?;
+        write!(logf, "{text}")?;
+        // cache(log, &text)?;
+        // info!("cached.");
+
+        Ok(text)
+    }
+}
+
+/// [`Msg`]s and [`Attachment`]s
+impl User {
+    /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
+    ///
+    /// # Errors
+    /// - net
+    pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
+        for am in msg.attachments() {
+            info!("downloading file://{}", am.download_to().display());
+            // don't download if already exists
+            if am.download_to().exists() {
+                info!("not downloading, already done");
+                continue;
+            }
+            let mut f = File::create(am.download_to())?;
+
+            let client = Client::new();
+            client
+                .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
+                .headers(self.headers()?)
+                .timeout(TIMEOUT)
+                .send()?
+                .copy_to(&mut f)?;
+
+            info!("recieved file {}", &am.file_name);
+        }
+        Ok(())
+    }
+
     /// get all [`MsgOview`]s of a [`MsgKind`]
     ///
     /// # Errors
@@ -555,197 +771,6 @@ impl User {
         Ok(msgs)
     }
 
-    /// get all [`Eval`]s with `from` `to` or all
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    ///
-    /// # Errors
-    ///
-    /// net
-    pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
-        let (cache_t, cache_content) = uncache("evals").unzip();
-        let mut evals = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Eval>>(cached)?
-        } else {
-            vec![]
-        };
-
-        let mut query = vec![];
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            query.push(("datumTol", ct.make_kreta_valid()));
-        } else if let Some(from) = interval.0 {
-            query.push(("datumTol", from.make_kreta_valid()));
-        }
-        if let Some(to) = interval.1 {
-            query.push(("datumIg", to.make_kreta_valid()));
-        }
-
-        let txt = self
-            .fetch(&(self.base() + evals::ep()), "evals", &query)
-            .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
-
-        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default());
-        info!("recieved evals");
-
-        evals.extend(fetched_evals.unwrap_or_default());
-        evals.sort_by(|a, b| b.earned().partial_cmp(&a.earned()).unwrap());
-        evals.dedup();
-        if interval.0.is_none() {
-            cache("evals", &serde_json::to_string(&evals)?)?;
-        }
-        Ok(evals)
-    }
-
-    /// get all [`Lesson`]s `from` `to` which makes up a timetable
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// - sorting
-    pub fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
-        let txt = self.fetch(
-            &(self.base() + timetable::ep()),
-            "timetable",
-            &[("datumTol", from.to_string()), ("datumIg", to.to_string())],
-        )?;
-
-        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
-        info!("recieved lessons");
-        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).unwrap());
-        Ok(lessons)
-    }
-
-    /// get [`Announced`] tests `from` `to` or all
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    pub fn fetch_all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
-        let (cache_t, cache_content) = uncache("announced").unzip();
-        let mut tests = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Ancd>>(cached)?
-        } else {
-            vec![]
-        };
-
-        let mut query = vec![];
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            query.push(("datumTol", ct.make_kreta_valid()));
-        } else if let Some(from) = interval.0 {
-            query.push(("datumTol", from.make_kreta_valid()));
-        };
-
-        let txt = self
-            .fetch(&(self.base() + announced::ep()), "announced", &query)
-            .unwrap_or_default();
-
-        let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt);
-
-        tests.extend(fetched_tests.unwrap_or_default());
-        tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
-        tests.dedup();
-        if let Some(from) = interval.0 {
-            tests.retain(|ancd| ancd.day().num_days_from_ce() >= from.num_days_from_ce());
-        }
-        if let Some(to) = interval.1 {
-            tests.retain(|ancd| ancd.day().num_days_from_ce() <= to.num_days_from_ce());
-        }
-        if interval.0.is_none() {
-            cache("announced", &serde_json::to_string(&tests)?)?;
-        }
-
-        Ok(tests)
-    }
-
-    /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
-    ///
-    /// # Errors
-    /// - net
-    pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
-        for am in msg.attachments() {
-            info!("downloading file://{}", am.download_to().display());
-            // don't download if already exists
-            if am.download_to().exists() {
-                info!("not downloading, already done");
-                continue;
-            }
-            let mut f = File::create(am.download_to())?;
-
-            let client = Client::new();
-            client
-                .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
-                .headers(self.headers()?)
-                .timeout(TIMEOUT)
-                .send()?
-                .copy_to(&mut f)?;
-
-            info!("recieved file {}", &am.file_name);
-        }
-        Ok(())
-    }
-
-    /// get information about being [`Abs`]ent `from` `to` or all
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    pub fn fetch_absences(&self, interval: Interval) -> Res<Vec<Abs>> {
-        let (cache_t, cache_content) = uncache("absences").unzip();
-        let mut absences = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Abs>>(cached)?
-        } else {
-            vec![]
-        };
-
-        let mut query = vec![];
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            query.push(("datumTol", ct.make_kreta_valid()));
-        } else if let Some(from) = interval.0 {
-            query.push(("datumTol", from.make_kreta_valid()));
-        }
-        if let Some(to) = interval.1 {
-            query.push(("datumIg", to.make_kreta_valid()));
-        }
-
-        let txt = self
-            .fetch(&(self.base() + absences::ep()), "absences", &query)
-            .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
-
-        let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default());
-        info!("recieved absences");
-        absences.extend(fetched_absences.unwrap_or_default());
-        absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).unwrap());
-
-        Ok(absences)
-    }
-
-    /// get groups the [`User`] is a member of
-    ///
-    /// # Errors
-    ///
-    /// - net
-    pub fn fetch_groups(&self) -> Res<String> {
-        let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
-        // let all_announced = serde_json::from_str(&text)?;
-        Ok(txt)
-    }
-
     /// get notes: additional messages the [`User`] recieved.
     ///
     /// # Errors
@@ -780,25 +805,6 @@ impl User {
         }
 
         Ok(note_msgs)
-    }
-
-    /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
-    fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
-        let client = Client::new();
-        let res = client
-            .get(url)
-            .query(&query)
-            .headers(self.headers()?)
-            .timeout(TIMEOUT)
-            .send()?;
-        let text = res.text()?;
-
-        let mut logf = log_file(log)?;
-        write!(logf, "{text}")?;
-        // cache(log, &text)?;
-        // info!("cached.");
-
-        Ok(text)
     }
 }
 
