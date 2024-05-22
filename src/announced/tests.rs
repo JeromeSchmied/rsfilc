@@ -38,6 +38,6 @@ fn works() {
     assert_eq!(abs.teacher_entered, "Teszt Mónika");
     assert_eq!(abs.nth, Some(6));
     assert_eq!(abs.subject, "matematika");
-    assert_eq!(abs.topic, "Matematikai logika");
+    assert_eq!(abs.topic, Some("Matematikai logika".into()));
     assert_eq!(abs.kind(), "Írásbeli röpdolgozat");
 }

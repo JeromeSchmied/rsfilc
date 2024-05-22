@@ -298,7 +298,11 @@ impl User {
                     .iter()
                     .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
                 {
-                    printer += &format!("\n| {}: {}", test.kind(), test.topic);
+                    printer += &format!(
+                        "\n| {}: {}",
+                        test.kind(),
+                        test.topic.clone().unwrap_or_default()
+                    );
                 }
                 println!("{printer}");
 

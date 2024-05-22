@@ -41,7 +41,7 @@ pub struct Ancd {
 
     /// topic of the test
     #[serde(rename(deserialize = "Temaja", serialize = "Temaja"))]
-    pub topic: String,
+    pub topic: Option<String>,
 
     /// how it'll be done
     #[serde(rename(deserialize = "Modja", serialize = "Modja"))]
@@ -94,7 +94,9 @@ impl fmt::Display for Ancd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "| {}", &self.day().pretty())?;
         write!(f, " {}", self.subject)?;
-        writeln!(f, ": {}", self.topic)?;
+        if let Some(tc) = &self.topic {
+            writeln!(f, ": {}", tc)?;
+        }
 
         writeln!(f, "| {}", self.kind())?;
         writeln!(f, "| {}", self.teacher_entered)?;
