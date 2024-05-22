@@ -12,25 +12,25 @@ pub const fn ep() -> &'static str {
 }
 
 /// Absence info
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Abs {
     /// subject: information about the type of the lesson: eg.: maths, history
-    #[serde(rename(deserialize = "Tantargy"))]
+    #[serde(rename(deserialize = "Tantargy", serialize = "Tantargy"))]
     subject: HashMap<String, Value>,
 
     /// lesson from, to it was held
-    #[serde(rename(deserialize = "Ora"))]
+    #[serde(rename(deserialize = "Ora", serialize = "Ora"))]
     lesson: HashMap<String, Value>,
 
     /// teacher who entered it
-    #[serde(rename(deserialize = "RogzitoTanarNeve"))]
+    #[serde(rename(deserialize = "RogzitoTanarNeve", serialize = "RogzitoTanarNeve"))]
     teacher: String,
 
     /// minutes of being late
-    #[serde(rename(deserialize = "KesesPercben"))]
+    #[serde(rename(deserialize = "KesesPercben", serialize = "KesesPercben"))]
     mins_late: Option<u8>,
     /// whether it's already verified
-    #[serde(rename(deserialize = "IgazolasAllapota"))]
+    #[serde(rename(deserialize = "IgazolasAllapota", serialize = "IgazolasAllapota"))]
     verification_status: String,
     // /// type of verification
     // #[serde(rename(deserialize = "igazolasTipusa"))]

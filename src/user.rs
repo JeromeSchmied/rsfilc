@@ -597,15 +597,26 @@ impl User {
             query.push(("datumIg", to.make_kreta_valid()));
         }
 
+        let mut fetch_err = false;
         let txt = self
             .fetch(&(self.base() + absences::ep()), "absences", &query)
-            .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"));
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't fetch from E-Kréta server: {e:?}");
+            });
 
         let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default())
-            .inspect_err(|e| warn!("couldn't deserialize data: {e:?}"));
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't deserialize data: {e:?}");
+            });
         info!("recieved absences");
         absences.extend(fetched_absences.unwrap_or_default());
         absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).unwrap());
+
+        if interval.0.is_none() && !fetch_err {
+            cache("absences", &serde_json::to_string(&absences)?)?;
+        }
 
         Ok(absences)
     }
