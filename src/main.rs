@@ -57,7 +57,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 .and_local_timezone(Local)
                 .unwrap();
 
-            let lessons = user.timetable(day_start, day_end)?;
+            let lessons = user.fetch_timetable(day_start, day_end)?;
 
             // nice output if no lessons, couldn't be possible in print_day()
             if lessons.is_empty() {
@@ -71,14 +71,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if current {
                 let current_lessons = timetable::current_lessons(&lessons);
-                if current_lessons.is_empty() {
-                    if let Some(nxt) = timetable::next_lesson(&lessons) {
-                        println!(
-                            "{}m -> {}",
-                            (nxt.start() - Local::now()).num_minutes(), // minutes remaining
-                            nxt.subject
-                        );
-                    }
+                if let Some(nxt) = timetable::next_lesson(&lessons) {
+                    println!(
+                        "{}m -> {}",
+                        (nxt.start() - Local::now()).num_minutes(), // minutes remaining
+                        nxt.subject
+                    );
                 }
                 for current_lesson in current_lessons {
                     println!(
@@ -103,16 +101,16 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
         Commands::Evals {
             subject,
-            kind,
+            filter,
             number,
             average,
             reverse,
             ghost,
         } => {
-            let mut evals = user.evals(None, None)?;
+            let mut evals = user.fetch_evals((None, None))?;
             info!("got evals");
-            if let Some(kind) = kind {
-                Eval::filter_by_kind(&mut evals, &kind);
+            if let Some(kind) = filter {
+                Eval::filter_by_kind_or_title(&mut evals, &kind);
             }
             if let Some(subject) = subject {
                 Eval::filter_by_subject(&mut evals, &subject);
@@ -128,20 +126,20 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if average {
                 let avg = Eval::average(&evals, &ghost);
-                println!("Average: {avg}");
+                println!("Average: {avg:.2}");
 
                 return Ok(());
             }
 
             if reverse {
                 for eval in evals.iter().take(number).rev() {
-                    print!("\n\n{eval}");
-                    fill_under(&eval.to_string(), '-');
+                    println!("\n\n{eval}");
+                    fill(&eval.to_string(), '-', None);
                 }
             } else {
                 for eval in evals.iter().take(number) {
-                    print!("\n\n{eval}");
-                    fill_under(&eval.to_string(), '-');
+                    println!("\n\n{eval}");
+                    fill(&eval.to_string(), '-', None);
                 }
             }
         }
@@ -152,34 +150,32 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             notes,
         } => {
             if notes {
-                let notes = user.note_msgs()?;
+                let notes = user.fetch_note_msgs((None, None))?;
                 if reverse {
                     for note in notes.iter().take(number).rev() {
                         println!("\n\n\n\n{note}");
-                        fill_under(&note.to_string(), '-');
+                        fill(&note.to_string(), '-', None);
                     }
                 } else {
                     for note in notes.iter().take(number) {
                         println!("\n\n\n\n{note}");
-                        fill_under(&note.to_string(), '-');
+                        fill(&note.to_string(), '-', None);
                     }
                 }
 
                 return Ok(());
             }
 
-            let msgs = user.msgs(None, None, Some(number))?;
+            let msgs = user.msgs((None, None))?;
             if reverse {
-                for msg in msgs.iter().rev() {
+                for msg in msgs.iter().rev().take(number) {
                     println!("\n\n\n\n{msg}");
-                    fill_under(&msg.to_string(), '-');
-                    user.download_attachments(msg)?;
+                    fill(&msg.to_string(), '-', None);
                 }
             } else {
-                for msg in &msgs {
+                for msg in msgs.iter().take(number) {
                     println!("\n\n\n\n{msg}");
-                    fill_under(&msg.to_string(), '-');
-                    user.download_attachments(msg)?;
+                    fill(&msg.to_string(), '-', None);
                 }
             }
         }
@@ -190,7 +186,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             subject,
             reverse,
         } => {
-            let mut absences = user.absences(None, None)?;
+            let mut absences = user.fetch_absences((None, None))?;
             if let Some(subject) = subject {
                 Abs::filter_by_subject(&mut absences, &subject);
             }
@@ -206,13 +202,13 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if reverse {
                 for absence in absences.iter().take(number).rev() {
-                    print!("\n\n{absence}");
-                    fill_under(&absence.to_string(), '-');
+                    println!("\n\n{absence}");
+                    fill(&absence.to_string(), '-', None);
                 }
             } else {
                 for absence in absences.iter().take(number) {
-                    print!("\n\n{absence}");
-                    fill_under(&absence.to_string(), '-');
+                    println!("\n\n{absence}");
+                    fill(&absence.to_string(), '-', None);
                 }
             }
         }
@@ -224,20 +220,20 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             past,
         } => {
             let from = if past { None } else { Some(Local::now()) };
-            let mut all_announced = user.all_announced(from, None)?;
+            let mut all_announced = user.fetch_all_announced((from, None))?;
             if let Some(subject) = subject {
                 Ancd::filter_by_subject(&mut all_announced, &subject);
             }
 
             if reverse {
                 for announced in all_announced.iter().take(number).rev() {
-                    print!("\n\n{announced}");
-                    fill_under(&announced.to_string(), '-');
+                    println!("\n\n{announced}");
+                    fill(&announced.to_string(), '-', None);
                 }
             } else {
                 for announced in all_announced.iter().take(number) {
-                    print!("\n\n{announced}");
-                    fill_under(&announced.to_string(), '-');
+                    println!("\n\n{announced}");
+                    fill(&announced.to_string(), '-', None);
                 }
             }
         }
@@ -249,6 +245,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             list,
         } => {
             if let Some(switch_to) = switch {
+                delete_cache_dir()?;
                 let switched_to = User::load(&switch_to).expect("couldn't load user");
                 info!("switched to user {switch_to}");
                 println!("switched to {switch_to}");
@@ -263,12 +260,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
-                    let user_info = current_user.info()?;
-                    print!("\n\n{user_info}");
-                    fill_under(&user_info.to_string(), '-');
+                    let user_info = current_user.fetch_info()?;
+                    println!("\n\n{user_info}");
+                    fill(&user_info.to_string(), '-', None);
                 }
             } else {
-                println!("{}", user.info()?);
+                println!("{}", user.fetch_info()?);
             }
         }
 
@@ -277,14 +274,14 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             if let Some(school_name) = search {
                 let found = School::search(&schools, &school_name);
                 for school in found {
-                    print!("\n\n{school}");
-                    fill_under(&school.to_string(), '-');
+                    println!("\n\n{school}");
+                    fill(&school.to_string(), '-', None);
                 }
             } else {
                 info!("listing schools");
                 for school in schools {
-                    print!("\n\n{school}");
-                    fill_under(&school.to_string(), '-');
+                    println!("\n\n{school}");
+                    fill(&school.to_string(), '-', None);
                 }
             }
         }

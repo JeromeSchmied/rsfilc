@@ -1,6 +1,7 @@
 use crate::{
     information::Info,
     messages::{Msg, MsgKind, MsgOview},
+    timetable::next_lesson,
     token::Token,
     *,
 };
@@ -21,10 +22,13 @@ use std::{
     time::Duration,
 };
 
-use self::messages::NaughtyMsg;
+use self::messages::NoteMsg;
 
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
+
+/// `(from, to)` interval
+pub type Interval = (Option<DateTime<Local>>, Option<DateTime<Local>>);
 
 /// endpoint
 pub const fn ep() -> &'static str {
@@ -50,7 +54,7 @@ impl User {
     ///
     /// net
     pub fn name(&self) -> Res<String> {
-        Ok(self.info()?.name)
+        Ok(self.fetch_info()?.name)
     }
 
     /// create new instance of [`User`]
@@ -263,15 +267,16 @@ impl User {
                 first_lesson.start().hun_day_of_week()
             );
             if first_lesson.shite() {
-                print!("{first_lesson}");
-                fill_under(&first_lesson.to_string(), '|');
+                println!("{first_lesson}");
+                fill(&first_lesson.to_string(), '|', None);
             }
             let todays_tests = self
-                .all_announced(
+                .fetch_all_announced((
                     Some(first_lesson.start()),
                     Some(lessons.last().unwrap().end()),
-                )
+                ))
                 .expect("couldn't fetch announced tests");
+            info!("all announced: {todays_tests:?}");
 
             // number of lessons at the same time
             let mut same_count = 0;
@@ -293,11 +298,34 @@ impl User {
                     .iter()
                     .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
                 {
-                    printer += &format!("\n| {}: {}", test.kind(), test.topic);
+                    printer += &format!(
+                        "\n| {}: {}",
+                        test.kind(),
+                        test.topic.clone().unwrap_or_default()
+                    );
                 }
-                print!("{printer}");
+                println!("{printer}");
 
-                fill_under(&printer, if lesson.happening() { '$' } else { '-' });
+                let (with, inlay_hint) = if lesson.happening() {
+                    (
+                        '$',
+                        Some(format!(
+                            "{} perc",
+                            (lesson.end() - Local::now()).num_minutes()
+                        )),
+                    )
+                } else if next_lesson(lessons).is_some_and(|nxt| nxt == lesson) {
+                    (
+                        '>',
+                        Some(format!(
+                            "{} perc",
+                            (lesson.start() - Local::now()).num_minutes()
+                        )),
+                    )
+                } else {
+                    ('-', None)
+                };
+                fill(&printer, with, inlay_hint.as_deref());
             }
         }
     }
@@ -315,7 +343,7 @@ impl User {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
-            format!("Bearer {}", self.token()?.access_token).parse()?,
+            format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
         );
         headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
         Ok(headers)
@@ -335,7 +363,7 @@ impl User {
     ///         &grant_type=password \
     ///         &client_id=kreta-ellenorzo-mobile-android"
     /// ```
-    fn token(&self) -> Res<Token> {
+    fn fetch_token(&self) -> Res<Token> {
         // Define the key as bytes
         let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
 
@@ -400,7 +428,7 @@ impl User {
     }
 
     /// get [`User`] info
-    pub fn info(&self) -> Res<Info> {
+    pub fn fetch_info(&self) -> Res<Info> {
         info!("recieved information about user");
 
         let txt = self.fetch(&(self.base() + user::ep()), "user_info", &[])?;
@@ -409,12 +437,256 @@ impl User {
         Ok(info)
     }
 
+    /// get all [`Eval`]s with `from` `to` or all
+    ///
+    /// # Panics
+    ///
+    /// sorting
+    ///
+    /// # Errors
+    ///
+    /// net
+    pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
+        let (cache_t, cache_content) = uncache("evals").unzip();
+        let mut evals = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Eval>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let mut query = vec![];
+        if let Some(ct) = cache_t {
+            info!("from cached");
+            query.push(("datumTol", ct.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            query.push(("datumTol", from.make_kreta_valid()));
+        }
+        if let Some(to) = interval.1 {
+            query.push(("datumIg", to.make_kreta_valid()));
+        }
+
+        let mut fetch_err = false;
+        let txt = self
+            .fetch(&(self.base() + evals::ep()), "evals", &query)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't fetch from E-Kréta server: {e:?}");
+            });
+
+        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default())
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't deserialize data: {e:?}")
+            });
+        info!("recieved evals");
+
+        evals.extend(fetched_evals.unwrap_or_default());
+        evals.sort_by(|a, b| b.earned().partial_cmp(&a.earned()).unwrap());
+        evals.dedup();
+        if interval.0.is_none() && !fetch_err {
+            cache("evals", &serde_json::to_string(&evals)?)?;
+        }
+        Ok(evals)
+    }
+
+    /// get all [`Lesson`]s `from` `to` which makes up a timetable
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// - sorting
+    pub fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
+        let txt = self.fetch(
+            &(self.base() + timetable::ep()),
+            "timetable",
+            &[("datumTol", from.to_string()), ("datumIg", to.to_string())],
+        )?;
+
+        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
+        info!("recieved lessons");
+        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).unwrap());
+        Ok(lessons)
+    }
+
+    /// get [`Announced`] tests `from` `to` or all
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// sorting
+    pub fn fetch_all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
+        let (cache_t, cache_content) = uncache("announced").unzip();
+        let mut tests = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Ancd>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let mut query = vec![];
+        if let Some(ct) = cache_t {
+            info!("from cached");
+            query.push(("datumTol", ct.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            info!("from date: {from:?}");
+            query.push(("datumTol", from.make_kreta_valid()));
+        };
+
+        let mut fetch_err = false;
+        let txt = self
+            .fetch(&(self.base() + announced::ep()), "announced", &query)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't reach E-Kréta server: {e:?}");
+            });
+
+        let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt.unwrap_or_default())
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't deserialize data: {e:?}");
+            });
+
+        tests.extend(fetched_tests.unwrap_or_default());
+        tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
+        tests.dedup();
+        if let Some(from) = interval.0 {
+            info!("filtering, from!");
+            tests.retain(|ancd| ancd.day().num_days_from_ce() >= from.num_days_from_ce());
+        }
+        if let Some(to) = interval.1 {
+            info!("filtering, to!");
+            tests.retain(|ancd| ancd.day().num_days_from_ce() <= to.num_days_from_ce());
+        }
+        if interval.0.is_none() && !fetch_err {
+            cache("announced", &serde_json::to_string(&tests)?)?;
+        }
+
+        Ok(tests)
+    }
+
+    /// get information about being [`Abs`]ent `from` `to` or all
+    ///
+    /// # Errors
+    ///
+    /// net
+    ///
+    /// # Panics
+    ///
+    /// sorting
+    pub fn fetch_absences(&self, interval: Interval) -> Res<Vec<Abs>> {
+        let (cache_t, cache_content) = uncache("absences").unzip();
+        let mut absences = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Abs>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let mut query = vec![];
+        if let Some(ct) = cache_t {
+            info!("from cached");
+            query.push(("datumTol", ct.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            query.push(("datumTol", from.make_kreta_valid()));
+        }
+        if let Some(to) = interval.1 {
+            query.push(("datumIg", to.make_kreta_valid()));
+        }
+
+        let mut fetch_err = false;
+        let txt = self
+            .fetch(&(self.base() + absences::ep()), "absences", &query)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't fetch from E-Kréta server: {e:?}");
+            });
+
+        let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default())
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't deserialize data: {e:?}");
+            });
+        info!("recieved absences");
+        absences.extend(fetched_absences.unwrap_or_default());
+        absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).unwrap());
+
+        if interval.0.is_none() && !fetch_err {
+            cache("absences", &serde_json::to_string(&absences)?)?;
+        }
+
+        Ok(absences)
+    }
+
+    /// get groups the [`User`] is a member of
+    ///
+    /// # Errors
+    ///
+    /// - net
+    pub fn fetch_groups(&self) -> Res<String> {
+        let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
+        // let all_announced = serde_json::from_str(&text)?;
+        Ok(txt)
+    }
+
+    /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
+    fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
+        let client = Client::new();
+        let res = client
+            .get(url)
+            .query(&query)
+            .headers(self.headers()?)
+            .timeout(TIMEOUT)
+            .send()?;
+        let text = res.text()?;
+
+        let mut logf = log_file(log)?;
+        write!(logf, "{text}")?;
+        // cache(log, &text)?;
+        // info!("cached.");
+
+        Ok(text)
+    }
+}
+
+/// [`Msg`]s and [`Attachment`]s
+impl User {
+    /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
+    ///
+    /// # Errors
+    /// - net
+    pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
+        for am in msg.attachments() {
+            info!("downloading file://{}", am.download_to().display());
+            // don't download if already exists
+            if am.download_to().exists() {
+                info!("not downloading, already done");
+                continue;
+            }
+            let mut f = File::create(am.download_to())?;
+
+            let client = Client::new();
+            client
+                .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
+                .headers(self.headers()?)
+                .timeout(TIMEOUT)
+                .send()?
+                .copy_to(&mut f)?;
+
+            info!("recieved file {}", &am.file_name);
+        }
+        Ok(())
+    }
+
     /// get all [`MsgOview`]s of a [`MsgKind`]
     ///
     /// # Errors
     ///
     /// net
-    pub fn msg_oviews_of_kind(&self, msg_kind: &MsgKind) -> Res<Vec<MsgOview>> {
+    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: &MsgKind) -> Res<Vec<MsgOview>> {
         let txt = self.fetch(
             &(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val())),
             "message_overviews",
@@ -433,13 +705,13 @@ impl User {
     /// - sorting
     pub fn msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
         let mut msg_oviews = [
-            self.msg_oviews_of_kind(&MsgKind::Recv)?,
-            self.msg_oviews_of_kind(&MsgKind::Sent)?,
-            self.msg_oviews_of_kind(&MsgKind::Del)?,
+            self.fetch_msg_oviews_of_kind(&MsgKind::Recv)?,
+            self.fetch_msg_oviews_of_kind(&MsgKind::Sent)?,
+            self.fetch_msg_oviews_of_kind(&MsgKind::Del)?,
         ]
         .concat();
 
-        msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).expect("couldn't compare"));
+        msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).unwrap());
         let max_n = msg_oviews.len();
         // don't exceed the lenght of msg_oviews
         let n = if n < max_n { n } else { max_n };
@@ -453,7 +725,7 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
+    pub fn fetch_full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
         let txt = self.fetch(
             &(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id)),
             "full_message",
@@ -465,181 +737,74 @@ impl User {
         Ok(msg)
     }
     /// Fetch max `n` [`Msg`]s between `from` and `to`.
+    /// Also download all `[Attachment]`s each [`Msg`] has.
     ///
     /// # Errors
     ///
     /// - net
-    pub fn msgs(
-        &self,
-        from: Option<DateTime<Local>>,
-        to: Option<DateTime<Local>>,
-        num: Option<usize>,
-    ) -> Res<Vec<Msg>> {
-        let n = if let Some(n) = num { n } else { usize::MAX };
-        let mut msgs = Vec::new();
-
-        for msg_oview in self.msg_oviews(n)? {
-            // if isn't between `from`-`to`
-            if from.is_some_and(|from| msg_oview.sent() < from)
-                || to.is_some_and(|to| msg_oview.sent() > to)
-            {
-                continue;
-            }
-            let msg = self.full_msg(&msg_oview)?;
-            msgs.push(msg);
-        }
-        let mut logf = log_file("messages")?;
-        write!(logf, "{msgs:?}")?;
-
-        Ok(msgs)
-    }
-
-    /// get all [`Eval`]s with `from` `to` or all
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    ///
-    /// # Errors
-    ///
-    /// net
-    pub fn evals(
-        &self,
-        from: Option<DateTime<Local>>,
-        to: Option<DateTime<Local>>,
-    ) -> Res<Vec<Eval>> {
-        let mut query = vec![];
-        if let Some(from) = from {
-            query.push(("datumTol", from.to_rfc3339()));
-        }
-        if let Some(to) = to {
-            query.push(("datumIg", to.to_rfc3339()));
-        }
-
-        let txt = self.fetch(&(self.base() + evals::ep()), "evals", &query)?;
-
-        let mut evals = serde_json::from_str::<Vec<Eval>>(&txt)?;
-        info!("recieved evals");
-
-        evals.sort_by(|a, b| {
-            b.earned()
-                .partial_cmp(&a.earned())
-                .expect("couldn't compare")
-        });
-        Ok(evals)
-    }
-
-    /// get all [`Lesson`]s `from` `to` which makes up a timetable
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// - sorting
-    pub fn timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
-        let txt = self.fetch(
-            &(self.base() + timetable::ep()),
-            "timetable",
-            &[("datumTol", from.to_string()), ("datumIg", to.to_string())],
-        )?;
-
-        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
-        info!("recieved lessons");
-        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).expect("couldn't compare"));
-        Ok(lessons)
-    }
-
-    /// get [`Announced`] tests `from` `to` or all
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    pub fn all_announced(
-        &self,
-        from: Option<DateTime<Local>>,
-        to: Option<DateTime<Local>>,
-    ) -> Res<Vec<Ancd>> {
-        let query = if let Some(from) = from {
-            vec![("datumTol", from.to_rfc3339())]
+    pub fn msgs(&self, interval: Interval) -> Res<Vec<Msg>> {
+        let (cache_t, cache_content) = uncache("messages").unzip();
+        let mut msgs = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Msg>>(cached)?
         } else {
             vec![]
         };
+        let from = if let Some(ct) = cache_t {
+            Some(ct)
+        } else {
+            interval.0
+        };
 
-        let txt = self.fetch(&(self.base() + announced::ep()), "announced", &query)?;
+        let mut fetched_msgs = Vec::new();
+        let mut handles = Vec::new();
 
-        let mut all_announced: Vec<Ancd> = serde_json::from_str(&txt)?;
-        info!("recieved all announced tests");
-
-        all_announced.sort_by(|a, b| b.day().partial_cmp(&a.day()).expect("couldn't compare"));
-        if let Some(to) = to {
-            all_announced.retain(|ancd| ancd.day() <= to);
+        let mut fetch_err = false;
+        for msg_oview in self.msg_oviews(usize::MAX).unwrap_or_default() {
+            // if isn't between `from`-`to`
+            if from.is_some_and(|fm| msg_oview.sent() < fm)
+                || interval.1.is_some_and(|to| msg_oview.sent() > to)
+            {
+                continue;
+            }
+            let s = self.clone();
+            let h = std::thread::spawn(move || {
+                s.fetch_full_msg(&msg_oview)
+                    .inspect_err(|e| {
+                        fetch_err = true;
+                        warn!("couldn't fetch from E-Kréta server: {e:?}");
+                    })
+                    .unwrap()
+            });
+            handles.push(h);
         }
-        Ok(all_announced)
-    }
+        let mut logf = log_file("messages")?;
+        write!(logf, "{fetched_msgs:?}")?;
 
-    /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
-    pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
-        for am in msg.attachments() {
-            info!("downloading file://{}", am.download_to().display());
-            let mut f = File::create(am.download_to())?;
+        let mut am_handles = Vec::new();
 
-            let client = Client::new();
-            client
-                .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
-                .headers(self.headers()?)
-                .timeout(TIMEOUT)
-                .send()?
-                .copy_to(&mut f)?;
-
-            info!("recieved file {}", &am.file_name);
+        for h in handles {
+            fetched_msgs.push(h.join().unwrap());
         }
-        Ok(())
-    }
 
-    /// get information about being [`Abs`]ent `from` `to` or all
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    pub fn absences(
-        &self,
-        from: Option<DateTime<Local>>,
-        to: Option<DateTime<Local>>,
-    ) -> Res<Vec<Abs>> {
-        let mut query = vec![];
-        if let Some(from) = from {
-            query.push(("datumTol", from.to_rfc3339()));
+        msgs.extend(fetched_msgs);
+        msgs.dedup();
+        for msg in msgs.clone() {
+            let s = self.clone();
+            let xl = std::thread::spawn(move || {
+                s.download_attachments(&msg)
+                    .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"))
+                    .unwrap()
+            });
+            am_handles.push(xl);
         }
-        if let Some(to) = to {
-            query.push(("datumIg", to.to_rfc3339()));
+        for h in am_handles {
+            let j = h.join();
+            j.map_err(|e| *e.downcast::<String>().unwrap())?;
         }
-        let txt = self.fetch(&(self.base() + absences::ep()), "absences", &query)?;
-
-        let mut abss: Vec<Abs> = serde_json::from_str(&txt)?;
-        info!("recieved absences");
-        abss.sort_by(|a, b| b.start().partial_cmp(&a.start()).expect("couldn't compare"));
-        Ok(abss)
-    }
-
-    /// get groups the [`User`] is a member of
-    ///
-    /// # Errors
-    ///
-    /// - net
-    pub fn groups(&self) -> Res<String> {
-        let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
-        // let all_announced = serde_json::from_str(&text)?;
-        Ok(txt)
+        if interval.0.is_none() && !fetch_err {
+            cache("messages", &serde_json::to_string(&msgs)?)?;
+        }
+        Ok(msgs)
     }
 
     /// get notes: additional messages the [`User`] recieved.
@@ -647,27 +812,44 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn note_msgs(&self) -> Res<Vec<NaughtyMsg>> {
-        let txt = self.fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])?;
-        let note_msgs = serde_json::from_str(&txt)?;
+    pub fn fetch_note_msgs(&self, interval: Interval) -> Res<Vec<NoteMsg>> {
+        let (cache_t, cache_content) = uncache("note_messages").unzip();
+        let mut note_msgs = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<NoteMsg>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let mut query = vec![];
+        if let Some(ct) = cache_t {
+            info!("from cached");
+            query.push(("datumTol", ct.make_kreta_valid()));
+        } else if let Some(from) = interval.0 {
+            query.push(("datumTol", from.make_kreta_valid()));
+        }
+        if let Some(to) = interval.1 {
+            query.push(("datumIg", to.make_kreta_valid()));
+        }
+
+        let mut fetch_err = false;
+        let txt = self
+            .fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't reach E-Kréta server: {e:?}");
+            })
+            .unwrap_or_default();
+        let fetched_note_msgs = serde_json::from_str::<Vec<NoteMsg>>(&txt).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't deserialize data: {e:?}");
+        });
+
+        note_msgs.extend(fetched_note_msgs.unwrap_or_default());
+        if interval.0.is_none() && !fetch_err {
+            cache("note_messages", &serde_json::to_string(&note_msgs)?)?;
+        }
+
         Ok(note_msgs)
-    }
-
-    /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
-    fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
-        let client = Client::new();
-        let res = client
-            .get(url)
-            .query(&query)
-            .headers(self.headers()?)
-            .timeout(TIMEOUT)
-            .send()?;
-        let text = res.text()?;
-
-        let mut logf = log_file(log)?;
-        write!(logf, "{text}")?;
-
-        Ok(text)
     }
 }
 

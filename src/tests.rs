@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn cache_path_exists() {
-    assert!(cache_path().is_some());
+    assert!(cache_dir().is_some());
 }
 #[test]
 fn config_path_exists() {

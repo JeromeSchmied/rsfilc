@@ -83,7 +83,7 @@ impl Attachment {
 }
 
 /// the message itself
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize, PartialEq)]
 pub struct Msg {
     // /// id
     // #[serde(rename(deserialize = "azonosito"))]
@@ -96,10 +96,10 @@ pub struct Msg {
     // #[serde(rename(deserialize = "isToroltElem"))]
     // is_torolt_elem: bool,
     /// kind
-    #[serde(rename(deserialize = "tipus"))]
+    #[serde(rename(deserialize = "tipus", serialize = "tipus"))]
     kind: HashMap<String, Value>,
     /// the message itself
-    #[serde(rename(deserialize = "uzenet"))]
+    #[serde(rename(deserialize = "uzenet", serialize = "uzenet"))]
     msg: HashMap<String, Value>,
 
     // /// attachments
@@ -239,7 +239,7 @@ impl Rendr {
                         "-dump",
                         "-assume_charset",
                         "utf-8",
-                        "--display_charset",
+                        "-display_charset",
                         "utf-8",
                     ])
                     .stdin(Stdio::piped())
@@ -390,18 +390,18 @@ impl MsgKind {
 }
 
 /// the message itself
-#[derive(Debug, Deserialize, Clone)]
-pub struct NaughtyMsg {
-    #[serde(rename(deserialize = "Cim"))]
+#[derive(Debug, Deserialize, Clone, Serialize)]
+pub struct NoteMsg {
+    #[serde(rename(deserialize = "Cim", serialize = "Cim"))]
     title: String,
 
-    #[serde(rename(deserialize = "Datum"))]
+    #[serde(rename(deserialize = "Datum", serialize = "Datum"))]
     date: String,
 
-    #[serde(rename(deserialize = "KeszitoTanarNeve"))]
+    #[serde(rename(deserialize = "KeszitoTanarNeve", serialize = "KeszitoTanarNeve"))]
     teacher: String,
 
-    #[serde(rename(deserialize = "TartalomFormazott"))]
+    #[serde(rename(deserialize = "TartalomFormazott", serialize = "TartalomFormazott"))]
     msg: String,
 
     #[serde(flatten)]
@@ -409,7 +409,7 @@ pub struct NaughtyMsg {
 }
 
 /// additional notes/system messages
-impl NaughtyMsg {
+impl NoteMsg {
     /// get `date`
     ///
     /// # Panics
@@ -419,7 +419,7 @@ impl NaughtyMsg {
         DateTime::parse_from_rfc3339(&self.date).unwrap().into()
     }
 }
-impl fmt::Display for NaughtyMsg {
+impl fmt::Display for NoteMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "| {}", self.title)?;
         writeln!(f, "| Időpont: {}", self.date().pretty())?;

@@ -11,46 +11,46 @@ pub const fn ep() -> &'static str {
 }
 
 /// evaluation/grade
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Eval {
     // /// the time it was saved to `Kréta`?
     // #[serde(rename(deserialize = "RogzitesDatuma"))]
     // date_saved: String,
     /// the time it was actually earned?
-    #[serde(rename(deserialize = "KeszitesDatuma"))]
+    #[serde(rename(deserialize = "KeszitesDatuma", serialize = "KeszitesDatuma"))]
     earned: String,
 
     /// subject: information about the type of the lesson: eg.: maths, history
-    #[serde(rename(deserialize = "Tantargy"))]
+    #[serde(rename(deserialize = "Tantargy", serialize = "Tantargy"))]
     subject: Option<HashMap<String, Value>>,
 
     /// topic of the evaluation
-    #[serde(rename(deserialize = "Tema"))]
+    #[serde(rename(deserialize = "Tema", serialize = "Tema"))]
     topic: Option<String>,
 
     /// type of it
-    #[serde(rename(deserialize = "Tipus"))]
+    #[serde(rename(deserialize = "Tipus", serialize = "Tipus"))]
     kind: Option<HashMap<String, String>>,
 
     /// type of it ?
-    #[serde(rename(deserialize = "Mod"))]
+    #[serde(rename(deserialize = "Mod", serialize = "Mod"))]
     another_kind: Option<HashMap<String, String>>,
 
     /// name of the teacher who made the evaluation
-    #[serde(rename(deserialize = "ErtekeloTanarNeve"))]
+    #[serde(rename(deserialize = "ErtekeloTanarNeve", serialize = "ErtekeloTanarNeve"))]
     teacher: Option<String>,
 
     // /// type, again?
     // jelleg: String,
     /// with number (1,2,3,4,5)
-    #[serde(rename(deserialize = "SzamErtek"))]
+    #[serde(rename(deserialize = "SzamErtek", serialize = "SzamErtek"))]
     as_num: Option<u8>,
     /// with text and number actually (Elégtelen(1), Elégséges(2), Közepes(3), Jó(4), Példás(5))
-    #[serde(rename(deserialize = "SzovegesErtek"))]
+    #[serde(rename(deserialize = "SzovegesErtek", serialize = "SzovegesErtek"))]
     as_txt: String,
 
     /// weigth in % (about: 0-5000 ?)
-    #[serde(rename(deserialize = "SulySzazalekErteke"))]
+    #[serde(rename(deserialize = "SulySzazalekErteke", serialize = "SulySzazalekErteke"))]
     weight_in_percent: Option<u16>,
 
     /// not needed
@@ -102,11 +102,16 @@ impl Eval {
     }
 
     /// Filter `evals` by `kind`
-    pub fn filter_by_kind(evals: &mut Vec<Eval>, kind: &str) {
-        info!("filtering evals by kind: {}", kind);
+    pub fn filter_by_kind_or_title(evals: &mut Vec<Eval>, filter: &str) {
+        let filter = filter.to_lowercase();
+        info!("filtering evals by kind: {}", filter);
         evals.retain(|eval| {
             eval.kind()
-                .is_some_and(|kd| kd.to_lowercase().contains(&kind.to_lowercase()))
+                .is_some_and(|kd| kd.to_lowercase().contains(&filter))
+                || eval
+                    .topic
+                    .as_ref()
+                    .is_some_and(|t| t.to_lowercase().contains(&filter))
         });
     }
 

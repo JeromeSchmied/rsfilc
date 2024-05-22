@@ -151,13 +151,17 @@
 -   [ ] caching everything so that life remains enjoyable
     -   [ ] token
     -   [ ] timetable
-    -   [ ] evals
+    -   [x] evals
     -   [ ] user info
-    -   [ ] absences
-    -   [ ] announced tests
-    -   [ ] messages
+    -   [x] absences
+    -   [x] announced tests
+    -   [x] messages
+    -   [x] note messages
 -   [x] encoding passwords
--   [ ] changing passwords
+-   [ ] sending messages
+-   [ ] class averages
+-   [ ] fetching administrational processes
+-   [ ] starting new administrational processes
 
 ## TUI
 

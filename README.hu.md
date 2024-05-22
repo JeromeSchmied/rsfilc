@@ -141,13 +141,16 @@
 -   [ ] kb minden cache-elése a valódi élmény érdekében
     -   [ ] token
     -   [ ] órarend
-    -   [ ] jegyek
+    -   [x] jegyek
     -   [ ] felhasználó adatai
-    -   [ ] hiányzások
-    -   [ ] bejelentett számonkérések
-    -   [ ] üzenetek
+    -   [x] hiányzások
+    -   [x] bejelentett számonkérések
+    -   [x] üzenetek
 -   [x] jelszavak titkosítása mentéshez
--   [ ] jelszavak módosítása
+-   [ ] üzenetek küldése
+-   [ ] osztályátlagok
+-   [ ] ügyintézések lekérése
+-   [ ] ügyintézések indítása
 -   [ ] ...
 
 ## TUI
