@@ -322,6 +322,8 @@ impl User {
                             (lesson.start() - Local::now()).num_minutes()
                         )),
                     )
+                } else if lesson.cancelled() {
+                    ('X', None)
                 } else {
                     ('-', None)
                 };
