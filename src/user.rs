@@ -276,7 +276,7 @@ impl User {
                     Some(lessons.last().unwrap().end()),
                 ))
                 .expect("couldn't fetch announced tests");
-            info!("all announced: {todays_tests:?}");
+            // info!("all announced: {todays_tests:?}");
 
             // number of lessons at the same time
             let mut same_count = 0;
@@ -322,6 +322,8 @@ impl User {
                             (lesson.start() - Local::now()).num_minutes()
                         )),
                     )
+                } else if lesson.cancelled() {
+                    ('X', None)
                 } else {
                     ('-', None)
                 };
