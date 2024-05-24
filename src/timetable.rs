@@ -67,10 +67,7 @@ pub const fn ep() -> &'static str {
 /// returns a `Vec<&Lesson>`, as a person might accidentally have more than one lessons at a time
 pub fn current_lessons(lessons: &[Lesson]) -> Vec<&Lesson> {
     info!("searching for current lesson(s)");
-    lessons
-        .iter()
-        .filter(|lsn| lsn.happening() && !lsn.cancelled())
-        .collect()
+    lessons.iter().filter(|lsn| lsn.happening()).collect()
 }
 /// Returns the next [`Lesson`] of this [`User`] from `lessons` which shall include today's [`Lesson`]s.
 ///
@@ -187,6 +184,9 @@ impl Lesson {
 
     /// Returns whether this [`Lesson`] is currently happening.
     pub fn happening(&self) -> bool {
+        if self.cancelled() {
+            return false;
+        }
         self.start() <= Local::now() && self.end() >= Local::now()
     }
 
