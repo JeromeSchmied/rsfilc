@@ -74,7 +74,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 if let Some(nxt) = timetable::next_lesson(&lessons) {
                     println!(
                         "{}m -> {}",
-                        (nxt.start() - Local::now()).num_minutes(), // minutes remaining
+                        (nxt.start - Local::now()).num_minutes(), // minutes remaining
                         nxt.subject
                     );
                 }
@@ -82,7 +82,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                     println!(
                         "{}, {}m",
                         current_lesson.subject,
-                        (current_lesson.end() - Local::now()).num_minutes() // minutes remaining
+                        (current_lesson.end - Local::now()).num_minutes() // minutes remaining
                     );
                 }
 

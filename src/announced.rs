@@ -19,10 +19,10 @@ pub const fn ep() -> &'static str {
 pub struct Ancd {
     /// date of doing test
     #[serde(rename(deserialize = "Datum", serialize = "Datum"))]
-    date: String,
+    pub date: DateTime<Local>,
     /// date of entry
     #[serde(rename(deserialize = "BejelentesDatuma", serialize = "BejelentesDatuma"))]
-    entry_date: String,
+    entry_date: DateTime<Local>,
 
     /// teacher who entered it
     #[serde(rename(deserialize = "RogzitoTanarNeve", serialize = "RogzitoTanarNeve"))]
@@ -53,24 +53,6 @@ pub struct Ancd {
     _extra: HashMap<String, serde_json::Value>,
 }
 impl Ancd {
-    /// Returns the entry date of this [`Announced`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if data contains invalid date-time.
-    pub fn entry_date(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.entry_date)
-            .expect("invalid date-time")
-            .into()
-    }
-    /// Returns the day when this [`Announced`] will be written by the student.
-    ///
-    /// # Panics
-    ///
-    /// Panics if data contains invalid date-time.
-    pub fn day(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.date).unwrap().into()
-    }
     /// Returns the kind of this [`Announced`].
     ///
     /// # Panics
@@ -92,7 +74,7 @@ impl Ancd {
 }
 impl fmt::Display for Ancd {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "| {}", &self.day().pretty())?;
+        write!(f, "| {}", &self.date.pretty())?;
         write!(f, " {}", self.subject)?;
         if let Some(tc) = &self.topic {
             writeln!(f, ": {}", tc)?;
@@ -100,7 +82,7 @@ impl fmt::Display for Ancd {
 
         writeln!(f, "| {}", self.kind())?;
         writeln!(f, "| {}", self.teacher_entered)?;
-        write!(f, "| Rögzítés dátuma: {}", &self.entry_date().pretty())?;
+        write!(f, "| Rögzítés dátuma: {}", &self.entry_date.pretty())?;
 
         Ok(())
     }

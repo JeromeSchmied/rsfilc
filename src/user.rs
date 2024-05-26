@@ -263,18 +263,15 @@ impl User {
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "    {} ({})",
-                &first_lesson.start().pretty(),
-                first_lesson.start().hun_day_of_week()
+                &first_lesson.start.pretty(),
+                first_lesson.start.hun_day_of_week()
             );
             if first_lesson.shite() {
                 println!("{first_lesson}");
                 fill(&first_lesson.to_string(), '|', None);
             }
             let todays_tests = self
-                .fetch_all_announced((
-                    Some(first_lesson.start()),
-                    Some(lessons.last().unwrap().end()),
-                ))
+                .fetch_all_announced((Some(first_lesson.start), Some(lessons.last().unwrap().end)))
                 .expect("couldn't fetch announced tests");
             // info!("all announced: {todays_tests:?}");
 
@@ -311,7 +308,7 @@ impl User {
                         '$',
                         Some(format!(
                             "{} perc",
-                            (lesson.end() - Local::now()).num_minutes()
+                            (lesson.end - Local::now()).num_minutes()
                         )),
                     )
                 } else if next_lesson(lessons).is_some_and(|nxt| nxt == lesson) {
@@ -319,7 +316,7 @@ impl User {
                         '>',
                         Some(format!(
                             "{} perc",
-                            (lesson.start() - Local::now()).num_minutes()
+                            (lesson.start - Local::now()).num_minutes()
                         )),
                     )
                 } else if lesson.cancelled() {
@@ -509,7 +506,7 @@ impl User {
 
         let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
         info!("recieved lessons");
-        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).unwrap());
+        lessons.sort_by(|a, b| a.start.partial_cmp(&b.start).unwrap());
         Ok(lessons)
     }
 
@@ -554,15 +551,15 @@ impl User {
             });
 
         tests.extend(fetched_tests.unwrap_or_default());
-        tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
+        tests.sort_by(|a, b| b.date.partial_cmp(&a.date).unwrap());
         tests.dedup();
         if let Some(from) = interval.0 {
             info!("filtering, from!");
-            tests.retain(|ancd| ancd.day().num_days_from_ce() >= from.num_days_from_ce());
+            tests.retain(|ancd| ancd.date.num_days_from_ce() >= from.num_days_from_ce());
         }
         if let Some(to) = interval.1 {
             info!("filtering, to!");
-            tests.retain(|ancd| ancd.day().num_days_from_ce() <= to.num_days_from_ce());
+            tests.retain(|ancd| ancd.date.num_days_from_ce() <= to.num_days_from_ce());
         }
         if interval.0.is_none() && !fetch_err {
             cache("announced", &serde_json::to_string(&tests)?)?;

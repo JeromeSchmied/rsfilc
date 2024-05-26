@@ -100,10 +100,10 @@ pub struct Lesson {
 
     // start datetime
     #[serde(rename(deserialize = "KezdetIdopont"))]
-    start: String,
+    pub start: DateTime<Local>,
     // end datetime
     #[serde(rename(deserialize = "VegIdopont"))]
-    end: String,
+    pub end: DateTime<Local>,
 
     /// topic of the lesson
     #[serde(rename(deserialize = "Tema"))]
@@ -136,7 +136,7 @@ pub struct Lesson {
 impl Lesson {
     /// The two goddamn [`Lesson`]s should happen in the same time.
     pub fn same_time(&self, other: &Self) -> bool {
-        self.start() == other.start() && self.end() == other.end()
+        self.start == other.start && self.end == other.end
     }
     /// Returns whether this [`Lesson`] has been/will be cancelled.
     pub fn cancelled(&self) -> bool {
@@ -152,23 +152,6 @@ impl Lesson {
                 .is_some_and(|presence| presence == "Hianyzas")
         })
     }
-    /// Returns the start of this [`Lesson`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if `kezdet_idopont` is invalid as date.
-    pub fn start(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.start).unwrap().into()
-    }
-    /// Returns the end of this [`Lesson`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if `veg_idopont` is invalid as date.
-    pub fn end(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.end).unwrap().into()
-    }
-
     /// Returns the subject id of this [`Lesson`].
     pub fn subject_id(&self) -> Option<String> {
         Some(
@@ -187,17 +170,17 @@ impl Lesson {
         if self.cancelled() {
             return false;
         }
-        self.start() <= Local::now() && self.end() >= Local::now()
+        self.start <= Local::now() && self.end >= Local::now()
     }
 
     /// Returns whether this [`Lesson`] is a forecoming one: to be done.
     pub fn forecoming(&self) -> bool {
-        self.start() > Local::now()
+        self.start > Local::now()
     }
 
     /// Returns whether this [`Lesson`] is just false positive, meaning it's just a title for a day.
     pub fn shite(&self) -> bool {
-        self.start().signed_duration_since(self.end()).is_zero()
+        self.start.signed_duration_since(self.end).is_zero()
     }
 }
 impl fmt::Display for Lesson {
@@ -211,8 +194,8 @@ impl fmt::Display for Lesson {
             writeln!(
                 f,
                 "| {} -> {}",
-                self.start().format("%H:%M"),
-                self.end().format("%H:%M")
+                self.start.format("%H:%M"),
+                self.end.format("%H:%M")
             )?;
         }
 
