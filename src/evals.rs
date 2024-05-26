@@ -18,7 +18,7 @@ pub struct Eval {
     // date_saved: String,
     /// the time it was actually earned?
     #[serde(rename(deserialize = "KeszitesDatuma", serialize = "KeszitesDatuma"))]
-    earned: String,
+    pub earned: DateTime<Local>,
 
     /// subject: information about the type of the lesson: eg.: maths, history
     #[serde(rename(deserialize = "Tantargy", serialize = "Tantargy"))]
@@ -90,15 +90,6 @@ impl Eval {
     /// Eg. "Memoriter"
     fn kind(&self) -> Option<String> {
         Some(self.another_kind.as_ref()?.get("Leiras")?.to_owned())
-    }
-
-    /// Returns the date when earned of this [`Eval`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if `keszites_datuma` is invalid date-time.
-    pub fn earned(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.earned).unwrap().into()
     }
 
     /// Filter `evals` by `kind`
@@ -192,7 +183,7 @@ impl fmt::Display for Eval {
         if let Some(teacher) = &self.teacher {
             writeln!(f, "| {teacher}")?;
         }
-        write!(f, "| Időpont: {}", &self.earned().pretty())?;
+        write!(f, "| Időpont: {}", &self.earned.pretty())?;
 
         Ok(())
     }

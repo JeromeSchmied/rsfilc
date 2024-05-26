@@ -483,7 +483,7 @@ impl User {
         info!("recieved evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
-        evals.sort_by(|a, b| b.earned().partial_cmp(&a.earned()).unwrap());
+        evals.sort_by(|a, b| b.earned.partial_cmp(&a.earned).unwrap());
         evals.dedup();
         if interval.0.is_none() && !fetch_err {
             cache("evals", &serde_json::to_string(&evals)?)?;

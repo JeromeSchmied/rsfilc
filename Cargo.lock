@@ -157,6 +157,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-targets 0.52.5",
 ]
@@ -820,7 +821,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.8.9"
+version = "0.8.10"
 dependencies = [
  "base64",
  "chrono",
