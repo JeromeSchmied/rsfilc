@@ -6,7 +6,7 @@ use crate::{
     *,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Days, Local, NaiveDate};
 use hmac::{Hmac, Mac};
 use reqwest::{
     blocking::{self, Client},
@@ -263,18 +263,15 @@ impl User {
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "    {} ({})",
-                &first_lesson.start().pretty(),
-                first_lesson.start().hun_day_of_week()
+                &first_lesson.start.pretty(),
+                first_lesson.start.hun_day_of_week()
             );
             if first_lesson.shite() {
                 println!("{first_lesson}");
                 fill(&first_lesson.to_string(), '|', None);
             }
             let todays_tests = self
-                .fetch_all_announced((
-                    Some(first_lesson.start()),
-                    Some(lessons.last().unwrap().end()),
-                ))
+                .fetch_all_announced((Some(first_lesson.start), Some(lessons.last().unwrap().end)))
                 .expect("couldn't fetch announced tests");
             // info!("all announced: {todays_tests:?}");
 
@@ -311,7 +308,7 @@ impl User {
                         '$',
                         Some(format!(
                             "{} perc",
-                            (lesson.end() - Local::now()).num_minutes()
+                            (lesson.end - Local::now()).num_minutes()
                         )),
                     )
                 } else if next_lesson(lessons).is_some_and(|nxt| nxt == lesson) {
@@ -319,7 +316,7 @@ impl User {
                         '>',
                         Some(format!(
                             "{} perc",
-                            (lesson.start() - Local::now()).num_minutes()
+                            (lesson.start - Local::now()).num_minutes()
                         )),
                     )
                 } else if lesson.cancelled() {
@@ -483,12 +480,67 @@ impl User {
         info!("recieved evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
-        evals.sort_by(|a, b| b.earned().partial_cmp(&a.earned()).unwrap());
+        evals.sort_by(|a, b| b.earned.partial_cmp(&a.earned).unwrap());
         evals.dedup();
         if interval.0.is_none() && !fetch_err {
             cache("evals", &serde_json::to_string(&evals)?)?;
         }
         Ok(evals)
+    }
+
+    pub fn get_timetable(&self, day: NaiveDate) -> Res<Vec<Lesson>> {
+        let (_, cache_content) = uncache("timetable").unzip();
+        let mut lessons = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Lesson>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let day_from_mon = day
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_local_timezone(Local)
+            .unwrap()
+            .weekday()
+            .number_from_monday()
+            - 1;
+        let day_till_sun = 7 - day_from_mon - 1;
+        let week_start = day
+            .checked_sub_days(Days::new(day_from_mon.into()))
+            .unwrap();
+        let week_end = day
+            .checked_add_days(Days::new(day_till_sun.into()))
+            .unwrap();
+
+        let mon_start = week_start
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_local_timezone(Local)
+            .unwrap();
+        let sun_end = week_end
+            .and_hms_opt(23, 59, 59)
+            .unwrap()
+            .and_local_timezone(Local)
+            .unwrap();
+
+        let mut fetch_err = false;
+        let fetched_lessons_week = self
+            .fetch_timetable(mon_start, sun_end)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't deserialize data: {e:?}");
+            })
+            .unwrap_or_default();
+
+        lessons.extend(fetched_lessons_week);
+        lessons.sort_by(|a, b| a.start.cmp(&b.start));
+        lessons.dedup();
+        if !fetch_err {
+            cache("timetable", &serde_json::to_string(&lessons)?)?;
+        }
+        lessons.retain(|lsn| lsn.start.date_naive() == day);
+
+        Ok(lessons)
     }
 
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
@@ -500,7 +552,7 @@ impl User {
     /// # Panics
     ///
     /// - sorting
-    pub fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
+    fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
         let txt = self.fetch(
             &(self.base() + timetable::ep()),
             "timetable",
@@ -509,7 +561,7 @@ impl User {
 
         let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
         info!("recieved lessons");
-        lessons.sort_by(|a, b| a.start().partial_cmp(&b.start()).unwrap());
+        lessons.sort_by(|a, b| a.start.partial_cmp(&b.start).unwrap());
         Ok(lessons)
     }
 
@@ -554,15 +606,15 @@ impl User {
             });
 
         tests.extend(fetched_tests.unwrap_or_default());
-        tests.sort_by(|a, b| b.day().partial_cmp(&a.day()).unwrap());
+        tests.sort_by(|a, b| b.date.partial_cmp(&a.date).unwrap());
         tests.dedup();
         if let Some(from) = interval.0 {
             info!("filtering, from!");
-            tests.retain(|ancd| ancd.day().num_days_from_ce() >= from.num_days_from_ce());
+            tests.retain(|ancd| ancd.date.num_days_from_ce() >= from.num_days_from_ce());
         }
         if let Some(to) = interval.1 {
             info!("filtering, to!");
-            tests.retain(|ancd| ancd.day().num_days_from_ce() <= to.num_days_from_ce());
+            tests.retain(|ancd| ancd.date.num_days_from_ce() <= to.num_days_from_ce());
         }
         if interval.0.is_none() && !fetch_err {
             cache("announced", &serde_json::to_string(&tests)?)?;

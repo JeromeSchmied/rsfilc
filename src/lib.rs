@@ -143,39 +143,22 @@ pub trait MyDate {
     /// Get hungarian day of week.
     fn hun_day_of_week<'a>(&self) -> &'a str;
     fn make_kreta_valid(&self) -> String;
+    fn day_diff(&self, other: &Self) -> Option<String>;
 }
 impl MyDate for DateTime<Local> {
     fn pretty(&self) -> String {
         let this_year = self.year() == Local::now().year();
-        let day_diff = self.num_days_from_ce() - Local::now().num_days_from_ce();
 
         if !this_year {
             format!("{}", self.format("%Y.%m.%d"))
-        } else if day_diff == -1 {
+        } else if let Some(day_diff) = self.day_diff(&Local::now()) {
             format!(
-                "tegnap{}",
+                "{} {}",
+                day_diff,
                 self.format(if self.hour() == 0 && self.minute() == 0 {
-                    ""
+                    "%d."
                 } else {
-                    " %H:%M"
-                })
-            )
-        } else if day_diff == 1 {
-            format!(
-                "holnap{}",
-                self.format(if self.hour() == 0 && self.minute() == 0 {
-                    ""
-                } else {
-                    " %H:%M"
-                })
-            )
-        } else if day_diff == 0 {
-            format!(
-                "ma{}",
-                self.format(if self.hour() == 0 && self.minute() == 0 {
-                    ""
-                } else {
-                    " %H:%M"
+                    "%d. %H:%M"
                 })
             )
         } else {
@@ -229,6 +212,18 @@ impl MyDate for DateTime<Local> {
     /// only day start: 00:00:00 is valid for `Kréta` feck it
     fn make_kreta_valid(&self) -> String {
         self.date_naive().and_hms_opt(0, 0, 0).unwrap().to_string()
+    }
+
+    fn day_diff(&self, other: &Self) -> Option<String> {
+        let day_diff = self.num_days_from_ce() - other.num_days_from_ce();
+        match day_diff {
+            -2 => Some("tegnapelőtt".into()),
+            -1 => Some("tegnap".into()),
+            0 => Some("ma".into()),
+            1 => Some("holnap".into()),
+            2 => Some("holnapután".into()),
+            _ => None,
+        }
     }
 }
 

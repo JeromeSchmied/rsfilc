@@ -18,7 +18,7 @@ pub struct Eval {
     // date_saved: String,
     /// the time it was actually earned?
     #[serde(rename(deserialize = "KeszitesDatuma", serialize = "KeszitesDatuma"))]
-    earned: String,
+    pub earned: DateTime<Local>,
 
     /// subject: information about the type of the lesson: eg.: maths, history
     #[serde(rename(deserialize = "Tantargy", serialize = "Tantargy"))]
@@ -92,15 +92,6 @@ impl Eval {
         Some(self.another_kind.as_ref()?.get("Leiras")?.to_owned())
     }
 
-    /// Returns the date when earned of this [`Eval`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if `keszites_datuma` is invalid date-time.
-    pub fn earned(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.earned).unwrap().into()
-    }
-
     /// Filter `evals` by `kind`
     pub fn filter_by_kind_or_title(evals: &mut Vec<Eval>, filter: &str) {
         let filter = filter.to_lowercase();
@@ -132,27 +123,27 @@ impl Eval {
         info!("calculating average for evals");
         let evals = evals
             .iter()
-            .filter(|eval| !eval.end_year() && !eval.half_year());
+            .filter(|eval| !eval.end_year() && !eval.half_year() && eval.as_num.is_some());
 
         // filter it, so only valid grades retain
         let ghosts = ghosts.iter().filter(|g| *g > &0 && *g <= &5);
 
-        let sum = evals.clone().fold(0, |sum, cur| {
-            sum + cur.as_num.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
-        }) + ghosts.clone().fold(0u16, |sum, num| sum + *num as u16);
+        let sum = evals.clone().fold(0., |sum, cur| {
+            sum + cur.as_num.unwrap_or(0) as f32 * cur.multi_from_percent()
+        }) + ghosts.clone().fold(0., |sum, num| sum + *num as f32);
 
         let count = evals
             .clone()
-            .fold(0, |sum, cur| sum + cur.multi_from_percent() as usize)
-            + ghosts.count();
+            .fold(0., |sum, cur| sum + cur.multi_from_percent())
+            + ghosts.count() as f32;
 
-        sum as f32 / count as f32
+        sum / count
     }
 
     /// Returns the multiplication value from percent of this [`Eval`].
     /// Eg. for 100% -> 1
-    fn multi_from_percent(&self) -> u8 {
-        (self.weight_in_percent.unwrap_or(100) / 100) as u8
+    fn multi_from_percent(&self) -> f32 {
+        self.weight_in_percent.unwrap_or(100) as f32 / 100.
     }
 
     /// Returns the type id of this [`Eval`].
@@ -192,7 +183,7 @@ impl fmt::Display for Eval {
         if let Some(teacher) = &self.teacher {
             writeln!(f, "| {teacher}")?;
         }
-        write!(f, "| Időpont: {}", &self.earned().pretty())?;
+        write!(f, "| Időpont: {}", &self.earned.pretty())?;
 
         Ok(())
     }

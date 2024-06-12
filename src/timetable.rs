@@ -92,40 +92,40 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Lesson {
     // subject of the lesson
-    #[serde(rename(deserialize = "Nev"))]
+    #[serde(rename(deserialize = "Nev", serialize = "Nev"))]
     pub subject: String,
     // room in which it will be held
-    #[serde(rename(deserialize = "TeremNeve"))]
+    #[serde(rename(deserialize = "TeremNeve", serialize = "TeremNeve"))]
     room: Option<String>,
 
     // start datetime
-    #[serde(rename(deserialize = "KezdetIdopont"))]
-    start: String,
+    #[serde(rename(deserialize = "KezdetIdopont", serialize = "KezdetIdopont"))]
+    pub start: DateTime<Local>,
     // end datetime
-    #[serde(rename(deserialize = "VegIdopont"))]
-    end: String,
+    #[serde(rename(deserialize = "VegIdopont", serialize = "VegIdopont"))]
+    pub end: DateTime<Local>,
 
     /// topic of the lesson
-    #[serde(rename(deserialize = "Tema"))]
+    #[serde(rename(deserialize = "Tema", serialize = "Tema"))]
     topic: Option<String>,
 
     /// name of the teacher
-    #[serde(rename(deserialize = "TanarNeve"))]
+    #[serde(rename(deserialize = "TanarNeve", serialize = "TanarNeve"))]
     teacher: Option<String>,
     /// alternative teacher's name if any
-    #[serde(rename(deserialize = "HelyettesTanarNeve"))]
+    #[serde(rename(deserialize = "HelyettesTanarNeve", serialize = "HelyettesTanarNeve"))]
     alt_teacher: Option<String>,
 
     /// subject: information about the type of the lesson: eg.: maths, history
-    #[serde(rename(deserialize = "Tantargy"))]
+    #[serde(rename(deserialize = "Tantargy", serialize = "Tantargy"))]
     subject_details: Option<HashMap<String, Value>>,
 
     /// whether it has been cancelled or what
-    #[serde(rename(deserialize = "Allapot"))]
+    #[serde(rename(deserialize = "Allapot", serialize = "Allapot"))]
     status: Option<HashMap<String, String>>,
 
     /// info about the student being present
-    #[serde(rename(deserialize = "TanuloJelenlet"))]
+    #[serde(rename(deserialize = "TanuloJelenlet", serialize = "TanuloJelenlet"))]
     absence: Option<HashMap<String, String>>,
 
     /// not needed
@@ -136,7 +136,7 @@ pub struct Lesson {
 impl Lesson {
     /// The two goddamn [`Lesson`]s should happen in the same time.
     pub fn same_time(&self, other: &Self) -> bool {
-        self.start() == other.start() && self.end() == other.end()
+        self.start == other.start && self.end == other.end
     }
     /// Returns whether this [`Lesson`] has been/will be cancelled.
     pub fn cancelled(&self) -> bool {
@@ -152,23 +152,6 @@ impl Lesson {
                 .is_some_and(|presence| presence == "Hianyzas")
         })
     }
-    /// Returns the start of this [`Lesson`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if `kezdet_idopont` is invalid as date.
-    pub fn start(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.start).unwrap().into()
-    }
-    /// Returns the end of this [`Lesson`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if `veg_idopont` is invalid as date.
-    pub fn end(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.end).unwrap().into()
-    }
-
     /// Returns the subject id of this [`Lesson`].
     pub fn subject_id(&self) -> Option<String> {
         Some(
@@ -187,17 +170,17 @@ impl Lesson {
         if self.cancelled() {
             return false;
         }
-        self.start() <= Local::now() && self.end() >= Local::now()
+        self.start <= Local::now() && self.end >= Local::now()
     }
 
     /// Returns whether this [`Lesson`] is a forecoming one: to be done.
     pub fn forecoming(&self) -> bool {
-        self.start() > Local::now()
+        self.start > Local::now()
     }
 
     /// Returns whether this [`Lesson`] is just false positive, meaning it's just a title for a day.
     pub fn shite(&self) -> bool {
-        self.start().signed_duration_since(self.end()).is_zero()
+        self.start.signed_duration_since(self.end).is_zero()
     }
 }
 impl fmt::Display for Lesson {
@@ -211,8 +194,8 @@ impl fmt::Display for Lesson {
             writeln!(
                 f,
                 "| {} -> {}",
-                self.start().format("%H:%M"),
-                self.end().format("%H:%M")
+                self.start.format("%H:%M"),
+                self.end.format("%H:%M")
             )?;
         }
 

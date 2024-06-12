@@ -150,7 +150,7 @@
 -   [ ] helpful crashes
 -   [ ] caching everything so that life remains enjoyable
     -   [ ] token
-    -   [ ] timetable
+    -   [x] timetable
     -   [x] evals
     -   [ ] user info
     -   [x] absences

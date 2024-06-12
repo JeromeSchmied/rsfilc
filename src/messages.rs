@@ -396,7 +396,7 @@ pub struct NoteMsg {
     title: String,
 
     #[serde(rename(deserialize = "Datum", serialize = "Datum"))]
-    date: String,
+    date: DateTime<Local>,
 
     #[serde(rename(deserialize = "KeszitoTanarNeve", serialize = "KeszitoTanarNeve"))]
     teacher: String,
@@ -409,20 +409,11 @@ pub struct NoteMsg {
 }
 
 /// additional notes/system messages
-impl NoteMsg {
-    /// get `date`
-    ///
-    /// # Panics
-    ///
-    /// if [`NaughtyMsg`] doesn't contain `date`
-    pub fn date(&self) -> DateTime<Local> {
-        DateTime::parse_from_rfc3339(&self.date).unwrap().into()
-    }
-}
+impl NoteMsg {}
 impl fmt::Display for NoteMsg {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "| {}", self.title)?;
-        writeln!(f, "| Időpont: {}", self.date().pretty())?;
+        writeln!(f, "| Időpont: {}", self.date.pretty())?;
         writeln!(f, "| {}", self.teacher,)?;
         write!(f, "\n{}", Rendr::render_html(&self.msg).trim())?;
         Ok(())

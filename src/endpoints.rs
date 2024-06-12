@@ -7,7 +7,7 @@ pub const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
 /// kreta files base Url
 pub const FILES: &str = "https://files.e-kreta.hu";
 /// just a random `USER_AGENT`
-pub const USER_AGENT: &str = "hu.ekreta.student/9.1.1/Linux/1";
+pub const USER_AGENT: &str = "hu.ekreta.student/4.4.1/Android";
 /// client id, just like as if it was official
 pub const CLIENT_ID: &str = "kreta-ellenorzo-mobile-android";
 
