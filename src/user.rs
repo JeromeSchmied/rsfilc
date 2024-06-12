@@ -299,9 +299,13 @@ impl User {
                     .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
                 {
                     printer += &format!(
-                        "\n| {}: {}",
+                        "\n| {}{}",
                         test.kind(),
-                        test.topic.clone().unwrap_or_default()
+                        if let Some(topic) = test.topic.as_ref() {
+                            format!(": {}", topic)
+                        } else {
+                            "".into()
+                        }
                     );
                 }
                 println!("{printer}");
