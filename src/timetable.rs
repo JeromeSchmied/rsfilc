@@ -249,7 +249,12 @@ fn day_diff(value: &str) -> Option<i8> {
     info!("today_as_num: {today_as_num}");
     info!("other_as_num: {num_from_mon:?}");
     let diff = if let Some(from_mon) = num_from_mon {
-        7i8 - today_as_num as i8 + from_mon
+        let x = from_mon as i8 - today_as_num as i8;
+        if x < 0 {
+            7 - today_as_num as i8 + x.abs() - 1
+        } else {
+            x
+        }
     } else {
         match value.as_str() {
             "ma" | "today" => 0,
