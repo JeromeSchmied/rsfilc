@@ -77,10 +77,10 @@ impl fmt::Display for Ancd {
         write!(f, "| {}", &self.date.pretty())?;
         write!(f, " {}", self.subject)?;
         if let Some(tc) = &self.topic {
-            writeln!(f, ": {}", tc)?;
+            write!(f, ": {}", tc)?;
         }
 
-        writeln!(f, "| {}", self.kind())?;
+        writeln!(f, "\n| {}", self.kind())?;
         writeln!(f, "| {}", self.teacher_entered)?;
         write!(f, "| Rögzítés dátuma: {}", &self.entry_date.pretty())?;
 
