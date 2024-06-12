@@ -273,6 +273,9 @@ impl User {
             let todays_tests = self
                 .fetch_all_announced((Some(first_lesson.start), Some(lessons.last().unwrap().end)))
                 .expect("couldn't fetch announced tests");
+            let all_lessons_till_day = self
+                .get_timetable(first_lesson.start.date_naive(), true)
+                .unwrap_or_default();
             // info!("all announced: {todays_tests:?}");
 
             // number of lessons at the same time
@@ -311,7 +314,7 @@ impl User {
                             (lesson.end - Local::now()).num_minutes()
                         )),
                     )
-                } else if next_lesson(lessons).is_some_and(|nxt| nxt == lesson) {
+                } else if next_lesson(&all_lessons_till_day).is_some_and(|nxt| nxt == lesson) {
                     (
                         '>',
                         Some(format!(
@@ -488,7 +491,7 @@ impl User {
         Ok(evals)
     }
 
-    pub fn get_timetable(&self, day: NaiveDate) -> Res<Vec<Lesson>> {
+    pub fn get_timetable(&self, day: NaiveDate, everything_till_day: bool) -> Res<Vec<Lesson>> {
         let (_, cache_content) = uncache("timetable").unzip();
         let mut lessons = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Lesson>>(cached)?
@@ -496,14 +499,7 @@ impl User {
             vec![]
         };
 
-        let day_from_mon = day
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_local_timezone(Local)
-            .unwrap()
-            .weekday()
-            .number_from_monday()
-            - 1;
+        let day_from_mon = Local::now().weekday().number_from_monday() - 1;
         let day_till_sun = 7 - day_from_mon - 1;
         let week_start = day
             .checked_sub_days(Days::new(day_from_mon.into()))
@@ -538,8 +534,9 @@ impl User {
         if !fetch_err {
             cache("timetable", &serde_json::to_string(&lessons)?)?;
         }
-        lessons.retain(|lsn| lsn.start.date_naive() == day);
-
+        if !everything_till_day {
+            lessons.retain(|lsn| lsn.start.date_naive() == day);
+        }
         Ok(lessons)
     }
 
