@@ -1,4 +1,4 @@
-use chrono::Local;
+use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
 use rsfilc::{Abs, Ancd, Eval, School, User, *};
@@ -46,26 +46,11 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             // parse day
             let day = timetable::parse_day(&day);
 
-            let day_start = day
-                .and_hms_opt(0, 0, 0)
-                .expect("couldn't make from")
-                .and_local_timezone(Local)
-                .unwrap();
-            let day_end = day
-                .and_hms_opt(23, 59, 59)
-                .expect("couldn't make to")
-                .and_local_timezone(Local)
-                .unwrap();
-
-            let lessons = user.fetch_timetable(day_start, day_end)?;
+            let lessons = user.get_timetable(day)?;
 
             // nice output if no lessons, couldn't be possible in print_day()
             if lessons.is_empty() {
-                println!(
-                    "{} ({}) nincs rögzített órád, juhé!",
-                    day_start.pretty(),
-                    day_start.hun_day_of_week()
-                );
+                println!("{} ({}) nincs rögzített órád, juhé!", day, day.weekday());
                 return Ok(());
             }
 

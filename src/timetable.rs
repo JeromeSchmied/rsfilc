@@ -92,40 +92,40 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Lesson {
     // subject of the lesson
-    #[serde(rename(deserialize = "Nev"))]
+    #[serde(rename(deserialize = "Nev", serialize = "Nev"))]
     pub subject: String,
     // room in which it will be held
-    #[serde(rename(deserialize = "TeremNeve"))]
+    #[serde(rename(deserialize = "TeremNeve", serialize = "TeremNeve"))]
     room: Option<String>,
 
     // start datetime
-    #[serde(rename(deserialize = "KezdetIdopont"))]
+    #[serde(rename(deserialize = "KezdetIdopont", serialize = "KezdetIdopont"))]
     pub start: DateTime<Local>,
     // end datetime
-    #[serde(rename(deserialize = "VegIdopont"))]
+    #[serde(rename(deserialize = "VegIdopont", serialize = "VegIdopont"))]
     pub end: DateTime<Local>,
 
     /// topic of the lesson
-    #[serde(rename(deserialize = "Tema"))]
+    #[serde(rename(deserialize = "Tema", serialize = "Tema"))]
     topic: Option<String>,
 
     /// name of the teacher
-    #[serde(rename(deserialize = "TanarNeve"))]
+    #[serde(rename(deserialize = "TanarNeve", serialize = "TanarNeve"))]
     teacher: Option<String>,
     /// alternative teacher's name if any
-    #[serde(rename(deserialize = "HelyettesTanarNeve"))]
+    #[serde(rename(deserialize = "HelyettesTanarNeve", serialize = "HelyettesTanarNeve"))]
     alt_teacher: Option<String>,
 
     /// subject: information about the type of the lesson: eg.: maths, history
-    #[serde(rename(deserialize = "Tantargy"))]
+    #[serde(rename(deserialize = "Tantargy", serialize = "Tantargy"))]
     subject_details: Option<HashMap<String, Value>>,
 
     /// whether it has been cancelled or what
-    #[serde(rename(deserialize = "Allapot"))]
+    #[serde(rename(deserialize = "Allapot", serialize = "Allapot"))]
     status: Option<HashMap<String, String>>,
 
     /// info about the student being present
-    #[serde(rename(deserialize = "TanuloJelenlet"))]
+    #[serde(rename(deserialize = "TanuloJelenlet", serialize = "TanuloJelenlet"))]
     absence: Option<HashMap<String, String>>,
 
     /// not needed

@@ -6,7 +6,7 @@ use crate::{
     *,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Days, Local, NaiveDate};
 use hmac::{Hmac, Mac};
 use reqwest::{
     blocking::{self, Client},
@@ -488,6 +488,61 @@ impl User {
         Ok(evals)
     }
 
+    pub fn get_timetable(&self, day: NaiveDate) -> Res<Vec<Lesson>> {
+        let (_, cache_content) = uncache("timetable").unzip();
+        let mut lessons = if let Some(cached) = &cache_content {
+            serde_json::from_str::<Vec<Lesson>>(cached)?
+        } else {
+            vec![]
+        };
+
+        let day_from_mon = day
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_local_timezone(Local)
+            .unwrap()
+            .weekday()
+            .number_from_monday()
+            - 1;
+        let day_till_sun = 7 - day_from_mon - 1;
+        let week_start = day
+            .checked_sub_days(Days::new(day_from_mon.into()))
+            .unwrap();
+        let week_end = day
+            .checked_add_days(Days::new(day_till_sun.into()))
+            .unwrap();
+
+        let mon_start = week_start
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_local_timezone(Local)
+            .unwrap();
+        let sun_end = week_end
+            .and_hms_opt(23, 59, 59)
+            .unwrap()
+            .and_local_timezone(Local)
+            .unwrap();
+
+        let mut fetch_err = false;
+        let fetched_lessons_week = self
+            .fetch_timetable(mon_start, sun_end)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't deserialize data: {e:?}");
+            })
+            .unwrap_or_default();
+
+        lessons.extend(fetched_lessons_week);
+        lessons.sort_by(|a, b| a.start.cmp(&b.start));
+        lessons.dedup();
+        if !fetch_err {
+            cache("timetable", &serde_json::to_string(&lessons)?)?;
+        }
+        lessons.retain(|lsn| lsn.start.date_naive() == day);
+
+        Ok(lessons)
+    }
+
     /// get all [`Lesson`]s `from` `to` which makes up a timetable
     ///
     /// # Errors
@@ -497,7 +552,7 @@ impl User {
     /// # Panics
     ///
     /// - sorting
-    pub fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
+    fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
         let txt = self.fetch(
             &(self.base() + timetable::ep()),
             "timetable",
