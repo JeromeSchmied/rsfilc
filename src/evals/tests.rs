@@ -64,6 +64,6 @@ fn works() {
         Some("Magyar nyelv és irodalom".to_owned())
     );
     assert_eq!(eval.kind(), Some("Memoriter".to_owned()));
-    assert_eq!(eval.multi_from_percent(), 1);
+    assert_eq!(eval.multi_from_percent(), 1.);
     assert_eq!(eval.type_id(), Some("evkozi_jegy_ertekeles".to_owned()))
 }
