@@ -323,7 +323,13 @@ impl User {
                         )),
                     )
                 } else if lesson.cancelled() {
-                    ('X', None)
+                    (
+                        'X',
+                        Some(format!(
+                            "elmarad{}",
+                            if lesson.forecoming() { "" } else { "t" }
+                        )),
+                    )
                 } else {
                     ('-', None)
                 };
