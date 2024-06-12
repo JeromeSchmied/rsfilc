@@ -140,7 +140,7 @@
 -   [ ] segítőkész hibaüüzenetek
 -   [ ] kb minden cache-elése a valódi élmény érdekében
     -   [ ] token
-    -   [ ] órarend
+    -   [x] órarend
     -   [x] jegyek
     -   [ ] felhasználó adatai
     -   [x] hiányzások
