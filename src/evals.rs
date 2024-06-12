@@ -128,22 +128,22 @@ impl Eval {
         // filter it, so only valid grades retain
         let ghosts = ghosts.iter().filter(|g| *g > &0 && *g <= &5);
 
-        let sum = evals.clone().fold(0, |sum, cur| {
-            sum + cur.as_num.unwrap_or(0) as u16 * cur.multi_from_percent() as u16
-        }) + ghosts.clone().fold(0u16, |sum, num| sum + *num as u16);
+        let sum = evals.clone().fold(0., |sum, cur| {
+            sum + cur.as_num.unwrap_or(0) as f32 * cur.multi_from_percent()
+        }) + ghosts.clone().fold(0., |sum, num| sum + *num as f32);
 
         let count = evals
             .clone()
-            .fold(0, |sum, cur| sum + cur.multi_from_percent() as usize)
-            + ghosts.count();
+            .fold(0., |sum, cur| sum + cur.multi_from_percent())
+            + ghosts.count() as f32;
 
-        sum as f32 / count as f32
+        sum / count
     }
 
     /// Returns the multiplication value from percent of this [`Eval`].
     /// Eg. for 100% -> 1
-    fn multi_from_percent(&self) -> u8 {
-        (self.weight_in_percent.unwrap_or(100) / 100) as u8
+    fn multi_from_percent(&self) -> f32 {
+        self.weight_in_percent.unwrap_or(100) as f32 / 100.
     }
 
     /// Returns the type id of this [`Eval`].
