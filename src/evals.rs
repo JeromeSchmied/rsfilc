@@ -123,7 +123,7 @@ impl Eval {
         info!("calculating average for evals");
         let evals = evals
             .iter()
-            .filter(|eval| !eval.end_year() && !eval.half_year());
+            .filter(|eval| !eval.end_year() && !eval.half_year() && eval.as_num.is_some());
 
         // filter it, so only valid grades retain
         let ghosts = ghosts.iter().filter(|g| *g > &0 && *g <= &5);
