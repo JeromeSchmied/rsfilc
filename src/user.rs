@@ -504,8 +504,14 @@ impl User {
         } else {
             vec![]
         };
-
-        let day_from_mon = Local::now().weekday().number_from_monday() - 1;
+        let day_from_mon = day
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_local_timezone(Local)
+            .unwrap()
+            .weekday()
+            .number_from_monday()
+            - 1;
         let day_till_sun = 7 - day_from_mon - 1;
         let week_start = day
             .checked_sub_days(Days::new(day_from_mon.into()))
