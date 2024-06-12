@@ -66,7 +66,6 @@ pub const fn ep() -> &'static str {
 ///
 /// returns a `Vec<&Lesson>`, as a person might accidentally have more than one lessons at a time
 pub fn current_lessons(lessons: &[Lesson]) -> Vec<&Lesson> {
-    info!("searching for current lesson(s)");
     lessons.iter().filter(|lsn| lsn.happening()).collect()
 }
 /// Returns the next [`Lesson`] of this [`User`] from `lessons` which shall include today's [`Lesson`]s.
@@ -79,7 +78,6 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     if !current_lessons(lessons).is_empty() {
         return None;
     }
-    info!("searching for next lesson");
     lessons
         .iter()
         .filter(|lsn| lsn.forecoming() && !lsn.shite() && !lsn.cancelled())

@@ -46,7 +46,8 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             // parse day
             let day = timetable::parse_day(&day);
 
-            let lessons = user.get_timetable(day)?;
+            let all_lessons_till_day = user.get_timetable(day, true)?;
+            let lessons = user.get_timetable(day, false)?;
 
             // nice output if no lessons, couldn't be possible in print_day()
             if lessons.is_empty() {
@@ -56,7 +57,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if current {
                 let current_lessons = timetable::current_lessons(&lessons);
-                if let Some(nxt) = timetable::next_lesson(&lessons) {
+                if let Some(nxt) = timetable::next_lesson(&all_lessons_till_day) {
                     println!(
                         "{}m -> {}",
                         (nxt.start - Local::now()).num_minutes(), // minutes remaining
