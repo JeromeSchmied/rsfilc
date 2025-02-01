@@ -188,6 +188,3 @@ impl fmt::Display for Eval {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests;

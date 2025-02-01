@@ -38,6 +38,7 @@ pub trait Endpoint {
 
 pub mod absences;
 pub mod announced_tests;
+pub mod evaluations;
 
 pub mod base {
     use crate::Str;
