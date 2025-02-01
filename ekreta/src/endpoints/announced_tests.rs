@@ -1,14 +1,13 @@
 use crate::types::{OsztalyCsoport, Rektip, Tantargy};
-use crate::{Endpoint, Interval};
-use chrono::{DateTime, Local};
+use crate::{DateTime, Endpoint, Interval};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct AnnouncedTest {
     pub uid: String,
-    pub datum: DateTime<Local>,
-    pub bejelentes_datuma: DateTime<Local>,
+    pub datum: DateTime,
+    pub bejelentes_datuma: DateTime,
     pub rogzito_tanar_neve: String,
     pub orarendi_ora_oraszama: Option<u8>,
     pub tantargy: Tantargy,

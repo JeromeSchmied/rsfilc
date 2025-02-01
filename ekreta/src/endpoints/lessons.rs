@@ -1,5 +1,5 @@
-use crate::types::*;
-use chrono::{DateTime, Local};
+use crate::{types::*, DateTime, Endpoint};
+use chrono::Local;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 pub struct Lesson {
     pub uid: String,
     pub datum: String,
-    pub kezdet_idopont: DateTime<Local>,
-    pub veg_idopont: DateTime<Local>,
+    pub kezdet_idopont: DateTime,
+    pub veg_idopont: DateTime,
     pub nev: String,
     pub oraszam: i64,
     pub ora_eves_sorszama: i64,
@@ -33,9 +33,13 @@ pub struct Lesson {
     pub digitalis_platform_tipus: String,
     pub digitalis_tamogato_eszkoz_tipus_list: Vec<String>,
     pub letrehozas: String,
-    pub utolso_modositas: DateTime<Local>,
+    pub utolso_modositas: DateTime,
 }
 impl Lesson {
+    /// The two goddamn [`Lesson`]s should happen in the same time.
+    pub fn same_time(&self, other: &Self) -> bool {
+        self.kezdet_idopont == other.kezdet_idopont && self.veg_idopont == other.veg_idopont
+    }
     /// Returns whether this [`Lesson`] has been/will be cancelled.
     pub fn cancelled(&self) -> bool {
         self.allapot.as_ref().is_some_and(|a| a.nev == "Elmaradt")
@@ -67,6 +71,21 @@ impl Lesson {
     /// Returns whether this [`Lesson`] is a forecoming one: to be done.
     pub fn forecoming(&self) -> bool {
         self.kezdet_idopont > Local::now()
+    }
+}
+
+impl Endpoint for Lesson {
+    type QueryInput = (DateTime, DateTime);
+
+    fn path() -> &'static str {
+        "/ellenorzo/V3/Sajat/OrarendElemek"
+    }
+
+    fn query(input: &Self::QueryInput) -> anyhow::Result<impl Serialize> {
+        let mut q = vec![];
+        q.push(("datumTol", input.0.to_string()));
+        q.push(("datumIg", input.1.to_string()));
+        Ok(q)
     }
 }
 
@@ -129,7 +148,7 @@ mod tests {
         "DigitalisPlatformTipus": "Na",
         "DigitalisTamogatoEszkozTipusList": ["Na"],
         "Letrehozas": "2023-08-26T18:15:00",
-        "UtolsoModositas": "2023-08-26T18:15:00"
+        "UtolsoModositas": "2023-08-26T18:15:00Z"
     }"#;
 
         let lesson = serde_json::from_str::<Lesson>(lesson_json);

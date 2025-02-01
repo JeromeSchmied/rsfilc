@@ -1,6 +1,6 @@
 use crate::types::{Ora, OsztalyCsoport, Rektip, Tantargy};
+use crate::DateTime;
 use crate::{Endpoint, Interval, Result};
-use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9,12 +9,12 @@ pub struct Absence {
     pub uid: String,
     pub tantargy: Tantargy,
     pub ora: Ora,
-    pub datum: DateTime<Local>,
+    pub datum: DateTime,
     pub rogzito_tanar_neve: String,
     pub tipus: Rektip,
     pub r#mod: Rektip,
     pub keses_percben: Option<u8>,
-    pub keszites_datuma: DateTime<Local>,
+    pub keszites_datuma: DateTime,
     pub igazolas_allapota: String,
     pub igazolas_tipusa: Rektip,
     pub osztaly_csoport: OsztalyCsoport,

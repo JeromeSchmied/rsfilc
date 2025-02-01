@@ -1,19 +1,17 @@
+use super::Endpoint;
 use crate::{
     types::{OsztalyCsoport, Rektip, Tantargy},
-    Interval,
+    DateTime, Interval,
 };
-use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
-
-use super::Endpoint;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Evaluation {
     pub uid: String,
-    pub rogzites_datuma: DateTime<Local>,
-    pub keszites_datuma: DateTime<Local>,
-    pub lattamozas_datuma: Option<DateTime<Local>>,
+    pub rogzites_datuma: DateTime,
+    pub keszites_datuma: DateTime,
+    pub lattamozas_datuma: Option<DateTime>,
     pub tantargy: Tantargy,
     pub tema: Option<String>,
     pub tipus: Rektip,
