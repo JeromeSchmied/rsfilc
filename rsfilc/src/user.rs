@@ -294,12 +294,12 @@ impl User {
 
                 if let Some(test) = todays_tests
                     .iter()
-                    .find(|ancd| ancd.nth.is_some_and(|x| x as usize == n))
+                    .find(|ancd| ancd.orarendi_ora_oraszama.is_some_and(|x| x as usize == n))
                 {
                     printer += &format!(
                         "\n| {}{}",
-                        test.kind(),
-                        if let Some(topic) = test.topic.as_ref() {
+                        test.modja.leiras,
+                        if let Some(topic) = test.temaja.as_ref() {
                             format!(": {}", topic)
                         } else {
                             "".into()
@@ -605,47 +605,42 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn fetch_all_announced(&self, interval: Interval) -> Res<Vec<Ancd>> {
+    pub fn fetch_all_announced(&self, mut interval: Interval) -> Res<Vec<AnnouncedTest>> {
         let (cache_t, cache_content) = uncache("announced").unzip();
         let mut tests = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Ancd>>(cached)?
+            serde_json::from_str::<Vec<AnnouncedTest>>(cached)?
         } else {
             vec![]
         };
 
-        let mut query = vec![];
         if let Some(ct) = cache_t {
             info!("from cached");
-            query.push(("datumTol", ct.make_kreta_valid()));
+            interval.0 = Some(ct.to_day_with_hms());
         } else if let Some(from) = interval.0 {
-            info!("from date: {from:?}");
-            query.push(("datumTol", from.make_kreta_valid()));
-        };
+            interval.0 = Some(from.to_day_with_hms());
+        }
+        if let Some(to) = interval.1 {
+            interval.1 = Some(to.to_day_with_hms());
+        }
 
         let mut fetch_err = false;
-        let txt = self
-            .fetch(&(self.base() + announced::ep()), "announced", &query)
+        let fetched_tests = self
+            .fetch_from_endpoint("announced", interval)
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't reach E-Kréta server: {e:?}");
             });
 
-        let fetched_tests = serde_json::from_str::<Vec<Ancd>>(&txt.unwrap_or_default())
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't deserialize data: {e:?}");
-            });
-
         tests.extend(fetched_tests.unwrap_or_default());
-        tests.sort_by(|a, b| b.date.partial_cmp(&a.date).unwrap());
+        tests.sort_by(|a, b| b.datum.partial_cmp(&a.datum).unwrap());
         tests.dedup();
         if let Some(from) = interval.0 {
             info!("filtering, from!");
-            tests.retain(|ancd| ancd.date.num_days_from_ce() >= from.num_days_from_ce());
+            tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
         }
         if let Some(to) = interval.1 {
             info!("filtering, to!");
-            tests.retain(|ancd| ancd.date.num_days_from_ce() <= to.num_days_from_ce());
+            tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
         }
         if interval.0.is_none() && !fetch_err {
             cache("announced", &serde_json::to_string(&tests)?)?;
@@ -673,15 +668,12 @@ impl User {
 
         if let Some(ct) = cache_t {
             info!("from cached");
-            let x = ct._make_kreta_valid().and_local_timezone(Local).unwrap();
-            interval.0 = Some(x);
+            interval.0 = Some(ct.to_day_with_hms());
         } else if let Some(from) = interval.0 {
-            let x = from._make_kreta_valid().and_local_timezone(Local).unwrap();
-            interval.0 = Some(x);
+            interval.0 = Some(from.to_day_with_hms());
         }
         if let Some(to) = interval.1 {
-            let x = to._make_kreta_valid().and_local_timezone(Local).unwrap();
-            interval.1 = Some(x);
+            interval.1 = Some(to.to_day_with_hms());
         }
 
         let mut fetch_err = false;

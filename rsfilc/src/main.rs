@@ -1,7 +1,7 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
-use rsfilc::{Absence, Ancd, Eval, School, User, *};
+use rsfilc::{Absence, AnnouncedTest, Eval, School, User, *};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
@@ -188,13 +188,15 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if reverse {
                 for absence in absences.iter().take(number).rev() {
-                    println!("\n\n{}", absences::disp(absence));
-                    fill(&absences::disp(absence), '-', None);
+                    let as_str = absences::disp(absence);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             } else {
                 for absence in absences.iter().take(number) {
-                    println!("\n\n{}", absences::disp(absence));
-                    fill(&absences::disp(absence), '-', None);
+                    let as_str = absences::disp(absence);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             }
         }
@@ -208,18 +210,20 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             let from = if past { None } else { Some(Local::now()) };
             let mut all_announced = user.fetch_all_announced((from, None))?;
             if let Some(subject) = subject {
-                Ancd::filter_by_subject(&mut all_announced, &subject);
+                announced::filter_by_subject(&mut all_announced, &subject);
             }
 
             if reverse {
                 for announced in all_announced.iter().take(number).rev() {
-                    println!("\n\n{announced}");
-                    fill(&announced.to_string(), '-', None);
+                    let as_str = announced::disp(announced);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             } else {
                 for announced in all_announced.iter().take(number) {
-                    println!("\n\n{announced}");
-                    fill(&announced.to_string(), '-', None);
+                    let as_str = announced::disp(announced);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             }
         }
