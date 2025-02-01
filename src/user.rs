@@ -1,3 +1,4 @@
+use self::messages::NoteMsg;
 use crate::{
     information::Info,
     messages::{Msg, MsgKind, MsgOview},
@@ -7,22 +8,19 @@ use crate::{
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Days, Local, NaiveDate};
-use hmac::{Hmac, Mac};
 use reqwest::{
-    blocking::{self, Client},
-    header::HeaderMap,
+    blocking::Client,
+    header::{self, HeaderMap},
+    redirect, Url,
 };
+use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
-use sha2::Sha512;
 use std::{
-    collections::HashMap,
     fmt::Debug,
     fs::{self, File, OpenOptions},
     io::{self, Write},
     time::Duration,
 };
-
-use self::messages::NoteMsg;
 
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
@@ -355,87 +353,107 @@ impl User {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
-            format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
+            format!("Bearer {}", self.fetch_token().unwrap().access_token).parse()?,
         );
         headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
         Ok(headers)
     }
 
-    /// get [`Token`] from credentials, [`User::school_id`]
-    ///
-    /// ```shell
-    /// curl "https://idp.e-kreta.hu/connect/token"
-    ///     -A "hu.ekreta.tanulo/1.0.5/Android/0/0"
-    ///     -H "X-AuthorizationPolicy-Key: xxx"
-    ///     -H "X-AuthorizationPolicy-Version: v2"
-    ///     -H "X-AuthorizationPolicy-Nonce: xxx"
-    ///     -d "userName=xxxxxxxx \
-    ///         &password=xxxxxxxxx \
-    ///         &institute_code=xxxxxxxxx \
-    ///         &grant_type=password \
-    ///         &client_id=kreta-ellenorzo-mobile-android"
-    /// ```
     fn fetch_token(&self) -> Res<Token> {
-        // Define the key as bytes
-        let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
+        // Create a client with cookie store enable
+        let client = Client::builder()
+            .cookie_store(true)
+            .redirect(redirect::Policy::none()) // this is needed so the client doesnt follow redirects by itself like a dumb little sheep
+            .build()?;
 
-        // Get nonce
-        let nonce = blocking::get([endpoints::IDP, endpoints::NONCE].concat())?.text()?;
+        // initial login page
+        let initial_url = "https://idp.e-kreta.hu/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fprompt%3Dlogin%26nonce%3DwylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU%26response_type%3Dcode%26code_challenge_method%3DS256%26scope%3Dopenid%2520email%2520offline_access%2520kreta-ellenorzo-webapi.public%2520kreta-eugyintezes-webapi.public%2520kreta-fileservice-webapi.public%2520kreta-mobile-global-webapi.public%2520kreta-dkt-webapi.public%2520kreta-ier-webapi.public%26code_challenge%3DHByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ%26redirect_uri%3Dhttps%253A%252F%252Fmobil.e-kreta.hu%252Fellenorzo-student%252Fprod%252Foauthredirect%26client_id%3Dkreta-ellenorzo-student-mobile-ios%26state%3Dkreten_student_mobile%26suppressed_prompt%3Dlogin";
+        let response = client.get(initial_url).send()?;
+        let raw_login_page_html = response.text()?;
 
-        // Define the message
-        let message = format!(
-            "{}{nonce}{}",
-            self.school_id.to_uppercase(),
-            self.username.to_uppercase()
-        );
+        // Parse RVT token from HTML
+        let login_page_html = Html::parse_document(&raw_login_page_html);
+        let selector = Selector::parse("input[name='__RequestVerificationToken']")
+            .map_err(|e| format!("Selector parse error: {}", e))?;
 
-        // Create a new HMAC instance
-        let mut mac = Hmac::<Sha512>::new_from_slice(key)?;
+        let rvt = login_page_html
+            .select(&selector)
+            .next()
+            .ok_or("RVT token not found in HTML")?
+            .value()
+            .attr("value")
+            .ok_or("RVT token value missing")?; // shouldn't really ever happen but still
 
-        // Update the MAC with the message
-        mac.update(message.as_bytes());
-
-        // Obtain the result of the MAC computation
-        let result = mac.finalize();
-
-        // Encode the result in base64
-        let generated = STANDARD.encode(result.into_bytes());
-
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            "Content-Type",
-            "application/x-www-form-urlencoded; charset=utf-8"
-                .parse()
-                .unwrap(),
-        );
-        headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
-        headers.insert("X-AuthorizationPolicy-Key", generated.parse().unwrap());
-        headers.insert("X-AuthorizationPolicy-Version", "v2".parse().unwrap());
-        headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
-
+        // Perform login with credentials
         let decoded_password = self.decode_password();
+        let login_url = "https://idp.e-kreta.hu/account/login";
+        let form_data = [
+        ("ReturnUrl", "/connect/authorize/callback?prompt=login&nonce=wylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU&response_type=code&code_challenge_method=S256&scope=openid%20email%20offline_access%20kreta-ellenorzo-webapi.public%20kreta-eugyintezes-webapi.public%20kreta-fileservice-webapi.public%20kreta-mobile-global-webapi.public%20kreta-dkt-webapi.public%20kreta-ier-webapi.public&code_challenge=HByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ&redirect_uri=https%3A%2F%2Fmobil.e-kreta.hu%2Fellenorzo-student%2Fprod%2Foauthredirect&client_id=kreta-ellenorzo-student-mobile-ios&state=kreten_student_mobile&suppressed_prompt=login"),
+        ("IsTemporaryLogin", "False"),
+        ("UserName", &self.username),
+        ("Password", &decoded_password),
+        ("InstituteCode", &self.school_id),
+        ("loginType", "InstituteLogin"),
+        ("__RequestVerificationToken", rvt),
+    ];
 
-        let mut data = HashMap::new();
-        data.insert("userName", self.username.as_str());
-        data.insert("password", &decoded_password);
-        data.insert("institute_code", &self.school_id);
-        data.insert("grant_type", "password");
-        data.insert("client_id", endpoints::CLIENT_ID);
+        let response = client.post(login_url)
+        .header(header::USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .form(&form_data)
+        .send()?;
 
-        let client = Client::new();
-        let res = client
-            .post([endpoints::IDP, token::ep()].concat())
-            .headers(headers)
-            .form(&data)
-            .timeout(TIMEOUT)
+        // Check if the response status is 200 (OK)
+        if !response.status().is_success() {
+            return Err(format!(
+                "Login failed: check your credentials. Status: {}",
+                response.status()
+            )
+            .into());
+        }
+
+        let response = client.get("https://idp.e-kreta.hu/connect/authorize/callback?prompt=login&nonce=wylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU&response_type=code&code_challenge_method=S256&scope=openid%20email%20offline_access%20kreta-ellenorzo-webapi.public%20kreta-eugyintezes-webapi.public%20kreta-fileservice-webapi.public%20kreta-mobile-global-webapi.public%20kreta-dkt-webapi.public%20kreta-ier-webapi.public&code_challenge=HByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ&redirect_uri=https%3A%2F%2Fmobil.e-kreta.hu%2Fellenorzo-student%2Fprod%2Foauthredirect&client_id=kreta-ellenorzo-student-mobile-ios&state=kreten_student_mobile&suppressed_prompt=login").send()?;
+
+        // Follow the redirect manually to get the code
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .ok_or("No Location header after login redirect")?
+            .to_str()?;
+
+        // Extract code from the location header
+        let code = Url::parse(location)?
+            .query_pairs()
+            .find(|(k, _)| k == "code")
+            .map(|(_, v)| v.into_owned())
+            .ok_or("Authorization code not found")?; // this also shouldn't ever happen probably
+
+        // Exchange code for access token
+        let token_data = [
+            ("code", code.as_str()),
+            (
+                "code_verifier",
+                "DSpuqj_HhDX4wzQIbtn8lr8NLE5wEi1iVLMtMK0jY6c",
+            ),
+            (
+                "redirect_uri",
+                "https://mobil.e-kreta.hu/ellenorzo-student/prod/oauthredirect",
+            ),
+            ("client_id", "kreta-ellenorzo-student-mobile-ios"),
+            ("grant_type", "authorization_code"),
+        ];
+
+        let response = client
+            .post("https://idp.e-kreta.hu/connect/token")
+            .form(&token_data)
             .send()?;
 
-        let text = res.text()?;
+        let text = response.text()?;
         let mut logf = log_file("token")?;
         write!(logf, "{text}")?;
 
         let token = serde_json::from_str(&text)?;
-        info!("recieved token");
+        info!("received token");
         Ok(token)
     }
 
