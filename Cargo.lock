@@ -377,6 +377,9 @@ checksum = "b2972feb8dffe7bc8c5463b1dacda1b0dfbed3710e50f977d965429692d74cd8"
 [[package]]
 name = "ekreta"
 version = "0.1.0"
+dependencies = [
+ "http",
+]
 
 [[package]]
 name = "equivalent"

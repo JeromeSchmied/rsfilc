@@ -1,9 +1,5 @@
 [workspace]
 members = ["rsfilc", "ekreta"]
 resolver = "2"
-edition = "2021"
-authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
-repository = "https://codeberg.org/jark/rsfilc"
-license = "MIT"
 
 [workspace.dependencies]

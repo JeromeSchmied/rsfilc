@@ -5,9 +5,10 @@ description = "E-Kréta API"
 keywords = ["kreta", "api", "hungarian"]
 categories = ["api-bindings"]
 documentation = "https://docs.rs/ekreta"
-edition.workspace = true
-authors.workspace = true
-repository.workspace = true
-license.workspace = true
+edition = "2021"
+authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
+repository = "https://codeberg.org/jark/rsfilc"
+license = "MIT"
 
 [dependencies]
+http = "1.2.0"
