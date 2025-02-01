@@ -1,7 +1,7 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
-use rsfilc::{Absence, AnnouncedTest, Eval, School, User, *};
+use rsfilc::{School, User, *};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
@@ -96,10 +96,10 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             let mut evals = user.fetch_evals((None, None))?;
             info!("got evals");
             if let Some(kind) = filter {
-                Eval::filter_by_kind_or_title(&mut evals, &kind);
+                evals::filter_by_kind_or_title(&mut evals, &kind);
             }
             if let Some(subject) = subject {
-                Eval::filter_by_subject(&mut evals, &subject);
+                evals::filter_by_subject(&mut evals, &subject);
             }
 
             let mut logf = log_file("evals_filtered")?;
@@ -111,7 +111,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             }
 
             if average {
-                let avg = Eval::average(&evals, &ghost);
+                let avg = evals::average(&evals, &ghost);
                 println!("Average: {avg:.2}");
 
                 return Ok(());
@@ -119,13 +119,15 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
             if reverse {
                 for eval in evals.iter().take(number).rev() {
-                    println!("\n\n{eval}");
-                    fill(&eval.to_string(), '-', None);
+                    let as_str = evals::dips(eval);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             } else {
                 for eval in evals.iter().take(number) {
-                    println!("\n\n{eval}");
-                    fill(&eval.to_string(), '-', None);
+                    let as_str = evals::dips(eval);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             }
         }

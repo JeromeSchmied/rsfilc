@@ -1,6 +1,11 @@
-use crate::types::{OsztalyCsoport, Rektip, Tantargy};
+use crate::{
+    types::{OsztalyCsoport, Rektip, Tantargy},
+    Interval,
+};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
+
+use super::Endpoint;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
@@ -12,7 +17,7 @@ pub struct Evaluation {
     pub tantargy: Tantargy,
     pub tema: Option<String>,
     pub tipus: Rektip,
-    pub r#mod: Rektip,
+    pub r#mod: Option<Rektip>,
     pub ertek_fajta: Rektip,
     pub ertekelo_tanar_neve: Option<String>,
     pub jelleg: String,
@@ -36,6 +41,24 @@ impl Evaluation {
     /// Returns whether this [`Eval`] is end of year eval.
     pub fn evvegi(&self) -> bool {
         self.tipus.nev == "evvegi_jegy_ertekeles"
+    }
+}
+impl Endpoint for Evaluation {
+    type QueryInput = Interval;
+
+    fn path() -> &'static str {
+        "/ellenorzo/V3/Sajat/Ertekelesek"
+    }
+
+    fn query(input: &Self::QueryInput) -> anyhow::Result<impl Serialize> {
+        let mut q = vec![];
+        if let Some(from) = input.0 {
+            q.push(("datumTol", from.to_string()));
+        }
+        if let Some(to) = input.1 {
+            q.push(("datumIg", to.to_string()));
+        }
+        Ok(q)
     }
 }
 
@@ -100,7 +123,7 @@ mod tests {
         assert_eq!(eval.suly_szazalek_erteke, Some(100));
         assert_eq!(eval.tantargy.kategoria.nev, "magyar_nyelv_es_irodalom");
         assert_eq!(eval.tantargy.kategoria.leiras, "Magyar nyelv és irodalom");
-        assert_eq!(eval.r#mod.leiras, "Memoriter");
+        assert_eq!(eval.r#mod.as_ref().unwrap().leiras, "Memoriter");
         assert_eq!(eval.szorzo(), 1.);
         assert_eq!(eval.tipus.nev, "evkozi_jegy_ertekeles")
     }

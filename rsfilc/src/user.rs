@@ -476,42 +476,36 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn fetch_evals(&self, interval: Interval) -> Res<Vec<Eval>> {
+    pub fn fetch_evals(&self, mut interval: Interval) -> Res<Vec<Evaluation>> {
         let (cache_t, cache_content) = uncache("evals").unzip();
         let mut evals = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Eval>>(cached)?
+            serde_json::from_str::<Vec<Evaluation>>(cached)?
         } else {
             vec![]
         };
 
-        let mut query = vec![];
         if let Some(ct) = cache_t {
             info!("from cached");
-            query.push(("datumTol", ct.make_kreta_valid()));
+            interval.0 = Some(ct.to_day_with_hms());
         } else if let Some(from) = interval.0 {
-            query.push(("datumTol", from.make_kreta_valid()));
+            interval.0 = Some(from.to_day_with_hms());
         }
         if let Some(to) = interval.1 {
-            query.push(("datumIg", to.make_kreta_valid()));
+            interval.1 = Some(to.to_day_with_hms());
         }
 
         let mut fetch_err = false;
-        let txt = self
-            .fetch(&(self.base() + evals::ep()), "evals", &query)
+        let fetched_evals = self
+            .fetch_from_endpoint("evals", interval)
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't fetch from E-Kréta server: {e:?}");
             });
 
-        let fetched_evals = serde_json::from_str::<Vec<Eval>>(&txt.unwrap_or_default())
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't deserialize data: {e:?}")
-            });
         info!("recieved evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
-        evals.sort_by(|a, b| b.earned.partial_cmp(&a.earned).unwrap());
+        evals.sort_by(|a, b| b.keszites_datuma.partial_cmp(&a.keszites_datuma).unwrap());
         evals.dedup();
         if interval.0.is_none() && !fetch_err {
             cache("evals", &serde_json::to_string(&evals)?)?;

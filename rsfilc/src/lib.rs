@@ -26,7 +26,7 @@ pub mod user;
 pub use args::{Args, Commands};
 pub use ekreta::Absence;
 pub use ekreta::AnnouncedTest;
-pub use evals::Eval;
+pub use ekreta::Evaluation;
 pub use school_list::School;
 pub use timetable::Lesson;
 pub use user::User;

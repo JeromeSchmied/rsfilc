@@ -8,6 +8,7 @@ use std::borrow::Cow;
 
 pub use endpoints::absences::Absence;
 pub use endpoints::announced_tests::AnnouncedTest;
+pub use endpoints::evaluations::Evaluation;
 pub use endpoints::Endpoint;
 // pub use error::Error;
 
