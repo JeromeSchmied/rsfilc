@@ -37,10 +37,7 @@ pub trait Endpoint {
 }
 
 pub mod absences;
-
-fn bob() {
-    // absences::Absence::query(input)
-}
+pub mod announced_tests;
 
 pub mod base {
     use crate::Str;

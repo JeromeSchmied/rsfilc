@@ -1,4 +1,5 @@
-use crate::{types::*, Endpoint, Interval, Result};
+use crate::types::{Ora, OsztalyCsoport, Rektip, Tantargy};
+use crate::{Endpoint, Interval, Result};
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
 
