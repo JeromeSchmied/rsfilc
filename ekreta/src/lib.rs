@@ -6,6 +6,7 @@ pub use anyhow::Result;
 use chrono::{DateTime, Local};
 use std::borrow::Cow;
 
+pub use endpoints::absences::Absence;
 pub use endpoints::Endpoint;
 // pub use error::Error;
 

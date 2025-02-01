@@ -12,7 +12,8 @@ license = "MIT"
 
 [dependencies]
 anyhow = "1.0.95"
-chrono = { version = "0.4.39", features = ["now", "serde", "std"], default-features = false }
+chrono = { version = "0.4.39", features = ["clock", "now", "serde", "std"], default-features = false }
 http = "1.2.0"
+log = "0.4.25"
 serde = { version = "1.0.217", features = ["derive"] }
 serde_json = "1.0.138"

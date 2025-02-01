@@ -1,7 +1,7 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
-use rsfilc::{Abs, Ancd, Eval, School, User, *};
+use rsfilc::{Absence, Ancd, Eval, School, User, *};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
@@ -174,27 +174,27 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
         } => {
             let mut absences = user.fetch_absences((None, None))?;
             if let Some(subject) = subject {
-                Abs::filter_by_subject(&mut absences, &subject);
+                absences::filter_by_subject(&mut absences, &subject);
             }
 
             if count {
                 println!("Összes hiányzásod száma: {}", absences.len());
                 println!(
                     "Ebből még igazolatlan: {}",
-                    absences.iter().filter(|item| !item.verified()).count()
+                    absences.iter().filter(|item| !item.igazolt()).count()
                 );
                 return Ok(());
             }
 
             if reverse {
                 for absence in absences.iter().take(number).rev() {
-                    println!("\n\n{absence}");
-                    fill(&absence.to_string(), '-', None);
+                    println!("\n\n{}", absences::disp(absence));
+                    fill(&absences::disp(absence), '-', None);
                 }
             } else {
                 for absence in absences.iter().take(number) {
-                    println!("\n\n{absence}");
-                    fill(&absence.to_string(), '-', None);
+                    println!("\n\n{}", absences::disp(absence));
+                    fill(&absences::disp(absence), '-', None);
                 }
             }
         }

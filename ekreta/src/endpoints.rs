@@ -15,13 +15,13 @@ pub trait Endpoint {
     }
 
     /// after BASE_URL
-    fn path() -> Str;
+    fn path() -> &'static str;
 
     fn method() -> http::Method {
         http::Method::GET
     }
 
-    fn query(input: &Self::QueryInput) -> Result<Option<impl Serialize>> {
+    fn query(input: &Self::QueryInput) -> Result<impl Serialize> {
         Ok(None::<()>)
     }
 

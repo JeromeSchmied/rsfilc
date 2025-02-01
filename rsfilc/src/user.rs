@@ -8,6 +8,7 @@ use crate::{
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Days, Local, NaiveDate};
+use ekreta::Endpoint;
 use reqwest::{
     blocking::Client,
     header::{self, HeaderMap},
@@ -663,41 +664,38 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn fetch_absences(&self, interval: Interval) -> Res<Vec<Abs>> {
+    pub fn fetch_absences(&self, mut interval: Interval) -> Res<Vec<Absence>> {
         let (cache_t, cache_content) = uncache("absences").unzip();
         let mut absences = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Abs>>(cached)?
+            serde_json::from_str::<Vec<Absence>>(cached)?
         } else {
             vec![]
         };
 
-        let mut query = vec![];
         if let Some(ct) = cache_t {
             info!("from cached");
-            query.push(("datumTol", ct.make_kreta_valid()));
+            let x = ct._make_kreta_valid().and_local_timezone(Local).unwrap();
+            interval.0 = Some(x);
         } else if let Some(from) = interval.0 {
-            query.push(("datumTol", from.make_kreta_valid()));
+            let x = from._make_kreta_valid().and_local_timezone(Local).unwrap();
+            interval.0 = Some(x);
         }
         if let Some(to) = interval.1 {
-            query.push(("datumIg", to.make_kreta_valid()));
+            let x = to._make_kreta_valid().and_local_timezone(Local).unwrap();
+            interval.1 = Some(x);
         }
 
         let mut fetch_err = false;
-        let txt = self
-            .fetch(&(self.base() + absences::ep()), "absences", &query)
+        let fetched_absences = self
+            .fetch_from_endpoint("absences", interval)
             .inspect_err(|e| {
                 fetch_err = true;
-                warn!("couldn't fetch from E-Kréta server: {e:?}");
+                warn!("couldn't fetch from E-Kréta server: {e:?}")
             });
 
-        let fetched_absences = serde_json::from_str::<Vec<Abs>>(&txt.unwrap_or_default())
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't deserialize data: {e:?}");
-            });
         info!("recieved absences");
         absences.extend(fetched_absences.unwrap_or_default());
-        absences.sort_by(|a, b| b.start().partial_cmp(&a.start()).unwrap());
+        absences.sort_by(|a, b| b.ora.kezdo_datum.partial_cmp(&a.ora.kezdo_datum).unwrap());
 
         if interval.0.is_none() && !fetch_err {
             cache("absences", &serde_json::to_string(&absences)?)?;
@@ -715,6 +713,28 @@ impl User {
         let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
         // let all_announced = serde_json::from_str(&text)?;
         Ok(txt)
+    }
+
+    fn fetch_from_endpoint<E>(&self, log: &str, query: E::QueryInput) -> ekreta::Result<Vec<E>>
+    where
+        E: ekreta::Endpoint + for<'a> Deserialize<'a>,
+    {
+        let uri = [self.base().as_str(), E::path()].concat();
+        log::info!("sending request to {uri}");
+        let query = E::query(&query)?;
+        log::info!("query: {}", serde_json::to_string(&query).unwrap());
+        let resp = Client::new()
+            .get(uri)
+            .query(&query)
+            .headers(self.headers().unwrap())
+            .timeout(TIMEOUT);
+        info!("sending request: {resp:?}");
+        let resp = resp.send()?;
+        let txt = resp.text()?;
+        let mut logf = log_file(log).unwrap();
+        write!(logf, "{txt}")?;
+        // serde
+        Ok(serde_json::from_str(&txt)?)
     }
 
     /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].

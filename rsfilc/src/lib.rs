@@ -23,9 +23,9 @@ pub mod token;
 pub mod user;
 
 // reexports
-pub use absences::Abs;
 pub use announced::Ancd;
 pub use args::{Args, Commands};
+pub use ekreta::Absence;
 pub use evals::Eval;
 pub use school_list::School;
 pub use timetable::Lesson;
@@ -143,6 +143,7 @@ pub trait MyDate {
     /// Get hungarian day of week.
     fn hun_day_of_week<'a>(&self) -> &'a str;
     fn make_kreta_valid(&self) -> String;
+    fn _make_kreta_valid(&self) -> chrono::NaiveDateTime;
     fn day_diff(&self, other: &Self) -> Option<String>;
 }
 impl MyDate for DateTime<Local> {
@@ -212,6 +213,9 @@ impl MyDate for DateTime<Local> {
     /// only day start: 00:00:00 is valid for `Kréta` feck it
     fn make_kreta_valid(&self) -> String {
         self.date_naive().and_hms_opt(0, 0, 0).unwrap().to_string()
+    }
+    fn _make_kreta_valid(&self) -> chrono::NaiveDateTime {
+        self.date_naive().and_hms_opt(0, 0, 0).unwrap()
     }
 
     fn day_diff(&self, other: &Self) -> Option<String> {
