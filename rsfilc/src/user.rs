@@ -8,7 +8,6 @@ use crate::{
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{DateTime, Days, Local, NaiveDate};
-use ekreta::Endpoint;
 use reqwest::{
     blocking::Client,
     header::{self, HeaderMap},
@@ -354,7 +353,7 @@ impl User {
         let mut headers = HeaderMap::new();
         headers.insert(
             "Authorization",
-            format!("Bearer {}", self.fetch_token().unwrap().access_token).parse()?,
+            format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
         );
         headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
         Ok(headers)
@@ -715,7 +714,7 @@ impl User {
         Ok(txt)
     }
 
-    fn fetch_from_endpoint<E>(&self, log: &str, query: E::QueryInput) -> ekreta::Result<Vec<E>>
+    fn fetch_from_endpoint<E>(&self, log: &str, query: E::QueryInput) -> Res<Vec<E>>
     where
         E: ekreta::Endpoint + for<'a> Deserialize<'a>,
     {
@@ -726,7 +725,7 @@ impl User {
         let resp = Client::new()
             .get(uri)
             .query(&query)
-            .headers(self.headers().unwrap())
+            .headers(self.headers()?)
             .timeout(TIMEOUT);
         info!("sending request: {resp:?}");
         let resp = resp.send()?;
