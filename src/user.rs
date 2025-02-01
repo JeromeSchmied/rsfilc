@@ -1,3 +1,4 @@
+use self::messages::NoteMsg;
 use crate::{
     information::Info,
     messages::{Msg, MsgKind, MsgOview},
@@ -20,8 +21,6 @@ use std::{
     io::{self, Write},
     time::Duration,
 };
-
-use self::messages::NoteMsg;
 
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
@@ -364,7 +363,7 @@ impl User {
         // Create a client with cookie store enable
         let client = Client::builder()
             .cookie_store(true)
-            .redirect(redirect::Policy::none()) // this is needed so the client doesnt follow redirects by itself like a dump little sheep
+            .redirect(redirect::Policy::none()) // this is needed so the client doesnt follow redirects by itself like a dumb little sheep
             .build()?;
 
         // initial login page
