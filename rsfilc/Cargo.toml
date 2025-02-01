@@ -1,13 +1,13 @@
 [package]
 name = "rsfilc"
 version = "0.8.16"
-edition = "2021"
-authors = ["Jeromos Kovács <iitsnotme214@proton.me>"]
-description = "A Kréta API and console client: cli and todo!(\"TUI\"), written entirely in Rust from the ground up."
-keywords = ["kreta", "api", "client", "hungarian"]
+description = "An E-Kréta console client: cli and todo!(\"TUI\"), written entirely in Rust from the ground up."
+keywords = ["kreta", "client", "hungarian"]
 categories = ["command-line-interface"]
-repository = "https://codeberg.org/jark/rsfilc"
-license = "MIT"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

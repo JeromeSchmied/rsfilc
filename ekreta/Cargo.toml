@@ -1,6 +1,13 @@
 [package]
 name = "ekreta"
 version = "0.1.0"
-edition = "2021"
+description = "E-Kréta API"
+keywords = ["kreta", "api", "hungarian"]
+categories = ["api-bindings"]
+documentation = "https://docs.rs/ekreta"
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
