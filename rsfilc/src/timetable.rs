@@ -270,6 +270,3 @@ fn day_diff(value: &str) -> Option<i8> {
     info!("day diff: {diff}");
     Some(diff)
 }
-
-#[cfg(test)]
-mod tests;

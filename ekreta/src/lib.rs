@@ -1,4 +1,5 @@
 mod endpoints;
+mod lessons;
 mod types;
 // mod error;
 
