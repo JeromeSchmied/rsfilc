@@ -1,0 +1,54 @@
+use crate::{Bytes, Result, Str};
+use serde::Serialize;
+
+// uri
+// method
+// query
+// headers
+pub trait Endpoint {
+    type QueryInput;
+
+    /// if differs from BASE_URL
+    fn base_url(args: impl AsRef<str>) -> Str {
+        base::school_base(args.as_ref())
+        // base::IDP.into()
+    }
+
+    /// after BASE_URL
+    fn path() -> Str;
+
+    fn method() -> http::Method {
+        http::Method::GET
+    }
+
+    fn query(input: &Self::QueryInput) -> Result<Option<impl Serialize>> {
+        Ok(None::<()>)
+    }
+
+    /// Gather the request headers to set.
+    fn headers(input: &impl Serialize) -> Result<Option<http::HeaderMap>> {
+        Ok(None)
+    }
+
+    /// Retrieve the request's body.
+    fn body(input: &impl Serialize) -> Result<Option<Bytes>> {
+        Ok(None)
+    }
+}
+
+pub mod absences;
+
+fn bob() {
+    // absences::Absence::query(input)
+}
+
+pub mod base {
+    use crate::Str;
+
+    pub const IDP: &str = "https://idp.e-kreta.hu";
+    pub const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
+
+    pub fn school_base(school_id: impl AsRef<str>) -> Str {
+        format!("https://{}.e-kreta.hu", school_id.as_ref()).into()
+    }
+}
