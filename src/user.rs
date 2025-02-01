@@ -360,86 +360,6 @@ impl User {
         Ok(headers)
     }
 
-    /// get [`Token`] from credentials, [`User::school_id`]
-    ///
-    /// ```shell
-    /// curl "https://idp.e-kreta.hu/connect/token"
-    ///     -A "hu.ekreta.tanulo/1.0.5/Android/0/0"
-    ///     -H "X-AuthorizationPolicy-Key: xxx"
-    ///     -H "X-AuthorizationPolicy-Version: v2"
-    ///     -H "X-AuthorizationPolicy-Nonce: xxx"
-    ///     -d "userName=xxxxxxxx \
-    ///         &password=xxxxxxxxx \
-    ///         &institute_code=xxxxxxxxx \
-    ///         &grant_type=password \
-    ///         &client_id=kreta-ellenorzo-mobile-android"
-    /// ```
-
-    /// WARN this token fetching method is outdated, use the new method (implemented below, after this old one)
-    // fn fetch_token_old(&self) -> Res<Token> {
-    //     // Define the key as bytes
-    //     let key: &[u8] = &[98, 97, 83, 115, 120, 79, 119, 108, 85, 49, 106, 77];
-
-    //     // Get nonce
-    //     let nonce = blocking::get([endpoints::IDP, endpoints::NONCE].concat())?.text()?;
-
-    //     // Define the message
-    //     let message = format!(
-    //         "{}{nonce}{}",
-    //         self.school_id.to_uppercase(),
-    //         self.username.to_uppercase()
-    //     );
-
-    //     // Create a new HMAC instance
-    //     let mut mac = Hmac::<Sha512>::new_from_slice(key)?;
-
-    //     // Update the MAC with the message
-    //     mac.update(message.as_bytes());
-
-    //     // Obtain the result of the MAC computation
-    //     let result = mac.finalize();
-
-    //     // Encode the result in base64
-    //     let generated = STANDARD.encode(result.into_bytes());
-
-    //     let mut headers = HeaderMap::new();
-    //     headers.insert(
-    //         "Content-Type",
-    //         "application/x-www-form-urlencoded; charset=utf-8"
-    //             .parse()
-    //             .unwrap(),
-    //     );
-    //     headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
-    //     headers.insert("X-AuthorizationPolicy-Key", generated.parse().unwrap());
-    //     headers.insert("X-AuthorizationPolicy-Version", "v2".parse().unwrap());
-    //     headers.insert("X-AuthorizationPolicy-Nonce", nonce.parse().unwrap());
-
-    //     let decoded_password = self.decode_password();
-
-    //     let mut data = HashMap::new();
-    //     data.insert("userName", self.username.as_str());
-    //     data.insert("password", &decoded_password);
-    //     data.insert("institute_code", &self.school_id);
-    //     data.insert("grant_type", "password");
-    //     data.insert("client_id", endpoints::CLIENT_ID);
-
-    //     let client = Client::new();
-    //     let res = client
-    //         .post([endpoints::IDP, token::ep()].concat())
-    //         .headers(headers)
-    //         .form(&data)
-    //         .timeout(TIMEOUT)
-    //         .send()?;
-
-    //     let text = res.text()?;
-    //     let mut logf = log_file("token")?;
-    //     write!(logf, "{text}")?;
-
-    //     let token = serde_json::from_str(&text)?;
-    //     info!("recieved token");
-    //     Ok(token)
-    // } // fn fetch_token (OUTDATED)
-
     fn fetch_token(&self) -> Res<Token> {
         // Create a client with cookie store enable
         let client = Client::builder()
@@ -501,7 +421,7 @@ impl User {
             .get(header::LOCATION)
             .ok_or("No Location header after login redirect")?
             .to_str()?;
-        
+
         // Extract code from the location header
         let code = Url::parse(location)?
             .query_pairs()
@@ -534,7 +454,7 @@ impl User {
         write!(logf, "{text}")?;
 
         let token = serde_json::from_str(&text)?;
-        info!("recieved token");
+        info!("received token");
         Ok(token)
     }
 
