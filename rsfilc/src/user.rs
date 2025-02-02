@@ -4,8 +4,9 @@ use chrono::{Days, Local, NaiveDate};
 use ekreta::{
     Endpoint, MessageItem, MessageKind as MsgKind, MessageOverview, OptIrval, Token, UserInfo,
 };
+use endpoints::CLIENT_ID;
 use reqwest::{
-    blocking::Client,
+    blocking::{Client, Response},
     header::{self, HeaderMap},
     redirect, Url,
 };
@@ -342,15 +343,13 @@ impl User {
 impl User {
     /// get headers which are necessary for making certain requests
     fn headers(&self) -> Res<HeaderMap> {
-        let hm = HeaderMap::from_iter([
+        Ok(HeaderMap::from_iter([
             (
-                reqwest::header::AUTHORIZATION,
+                header::AUTHORIZATION,
                 format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
             ),
-            (reqwest::header::USER_AGENT, endpoints::USER_AGENT.parse()?),
-        ])
-        .to_owned();
-        Ok(hm)
+            (header::USER_AGENT, endpoints::USER_AGENT.parse()?),
+        ]))
     }
 
     fn fetch_token(&self) -> Res<Token> {
@@ -369,7 +368,7 @@ impl User {
             .build()?;
 
         // initial login page
-        let initial_url = "https://idp.e-kreta.hu/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fprompt%3Dlogin%26nonce%3DwylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU%26response_type%3Dcode%26code_challenge_method%3DS256%26scope%3Dopenid%2520email%2520offline_access%2520kreta-ellenorzo-webapi.public%2520kreta-eugyintezes-webapi.public%2520kreta-fileservice-webapi.public%2520kreta-mobile-global-webapi.public%2520kreta-dkt-webapi.public%2520kreta-ier-webapi.public%26code_challenge%3DHByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ%26redirect_uri%3Dhttps%253A%252F%252Fmobil.e-kreta.hu%252Fellenorzo-student%252Fprod%252Foauthredirect%26client_id%3Dkreta-ellenorzo-student-mobile-ios%26state%3Dkreten_student_mobile%26suppressed_prompt%3Dlogin";
+        let initial_url = format!("https://idp.e-kreta.hu/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fprompt%3Dlogin%26nonce%3DwylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU%26response_type%3Dcode%26code_challenge_method%3DS256%26scope%3Dopenid%2520email%2520offline_access%2520kreta-ellenorzo-webapi.public%2520kreta-eugyintezes-webapi.public%2520kreta-fileservice-webapi.public%2520kreta-mobile-global-webapi.public%2520kreta-dkt-webapi.public%2520kreta-ier-webapi.public%26code_challenge%3DHByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ%26redirect_uri%3Dhttps%253A%252F%252Fmobil.e-kreta.hu%252Fellenorzo-student%252Fprod%252Foauthredirect%26client_id%3D{CLIENT_ID}%26state%3Dkreten_student_mobile%26suppressed_prompt%3Dlogin");
         let response = client.get(initial_url).send()?;
         let raw_login_page_html = response.text()?;
 
@@ -414,7 +413,7 @@ impl User {
             .into());
         }
 
-        let response = client.get("https://idp.e-kreta.hu/connect/authorize/callback?prompt=login&nonce=wylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU&response_type=code&code_challenge_method=S256&scope=openid%20email%20offline_access%20kreta-ellenorzo-webapi.public%20kreta-eugyintezes-webapi.public%20kreta-fileservice-webapi.public%20kreta-mobile-global-webapi.public%20kreta-dkt-webapi.public%20kreta-ier-webapi.public&code_challenge=HByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ&redirect_uri=https%3A%2F%2Fmobil.e-kreta.hu%2Fellenorzo-student%2Fprod%2Foauthredirect&client_id=kreta-ellenorzo-student-mobile-ios&state=kreten_student_mobile&suppressed_prompt=login").send()?;
+        let response = client.get(format!("https://idp.e-kreta.hu/connect/authorize/callback?prompt=login&nonce=wylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU&response_type=code&code_challenge_method=S256&scope=openid%20email%20offline_access%20kreta-ellenorzo-webapi.public%20kreta-eugyintezes-webapi.public%20kreta-fileservice-webapi.public%20kreta-mobile-global-webapi.public%20kreta-dkt-webapi.public%20kreta-ier-webapi.public&code_challenge=HByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ&redirect_uri=https%3A%2F%2Fmobil.e-kreta.hu%2Fellenorzo-student%2Fprod%2Foauthredirect&client_id={CLIENT_ID}&state=kreten_student_mobile&suppressed_prompt=login")).send()?;
 
         // Follow the redirect manually to get the code
         let location = response
@@ -441,7 +440,7 @@ impl User {
                 "redirect_uri",
                 "https://mobil.e-kreta.hu/ellenorzo-student/prod/oauthredirect",
             ),
-            ("client_id", endpoints::CLIENT_ID),
+            ("client_id", CLIENT_ID),
             ("grant_type", "authorization_code"),
         ];
 
@@ -684,11 +683,7 @@ impl User {
         Ok(self.fetch_single::<ekreta::Class, ekreta::Class>((), "")?)
     }
 
-    fn get_response<E>(
-        &self,
-        query: E::QueryInput,
-        path_args: impl AsRef<str>,
-    ) -> Res<reqwest::blocking::Response>
+    fn get_response<E>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<Response>
     where
         E: ekreta::Endpoint + for<'a> Deserialize<'a>,
     {
