@@ -685,10 +685,13 @@ impl User {
         Ok(self.fetch_single::<ekreta::Class, ekreta::Class>((), "")?)
     }
 
-    fn fetch_single<E, D>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<D>
+    fn get_response<E>(
+        &self,
+        query: E::QueryInput,
+        path_args: impl AsRef<str>,
+    ) -> Res<reqwest::blocking::Response>
     where
         E: ekreta::Endpoint + for<'a> Deserialize<'a>,
-        D: for<'a> Deserialize<'a>,
     {
         let base = E::base_url(&self.school_id).into_owned();
         let uri = [base, E::path(path_args)].concat();
@@ -701,7 +704,14 @@ impl User {
             .headers(self.headers()?)
             .timeout(TIMEOUT);
         info!("sending request: {resp:?}");
-        let resp = resp.send()?;
+        Ok(resp.send()?)
+    }
+    fn fetch_single<E, D>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<D>
+    where
+        E: ekreta::Endpoint + for<'a> Deserialize<'a>,
+        D: for<'a> Deserialize<'a>,
+    {
+        let resp = self.get_response::<E>(query, path_args)?;
         let txt = resp.text()?;
         let log_name = std::any::type_name::<E>()
             .split("::")
@@ -758,16 +768,8 @@ impl User {
             }
             let mut f = File::create(download_to)?;
 
-            let client = Client::new();
-            client
-                .get(
-                    endpoints::ADMIN.to_owned()
-                        + &endpoints::download_attachment(am.azonosito.into()),
-                )
-                .headers(self.headers()?)
-                .timeout(TIMEOUT)
-                .send()?
-                .copy_to(&mut f)?;
+            let mut resp = self.get_response::<ekreta::Attachment>((), am.azonosito.to_string())?;
+            resp.copy_to(&mut f)?;
 
             info!("recieved file {}", &am.fajl_nev);
         }

@@ -14,11 +14,11 @@ impl Endpoint for MessageItem {
     type QueryInput = ();
 
     fn base_url(_args: impl AsRef<str>) -> crate::Str {
-        "https://eugyintezes.e-kreta.hu".into()
+        super::base::ADMIN.into()
     }
 
-    fn path(args: impl AsRef<str>) -> String {
-        let id = args.as_ref();
+    fn path(id: impl AsRef<str>) -> String {
+        let id = id.as_ref();
         format!(
             "/api/v1/kommunikacio/postaladaelemek/{}",
             if id.is_empty() { "sajat" } else { id }
@@ -52,11 +52,11 @@ impl Endpoint for MessageOverview {
     type QueryInput = ();
 
     fn base_url(_args: impl AsRef<str>) -> crate::Str {
-        "https://eugyintezes.e-kreta.hu".into()
+        super::base::ADMIN.into()
     }
 
-    fn path(args: impl AsRef<str>) -> String {
-        format!("/api/v1/kommunikacio/postaladaelemek/{}", args.as_ref())
+    fn path(id: impl AsRef<str>) -> String {
+        format!("/api/v1/kommunikacio/postaladaelemek/{}", id.as_ref())
     }
 }
 
@@ -88,6 +88,17 @@ pub struct Cimzett {
 pub struct Attachment {
     pub azonosito: u32,
     pub fajl_nev: String,
+}
+impl Endpoint for Attachment {
+    type QueryInput = ();
+
+    fn base_url(_args: impl AsRef<str>) -> crate::Str {
+        super::base::ADMIN.into()
+    }
+
+    fn path(id: impl AsRef<str>) -> String {
+        format!("/api/v1/dokumentumok/uzenetek/{}", id.as_ref())
+    }
 }
 
 /// kinds of [`Msg`]
