@@ -253,11 +253,12 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
                     let user_info = current_user.fetch_info()?;
-                    println!("\n\n{user_info}");
-                    fill(&user_info.to_string(), '-', None);
+                    let as_str = information::disp(&user_info);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             } else {
-                println!("{}", user.fetch_info()?);
+                println!("{}", information::disp(&user.fetch_info()?));
             }
         }
 

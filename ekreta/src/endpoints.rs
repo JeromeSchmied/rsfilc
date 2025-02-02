@@ -22,7 +22,7 @@ pub trait Endpoint {
     }
 
     fn query(input: &Self::QueryInput) -> Result<impl Serialize> {
-        Ok(None::<()>)
+        Ok(Vec::<String>::new())
     }
 
     /// Gather the request headers to set.

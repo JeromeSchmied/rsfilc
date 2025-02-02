@@ -1,6 +1,8 @@
 use crate::{types::*, LDateTime};
 use serde::{Deserialize, Serialize};
 
+use super::Endpoint;
+
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct UserInfo {
@@ -23,6 +25,14 @@ pub struct UserInfo {
     pub gondviselok: Vec<Gondviselo>,
     pub bankszamla: Bankszamla,
     pub intezmeny: Intezmeny,
+}
+
+impl Endpoint for UserInfo {
+    type QueryInput = ();
+
+    fn path() -> &'static str {
+        "/ellenorzo/V3/Sajat/TanuloAdatlap"
+    }
 }
 
 #[cfg(test)]

@@ -1,5 +1,4 @@
 use crate::{
-    information::Info,
     messages::{Msg, MsgKind, MsgOview},
     timetable::next_lesson,
     token::Token,
@@ -7,7 +6,7 @@ use crate::{
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Days, Local, NaiveDate};
-use ekreta::OptIrval;
+use ekreta::{OptIrval, UserInfo};
 use messages::NoteMsg;
 use reqwest::{
     blocking::Client,
@@ -50,7 +49,7 @@ impl User {
     ///
     /// net
     pub fn name(&self) -> Res<String> {
-        Ok(self.fetch_info()?.name)
+        Ok(self.fetch_info()?.nev)
     }
 
     /// create new instance of [`User`]
@@ -460,13 +459,11 @@ impl User {
     }
 
     /// get [`User`] info
-    pub fn fetch_info(&self) -> Res<Info> {
+    pub fn fetch_info(&self) -> Res<UserInfo> {
         info!("recieved information about user");
 
-        let txt = self.fetch(&(self.base() + user::ep()), "user_info", &[])?;
-
-        let info = serde_json::from_str(&txt)?;
-        Ok(info)
+        let user_info = self.fetch_single::<UserInfo, UserInfo>(())?;
+        Ok(user_info)
     }
 
     /// get all [`Eval`]s with `from` `to` or all
@@ -497,12 +494,10 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_evals = self
-            .fetch_from_endpoint("evals", interval)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't fetch from E-Kréta server: {e:?}");
-            });
+        let fetched_evals = self.fetch_vec(interval).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't fetch from E-Kréta server: {e:?}");
+        });
 
         info!("recieved evals");
 
@@ -579,8 +574,8 @@ impl User {
     /// # Panics
     ///
     /// - sorting
-    fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<ekreta::Lesson>> {
-        let mut lessons: Vec<Lesson> = self.fetch_from_endpoint("timetable", (from, to))?;
+    fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<Lesson>> {
+        let mut lessons: Vec<Lesson> = self.fetch_vec((from, to))?;
         info!("recieved lessons");
         lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
         Ok(lessons)
@@ -614,12 +609,10 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_tests = self
-            .fetch_from_endpoint("announced", interval)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't reach E-Kréta server: {e:?}");
-            });
+        let fetched_tests = self.fetch_vec(interval).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't reach E-Kréta server: {e:?}");
+        });
 
         tests.extend(fetched_tests.unwrap_or_default());
         tests.sort_by(|a, b| b.datum.partial_cmp(&a.datum).unwrap());
@@ -667,12 +660,10 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_absences = self
-            .fetch_from_endpoint("absences", interval)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't fetch from E-Kréta server: {e:?}")
-            });
+        let fetched_absences = self.fetch_vec(interval).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't fetch from E-Kréta server: {e:?}")
+        });
 
         info!("recieved absences");
         absences.extend(fetched_absences.unwrap_or_default());
@@ -696,11 +687,13 @@ impl User {
         Ok(txt)
     }
 
-    fn fetch_from_endpoint<E>(&self, log: &str, query: E::QueryInput) -> Res<Vec<E>>
+    fn fetch_single<E, D>(&self, query: E::QueryInput) -> Res<D>
     where
         E: ekreta::Endpoint + for<'a> Deserialize<'a>,
+        D: for<'a> Deserialize<'a>,
     {
-        let uri = [self.base().as_str(), E::path()].concat();
+        let base = E::base_url(&self.school_id).into_owned();
+        let uri = [base.as_str(), E::path()].concat();
         log::info!("sending request to {uri}");
         let query = E::query(&query)?;
         log::info!("query: {}", serde_json::to_string(&query).unwrap());
@@ -712,10 +705,18 @@ impl User {
         info!("sending request: {resp:?}");
         let resp = resp.send()?;
         let txt = resp.text()?;
-        let mut logf = log_file(log).unwrap();
+        let log_name = std::any::type_name::<E>();
+        let mut logf = log_file(log_name).unwrap();
         write!(logf, "{txt}")?;
         // serde
         Ok(serde_json::from_str(&txt)?)
+    }
+
+    fn fetch_vec<E>(&self, query: E::QueryInput) -> Res<Vec<E>>
+    where
+        E: ekreta::Endpoint + for<'a> Deserialize<'a>,
+    {
+        self.fetch_single::<E, Vec<E>>(query)
     }
 
     /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
