@@ -1,7 +1,9 @@
-use crate::{timetable::next_lesson, token::Token, *};
+use crate::{timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Days, Local, NaiveDate};
-use ekreta::{MessageItem, MessageKind as MsgKind, MessageOverview, OptIrval, UserInfo};
+use ekreta::{
+    Endpoint, MessageItem, MessageKind as MsgKind, MessageOverview, OptIrval, Token, UserInfo,
+};
 use reqwest::{
     blocking::Client,
     header::{self, HeaderMap},
@@ -340,19 +342,23 @@ impl User {
 impl User {
     /// get headers which are necessary for making certain requests
     fn headers(&self) -> Res<HeaderMap> {
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            "Authorization",
-            format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
-        );
-        headers.insert("User-Agent", endpoints::USER_AGENT.parse().unwrap());
-        Ok(headers)
+        let hm = HeaderMap::from_iter([
+            (
+                reqwest::header::AUTHORIZATION,
+                format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
+            ),
+            (reqwest::header::USER_AGENT, endpoints::USER_AGENT.parse()?),
+        ])
+        .to_owned();
+        Ok(hm)
     }
 
     fn fetch_token(&self) -> Res<Token> {
         if let Some((cache_t, cache_content)) = uncache("token") {
-            if Local::now().signed_duration_since(cache_t) < chrono::Duration::seconds(1800) {
-                let cached_token = serde_json::from_str(&cache_content)?;
+            let cached_token: Token = serde_json::from_str(&cache_content)?;
+            if Local::now().signed_duration_since(cache_t)
+                < chrono::Duration::seconds(cached_token.expires_in.into())
+            {
                 return Ok(cached_token);
             }
         }
@@ -370,7 +376,7 @@ impl User {
         // Parse RVT token from HTML
         let login_page_html = Html::parse_document(&raw_login_page_html);
         let selector = Selector::parse("input[name='__RequestVerificationToken']")
-            .map_err(|e| format!("Selector parse error: {}", e))?;
+            .map_err(|e| format!("Selector parse error: {e}"))?;
 
         let rvt = login_page_html
             .select(&selector)
@@ -383,21 +389,21 @@ impl User {
         // Perform login with credentials
         let decoded_password = self.decode_password();
         let login_url = "https://idp.e-kreta.hu/account/login";
-        let form_data = [
-        ("ReturnUrl", "/connect/authorize/callback?prompt=login&nonce=wylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU&response_type=code&code_challenge_method=S256&scope=openid%20email%20offline_access%20kreta-ellenorzo-webapi.public%20kreta-eugyintezes-webapi.public%20kreta-fileservice-webapi.public%20kreta-mobile-global-webapi.public%20kreta-dkt-webapi.public%20kreta-ier-webapi.public&code_challenge=HByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ&redirect_uri=https%3A%2F%2Fmobil.e-kreta.hu%2Fellenorzo-student%2Fprod%2Foauthredirect&client_id=kreta-ellenorzo-student-mobile-ios&state=kreten_student_mobile&suppressed_prompt=login"),
-        ("IsTemporaryLogin", "False"),
-        ("UserName", &self.username),
-        ("Password", &decoded_password),
-        ("InstituteCode", &self.school_id),
-        ("loginType", "InstituteLogin"),
-        ("__RequestVerificationToken", rvt),
-    ];
+        let form_data = (
+            self.username.clone(),
+            decoded_password.clone(),
+            self.school_id.clone(),
+            rvt.to_string(),
+        );
+        // it's called query, but that doesn't matter
+        let form_data = Token::query(&form_data)?;
 
-        let response = client.post(login_url)
-        .header(header::USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
-        .form(&form_data)
-        .send()?;
+        let headers = Token::headers(&"")?.unwrap();
+        let response = client
+            .post(login_url)
+            .headers(headers)
+            .form(&form_data)
+            .send()?;
 
         // Check if the response status is 200 (OK)
         if !response.status().is_success() {
@@ -435,21 +441,19 @@ impl User {
                 "redirect_uri",
                 "https://mobil.e-kreta.hu/ellenorzo-student/prod/oauthredirect",
             ),
-            ("client_id", "kreta-ellenorzo-student-mobile-ios"),
+            ("client_id", endpoints::CLIENT_ID),
             ("grant_type", "authorization_code"),
         ];
 
-        let response = client
-            .post("https://idp.e-kreta.hu/connect/token")
-            .form(&token_data)
-            .send()?;
+        let token_url = [Token::base_url("").as_ref(), &Token::path("")].concat();
+        let response = client.post(token_url).form(&token_data).send()?;
 
         let text = response.text()?;
         let mut logf = log_file("token")?;
         write!(logf, "{text}")?;
-        cache("token", &text)?;
 
         let token = serde_json::from_str(&text)?;
+        cache("token", &text)?;
         info!("received token");
         Ok(token)
     }

@@ -17,7 +17,6 @@ pub mod information;
 pub mod messages;
 pub mod schools;
 pub mod timetable;
-pub mod token;
 pub mod user;
 
 // reexports

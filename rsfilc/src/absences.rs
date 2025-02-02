@@ -32,7 +32,7 @@ pub fn disp(abs: &Absence) -> String {
     if abs.igazolt() {
         _ = write!(&mut f, "| igazolt");
     } else {
-        _ =write!(&mut f, "| igazolatlan");
+        _ = write!(&mut f, "| igazolatlan");
     }
     f
 }

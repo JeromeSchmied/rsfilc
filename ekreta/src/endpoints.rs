@@ -8,6 +8,7 @@ pub mod groups;
 pub mod lessons;
 pub mod messages;
 pub mod schools;
+pub mod token;
 pub mod user_info;
 
 // uri

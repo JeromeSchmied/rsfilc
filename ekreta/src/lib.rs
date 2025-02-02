@@ -12,6 +12,7 @@ pub use endpoints::messages::{
     Attachment, Message, MessageItem, MessageKind, MessageOverview, NoteMessage,
 };
 pub use endpoints::schools::School;
+pub use endpoints::token::Token;
 pub use endpoints::user_info::UserInfo;
 pub use endpoints::Endpoint;
 use std::borrow::Cow;
