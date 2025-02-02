@@ -1,4 +1,4 @@
-use crate::types::{Uid, Rektip, Tantargy};
+use crate::types::{Rektip, Tantargy, Uid};
 use crate::{Endpoint, LDateTime, OptIrval};
 use serde::{Deserialize, Serialize};
 
@@ -20,8 +20,8 @@ pub struct AnnouncedTest {
 impl Endpoint for AnnouncedTest {
     type QueryInput = OptIrval;
 
-    fn path() -> &'static str {
-        "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"
+    fn path(_args: impl AsRef<str>) -> String {
+        "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek".into()
     }
 
     fn query(input: &Self::QueryInput) -> anyhow::Result<impl Serialize> {

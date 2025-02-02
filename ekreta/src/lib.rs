@@ -8,6 +8,7 @@ pub use endpoints::announced_tests::AnnouncedTest;
 pub use endpoints::evaluations::Evaluation;
 pub use endpoints::groups::Class;
 pub use endpoints::lessons::Lesson;
+pub use endpoints::messages::{Attachment, Message, MessageItem, MessageOverview};
 pub use endpoints::user_info::UserInfo;
 pub use endpoints::Endpoint;
 use std::borrow::Cow;

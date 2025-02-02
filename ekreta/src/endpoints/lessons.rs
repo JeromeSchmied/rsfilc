@@ -77,8 +77,8 @@ impl Lesson {
 impl Endpoint for Lesson {
     type QueryInput = (LDateTime, LDateTime);
 
-    fn path() -> &'static str {
-        "/ellenorzo/V3/Sajat/OrarendElemek"
+    fn path(_args: impl AsRef<str>) -> String {
+        "/ellenorzo/V3/Sajat/OrarendElemek".into()
     }
 
     fn query(input: &Self::QueryInput) -> anyhow::Result<impl Serialize> {

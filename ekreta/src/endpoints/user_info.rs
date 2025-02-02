@@ -30,8 +30,8 @@ pub struct UserInfo {
 impl Endpoint for UserInfo {
     type QueryInput = ();
 
-    fn path() -> &'static str {
-        "/ellenorzo/V3/Sajat/TanuloAdatlap"
+    fn path(_args: impl AsRef<str>) -> String {
+        "/ellenorzo/V3/Sajat/TanuloAdatlap".into()
     }
 }
 

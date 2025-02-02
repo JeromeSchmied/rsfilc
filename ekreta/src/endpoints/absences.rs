@@ -1,4 +1,4 @@
-use crate::types::{Ora, Uid, Rektip, Tantargy};
+use crate::types::{Ora, Rektip, Tantargy, Uid};
 use crate::LDateTime;
 use crate::{Endpoint, OptIrval, Result};
 use serde::{Deserialize, Serialize};
@@ -29,8 +29,8 @@ impl Absence {
 impl Endpoint for Absence {
     type QueryInput = OptIrval;
 
-    fn path() -> &'static str {
-        "/ellenorzo/V3/Sajat/Mulasztasok"
+    fn path(_args: impl AsRef<str>) -> String {
+        "/ellenorzo/V3/Sajat/Mulasztasok".into()
     }
 
     fn query(input: &Self::QueryInput) -> Result<impl Serialize> {

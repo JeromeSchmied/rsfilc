@@ -1,12 +1,7 @@
-use crate::{
-    messages::{Msg, MsgKind, MsgOview},
-    timetable::next_lesson,
-    token::Token,
-    *,
-};
+use crate::{messages::MsgKind, timetable::next_lesson, token::Token, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Days, Local, NaiveDate};
-use ekreta::{OptIrval, UserInfo};
+use ekreta::{MessageItem, MessageOverview, OptIrval, UserInfo};
 use messages::NoteMsg;
 use reqwest::{
     blocking::Client,
@@ -361,6 +356,10 @@ impl User {
     }
 
     fn fetch_token(&self) -> Res<Token> {
+        if let Some(cached_content) = uncache("token") {
+            let cached_token = serde_json::from_str(&cached_content.1)?;
+            return Ok(cached_token);
+        }
         // Create a client with cookie store enable
         let client = Client::builder()
             .cookie_store(true)
@@ -452,6 +451,7 @@ impl User {
         let text = response.text()?;
         let mut logf = log_file("token")?;
         write!(logf, "{text}")?;
+        cache("token", &text)?;
 
         let token = serde_json::from_str(&text)?;
         info!("received token");
@@ -462,7 +462,7 @@ impl User {
     pub fn fetch_info(&self) -> Res<UserInfo> {
         info!("recieved information about user");
 
-        let user_info = self.fetch_single::<UserInfo, UserInfo>(())?;
+        let user_info = self.fetch_single::<UserInfo, UserInfo>((), "")?;
         Ok(user_info)
     }
 
@@ -494,7 +494,7 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_evals = self.fetch_vec(interval).inspect_err(|e| {
+        let fetched_evals = self.fetch_vec(interval, "").inspect_err(|e| {
             fetch_err = true;
             warn!("couldn't fetch from E-Kréta server: {e:?}");
         });
@@ -575,7 +575,7 @@ impl User {
     ///
     /// - sorting
     fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<Lesson>> {
-        let mut lessons: Vec<Lesson> = self.fetch_vec((from, to))?;
+        let mut lessons: Vec<Lesson> = self.fetch_vec((from, to), "")?;
         info!("recieved lessons");
         lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
         Ok(lessons)
@@ -609,7 +609,7 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_tests = self.fetch_vec(interval).inspect_err(|e| {
+        let fetched_tests = self.fetch_vec(interval, "").inspect_err(|e| {
             fetch_err = true;
             warn!("couldn't reach E-Kréta server: {e:?}");
         });
@@ -660,7 +660,7 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_absences = self.fetch_vec(interval).inspect_err(|e| {
+        let fetched_absences = self.fetch_vec(interval, "").inspect_err(|e| {
             fetch_err = true;
             warn!("couldn't fetch from E-Kréta server: {e:?}")
         });
@@ -682,16 +682,16 @@ impl User {
     ///
     /// - net
     pub fn fetch_classes(&self) -> Res<ekreta::Class> {
-        Ok(self.fetch_single::<ekreta::Class, ekreta::Class>(())?)
+        Ok(self.fetch_single::<ekreta::Class, ekreta::Class>((), "")?)
     }
 
-    fn fetch_single<E, D>(&self, query: E::QueryInput) -> Res<D>
+    fn fetch_single<E, D>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<D>
     where
         E: ekreta::Endpoint + for<'a> Deserialize<'a>,
         D: for<'a> Deserialize<'a>,
     {
         let base = E::base_url(&self.school_id).into_owned();
-        let uri = [base.as_str(), E::path()].concat();
+        let uri = [base, E::path(path_args)].concat();
         log::info!("sending request to {uri}");
         let query = E::query(&query)?;
         log::info!("query: {}", serde_json::to_string(&query).unwrap());
@@ -703,18 +703,22 @@ impl User {
         info!("sending request: {resp:?}");
         let resp = resp.send()?;
         let txt = resp.text()?;
-        let log_name = std::any::type_name::<E>();
-        let mut logf = log_file(log_name).unwrap();
+        let log_name = std::any::type_name::<E>()
+            .split("::")
+            .last()
+            .unwrap()
+            .to_lowercase();
+        let mut logf = log_file(&log_name).unwrap();
         write!(logf, "{txt}")?;
         // serde
         Ok(serde_json::from_str(&txt)?)
     }
 
-    fn fetch_vec<E>(&self, query: E::QueryInput) -> Res<Vec<E>>
+    fn fetch_vec<E>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<Vec<E>>
     where
         E: ekreta::Endpoint + for<'a> Deserialize<'a>,
     {
-        self.fetch_single::<E, Vec<E>>(query)
+        self.fetch_single::<E, Vec<E>>(query, path_args)
     }
 
     /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
@@ -743,25 +747,29 @@ impl User {
     ///
     /// # Errors
     /// - net
-    pub fn download_attachments(&self, msg: &Msg) -> Res<()> {
-        for am in msg.attachments() {
-            info!("downloading file://{}", am.download_to().display());
+    pub fn download_attachments(&self, msg: &MessageItem) -> Res<()> {
+        for am in &msg.uzenet.csatolmanyok {
+            let download_to = messages::download_attachment_to(&am);
+            info!("downloading file://{}", download_to.display());
             // don't download if already exists
-            if am.download_to().exists() {
+            if download_to.exists() {
                 info!("not downloading, already done");
                 continue;
             }
-            let mut f = File::create(am.download_to())?;
+            let mut f = File::create(download_to)?;
 
             let client = Client::new();
             client
-                .get(endpoints::ADMIN.to_owned() + &endpoints::download_attachment(am.id))
+                .get(
+                    endpoints::ADMIN.to_owned()
+                        + &endpoints::download_attachment(am.azonosito.into()),
+                )
                 .headers(self.headers()?)
                 .timeout(TIMEOUT)
                 .send()?
                 .copy_to(&mut f)?;
 
-            info!("recieved file {}", &am.file_name);
+            info!("recieved file {}", &am.fajl_nev);
         }
         Ok(())
     }
@@ -771,16 +779,10 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: &MsgKind) -> Res<Vec<MsgOview>> {
-        let txt = self.fetch(
-            &(endpoints::ADMIN.to_owned() + &endpoints::get_all_msgs(&msg_kind.val())),
-            "message_overviews",
-            &[],
-        )?;
-
-        let msg = serde_json::from_str(&txt)?;
+    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: &MsgKind) -> Res<Vec<MessageOverview>> {
+        let msgs = self.fetch_vec((), msg_kind.val())?;
         info!("recieved message overviews of kind: {:?}", msg_kind);
-        Ok(msg)
+        Ok(msgs)
     }
 
     /// get up to `n` [`MsgOview`]s, of any [`MsgKind`]
@@ -788,15 +790,19 @@ impl User {
     /// # Panics
     ///
     /// - sorting
-    pub fn msg_oviews(&self, n: usize) -> Res<Vec<MsgOview>> {
+    pub fn msg_oviews(&self, n: usize) -> Res<Vec<MessageOverview>> {
         let mut msg_oviews = [
-            self.fetch_msg_oviews_of_kind(&MsgKind::Recv)?,
-            self.fetch_msg_oviews_of_kind(&MsgKind::Sent)?,
-            self.fetch_msg_oviews_of_kind(&MsgKind::Del)?,
+            self.fetch_msg_oviews_of_kind(&MsgKind::Recv).unwrap(),
+            self.fetch_msg_oviews_of_kind(&MsgKind::Sent).unwrap(),
+            self.fetch_msg_oviews_of_kind(&MsgKind::Del).unwrap(),
         ]
         .concat();
 
-        msg_oviews.sort_by(|a, b| b.sent().partial_cmp(&a.sent()).unwrap());
+        msg_oviews.sort_by(|a, b| {
+            b.uzenet_kuldes_datum
+                .partial_cmp(&a.uzenet_kuldes_datum)
+                .unwrap()
+        });
         let max_n = msg_oviews.len();
         // don't exceed the lenght of msg_oviews
         let n = if n < max_n { n } else { max_n };
@@ -810,27 +816,26 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn fetch_full_msg(&self, msg_oview: &MsgOview) -> Res<Msg> {
-        let txt = self.fetch(
-            &(endpoints::ADMIN.to_owned() + &endpoints::get_msg(msg_oview.id)),
-            "full_message",
-            &[],
-        )?;
-
-        let msg = serde_json::from_str(&txt)?;
+    pub fn fetch_full_msg(&self, msg_oview: &MessageOverview) -> Res<MessageItem> {
+        let msg =
+            self.fetch_single::<MessageItem, MessageItem>((), msg_oview.azonosito.to_string())?;
         info!("recieved full message: {:?}", msg);
         Ok(msg)
     }
+    // pub fn fetch_messages(&self) -> Res<Vec<MessageItem>> {
+    //     let msgs = self.fetch_vec((), "")?;
+    //     Ok(msgs)
+    // }
     /// Fetch max `n` [`Msg`]s between `from` and `to`.
     /// Also download all `[Attachment]`s each [`Msg`] has.
     ///
     /// # Errors
     ///
     /// - net
-    pub fn msgs(&self, interval: OptIrval) -> Res<Vec<Msg>> {
+    pub fn msgs(&self, interval: OptIrval) -> Res<Vec<MessageItem>> {
         let (cache_t, cache_content) = uncache("messages").unzip();
         let mut msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Msg>>(cached)?
+            serde_json::from_str::<Vec<MessageItem>>(cached)?
         } else {
             vec![]
         };
@@ -846,8 +851,10 @@ impl User {
         let mut fetch_err = false;
         for msg_oview in self.msg_oviews(usize::MAX).unwrap_or_default() {
             // if isn't between `from`-`to`
-            if from.is_some_and(|fm| msg_oview.sent() < fm)
-                || interval.1.is_some_and(|to| msg_oview.sent() > to)
+            if from.is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.date_naive().into())
+                || interval
+                    .1
+                    .is_some_and(|to| msg_oview.uzenet_kuldes_datum > to.date_naive().into())
             {
                 continue;
             }

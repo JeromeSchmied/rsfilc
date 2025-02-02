@@ -155,15 +155,18 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             }
 
             let msgs = user.msgs((None, None))?;
+            // let msgs = user.fetch_messages()?;
             if reverse {
                 for msg in msgs.iter().rev().take(number) {
-                    println!("\n\n\n\n{msg}");
-                    fill(&msg.to_string(), '-', None);
+                    let as_str = messages::disp_msg(msg);
+                    println!("\n\n\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             } else {
                 for msg in msgs.iter().take(number) {
-                    println!("\n\n\n\n{msg}");
-                    fill(&msg.to_string(), '-', None);
+                    let as_str = messages::disp_msg(msg);
+                    println!("\n\n\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             }
         }

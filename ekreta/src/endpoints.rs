@@ -6,6 +6,7 @@ pub mod announced_tests;
 pub mod evaluations;
 pub mod groups;
 pub mod lessons;
+pub mod messages;
 pub mod user_info;
 
 // uri
@@ -22,23 +23,23 @@ pub trait Endpoint {
     }
 
     /// after BASE_URL
-    fn path() -> &'static str;
+    fn path(args: impl AsRef<str>) -> String;
 
     fn method() -> http::Method {
         http::Method::GET
     }
 
-    fn query(input: &Self::QueryInput) -> Result<impl Serialize> {
+    fn query(_input: &Self::QueryInput) -> Result<impl Serialize> {
         Ok(Vec::<String>::new())
     }
 
     /// Gather the request headers to set.
-    fn headers(input: &impl Serialize) -> Result<Option<http::HeaderMap>> {
+    fn headers(_input: &impl Serialize) -> Result<Option<http::HeaderMap>> {
         Ok(None)
     }
 
     /// Retrieve the request's body.
-    fn body(input: &impl Serialize) -> Result<Option<Bytes>> {
+    fn body(_input: &impl Serialize) -> Result<Option<Bytes>> {
         Ok(None)
     }
 }

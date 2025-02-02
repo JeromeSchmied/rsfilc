@@ -44,8 +44,8 @@ impl Evaluation {
 impl Endpoint for Evaluation {
     type QueryInput = OptIrval;
 
-    fn path() -> &'static str {
-        "/ellenorzo/V3/Sajat/Ertekelesek"
+    fn path(_args: impl AsRef<str>) -> String {
+        "/ellenorzo/V3/Sajat/Ertekelesek".into()
     }
 
     fn query(input: &Self::QueryInput) -> anyhow::Result<impl Serialize> {

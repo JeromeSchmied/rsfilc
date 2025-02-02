@@ -6,8 +6,8 @@ use serde_json::Value;
 use std::{
     char,
     collections::HashMap,
-    fmt,
-    io::{Read, Write},
+    fmt::{self, Write},
+    io::Read,
     process::{Child, Command, Stdio},
 };
 
@@ -73,6 +73,10 @@ pub struct Attachment {
     /// id
     #[serde(rename(deserialize = "azonosito"))]
     pub id: u64,
+}
+
+pub fn download_attachment_to(am: &ekreta::Attachment) -> PathBuf {
+    download_dir().join(am.fajl_nev.replace(char::is_whitespace, "_"))
 }
 
 impl Attachment {
@@ -203,6 +207,42 @@ impl fmt::Display for Msg {
         Ok(())
     }
 }
+pub fn disp_msg(msg: &ekreta::MessageItem) -> String {
+    let mut f = String::new();
+    _ = writeln!(&mut f, "| Tárgy: {}", msg.uzenet.targy);
+    for am in &msg.uzenet.csatolmanyok {
+        _ = writeln!(
+            &mut f,
+            "| Csatolmány: \"file://{}\"",
+            download_attachment_to(am).display()
+        );
+    }
+
+    _ = writeln!(
+        &mut f,
+        "| {}: {}",
+        msg.tipus.nev,
+        &msg.uzenet
+            .kuldes_datum
+            .and_local_timezone(Local)
+            .unwrap()
+            .pretty()
+    );
+    _ = writeln!(
+        &mut f,
+        "| Feladó: {} {}",
+        msg.uzenet.felado_nev, msg.uzenet.felado_titulus
+    );
+    _ = write!(
+        &mut f,
+        "\n{}",
+        Rendr::render_html(&msg.uzenet.szoveg).trim()
+    );
+    // if !msg.is_elolvasva {
+    //  writeln!(f, "Olvasatlan")?;
+    // }
+    f
+}
 
 /// supported external programs that can render html
 enum Rendr {
@@ -275,7 +315,7 @@ impl Rendr {
             return None;
         };
 
-        if let Err(why) = proc.stdin.unwrap().write_all(html.as_bytes()) {
+        if let Err(why) = std::io::Write::write_all(&mut proc.stdin.unwrap(), html.as_bytes()) {
             eprintln!("couldn't write to {} stdin: {why}", Rendr::both_name());
             return None;
         };

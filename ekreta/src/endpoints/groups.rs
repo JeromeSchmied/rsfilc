@@ -20,7 +20,7 @@ pub struct Class {
 impl Endpoint for Class {
     type QueryInput = ();
 
-    fn path() -> &'static str {
-        "/ellenorzo/V3/Sajat/OsztalyCsoportok"
+    fn path(_args: impl AsRef<str>) -> String {
+        "/ellenorzo/V3/Sajat/OsztalyCsoportok".into()
     }
 }
