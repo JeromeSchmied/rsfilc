@@ -1,4 +1,3 @@
-use self::messages::NoteMsg;
 use crate::{
     information::Info,
     messages::{Msg, MsgKind, MsgOview},
@@ -7,7 +6,9 @@ use crate::{
     *,
 };
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{DateTime, Days, Local, NaiveDate};
+use chrono::{Days, Local, NaiveDate};
+use ekreta::OptIrval;
+use messages::NoteMsg;
 use reqwest::{
     blocking::Client,
     header::{self, HeaderMap},
@@ -24,9 +25,6 @@ use std::{
 
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
-
-/// `(from, to)` interval
-pub type Interval = (Option<DateTime<Local>>, Option<DateTime<Local>>);
 
 /// endpoint
 pub const fn ep() -> &'static str {
@@ -480,7 +478,7 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn fetch_evals(&self, mut interval: Interval) -> Res<Vec<Evaluation>> {
+    pub fn fetch_evals(&self, mut interval: OptIrval) -> Res<Vec<Evaluation>> {
         let (cache_t, cache_content) = uncache("evals").unzip();
         let mut evals = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Evaluation>>(cached)?
@@ -581,11 +579,7 @@ impl User {
     /// # Panics
     ///
     /// - sorting
-    fn fetch_timetable(
-        &self,
-        from: DateTime<Local>,
-        to: DateTime<Local>,
-    ) -> Res<Vec<ekreta::Lesson>> {
+    fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<ekreta::Lesson>> {
         let mut lessons: Vec<Lesson> = self.fetch_from_endpoint("timetable", (from, to))?;
         info!("recieved lessons");
         lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
@@ -601,7 +595,7 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn fetch_all_announced(&self, mut interval: Interval) -> Res<Vec<AnnouncedTest>> {
+    pub fn fetch_all_announced(&self, mut interval: OptIrval) -> Res<Vec<AnnouncedTest>> {
         let (cache_t, cache_content) = uncache("announced").unzip();
         let mut tests = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<AnnouncedTest>>(cached)?
@@ -654,7 +648,7 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn fetch_absences(&self, mut interval: Interval) -> Res<Vec<Absence>> {
+    pub fn fetch_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
         let (cache_t, cache_content) = uncache("absences").unzip();
         let mut absences = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Absence>>(cached)?
@@ -834,7 +828,7 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn msgs(&self, interval: Interval) -> Res<Vec<Msg>> {
+    pub fn msgs(&self, interval: OptIrval) -> Res<Vec<Msg>> {
         let (cache_t, cache_content) = uncache("messages").unzip();
         let mut msgs = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Msg>>(cached)?
@@ -904,7 +898,7 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn fetch_note_msgs(&self, interval: Interval) -> Res<Vec<NoteMsg>> {
+    pub fn fetch_note_msgs(&self, interval: OptIrval) -> Res<Vec<NoteMsg>> {
         let (cache_t, cache_content) = uncache("note_messages").unzip();
         let mut note_msgs = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<NoteMsg>>(cached)?

@@ -46,7 +46,7 @@ impl MsgOview {
     /// # Panics
     ///
     /// Panics if `uzenet_kuldes_datum` is invalid as date.
-    pub fn sent(&self) -> DateTime<Local> {
+    pub fn sent(&self) -> LDateTime {
         DateTime::parse_from_rfc3339(&format!("{}Z", &self.date_sent))
             .unwrap()
             .into()
@@ -117,7 +117,7 @@ impl Msg {
     /// Panics if
     /// - message doesn't contain `kuldesDatum` key.
     /// - which contains invalid date-time value.
-    pub fn time_sent(&self) -> DateTime<Local> {
+    pub fn time_sent(&self) -> LDateTime {
         DateTime::parse_from_rfc3339(&format!("{}Z", self.msg_kv("kuldesDatum").unwrap()))
             .unwrap()
             .into()
@@ -396,7 +396,7 @@ pub struct NoteMsg {
     title: String,
 
     #[serde(rename(deserialize = "Datum", serialize = "Datum"))]
-    date: DateTime<Local>,
+    date: LDateTime,
 
     #[serde(rename(deserialize = "KeszitoTanarNeve", serialize = "KeszitoTanarNeve"))]
     teacher: String,

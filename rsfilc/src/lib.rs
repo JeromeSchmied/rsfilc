@@ -71,7 +71,7 @@ pub fn cache(kind: &str, content: &str) -> Res<()> {
 
     Ok(())
 }
-pub fn uncache(kind: &str) -> Option<(DateTime<Local>, String)> {
+pub fn uncache(kind: &str) -> Option<(LDateTime, String)> {
     let cp = cache_path(kind);
     if !cp.exists() {
         return None;
@@ -144,10 +144,10 @@ pub trait MyDate {
     /// Get hungarian day of week.
     fn hun_day_of_week<'a>(&self) -> &'a str;
     fn make_kreta_valid(&self) -> String;
-    fn to_day_with_hms(&self) -> DateTime<Local>;
+    fn to_day_with_hms(&self) -> LDateTime;
     fn day_diff(&self, other: &Self) -> Option<String>;
 }
-impl MyDate for DateTime<Local> {
+impl MyDate for LDateTime {
     fn pretty(&self) -> String {
         let this_year = self.year() == Local::now().year();
 
@@ -207,7 +207,7 @@ impl MyDate for DateTime<Local> {
         }
     }
 
-    /// make [`DateTime<Local>`] valid for `Datum(Ig|Tol)` for `Kréta`
+    /// make [`LDateTime`] valid for `Datum(Ig|Tol)` for `Kréta`
     ///
     /// # warning
     ///
@@ -215,7 +215,7 @@ impl MyDate for DateTime<Local> {
     fn make_kreta_valid(&self) -> String {
         self.date_naive().and_hms_opt(0, 0, 0).unwrap().to_string()
     }
-    fn to_day_with_hms(&self) -> DateTime<Local> {
+    fn to_day_with_hms(&self) -> LDateTime {
         self.date_naive()
             .and_hms_opt(0, 0, 0)
             .unwrap()

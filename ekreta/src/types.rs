@@ -1,4 +1,4 @@
-use chrono::{DateTime, Local};
+use crate::LDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -21,8 +21,8 @@ pub struct Rektip {
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct Ora {
-    pub kezdo_datum: DateTime<Local>,
-    pub veg_datum: DateTime<Local>,
+    pub kezdo_datum: LDateTime,
+    pub veg_datum: LDateTime,
     pub oraszam: i64,
 }
 
