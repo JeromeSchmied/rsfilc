@@ -141,13 +141,15 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 let notes = user.fetch_note_msgs((None, None))?;
                 if reverse {
                     for note in notes.iter().take(number).rev() {
-                        println!("\n\n\n\n{note}");
-                        fill(&note.to_string(), '-', None);
+                        let as_str = messages::disp_note_msg(note);
+                        println!("\n\n\n\n{as_str}");
+                        fill(&as_str, '-', None);
                     }
                 } else {
                     for note in notes.iter().take(number) {
-                        println!("\n\n\n\n{note}");
-                        fill(&note.to_string(), '-', None);
+                        let as_str = messages::disp_note_msg(note);
+                        println!("\n\n\n\n{as_str}");
+                        fill(&as_str, '-', None);
                     }
                 }
 

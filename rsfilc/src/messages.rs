@@ -2,11 +2,8 @@
 
 use crate::*;
 use ekreta::MessageKind;
-use serde::Deserialize;
-use serde_json::Value;
 use std::{
     char,
-    collections::HashMap,
     fmt::{self, Write},
     io::Read,
     process::{Child, Command, Stdio},
@@ -27,7 +24,19 @@ use std::{
 pub fn download_attachment_to(am: &ekreta::Attachment) -> PathBuf {
     download_dir().join(am.fajl_nev.replace(char::is_whitespace, "_"))
 }
-
+#[cfg(test)]
+#[test]
+fn fix_file_name() {
+    use super::*;
+    let f = ekreta::Attachment {
+        fajl_nev: "ain't a good filename is it ted? .txt .doksi .docx".to_string(),
+        azonosito: 38,
+    };
+    assert_eq!(
+        download_dir().join("ain't_a_good_filename_is_it_ted?_.txt_.doksi_.docx"),
+        download_attachment_to(&f)
+    );
+}
 pub fn disp_msg(msg: &ekreta::MessageItem) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| Tárgy: {}", msg.uzenet.targy);
@@ -212,36 +221,15 @@ pub fn disp_msgkind(msgkind: MessageKind) -> &'static str {
     }
 }
 
-/// the message itself
-#[derive(Debug, Deserialize, Clone, Serialize)]
-pub struct NoteMsg {
-    #[serde(rename(deserialize = "Cim", serialize = "Cim"))]
-    title: String,
-
-    #[serde(rename(deserialize = "Datum", serialize = "Datum"))]
-    date: LDateTime,
-
-    #[serde(rename(deserialize = "KeszitoTanarNeve", serialize = "KeszitoTanarNeve"))]
-    teacher: String,
-
-    #[serde(rename(deserialize = "TartalomFormazott", serialize = "TartalomFormazott"))]
-    msg: String,
-
-    #[serde(flatten)]
-    _extra: HashMap<String, Value>,
+pub fn disp_note_msg(note_msg: &ekreta::NoteMessage) -> String {
+    let mut f = String::new();
+    _ = writeln!(&mut f, "| {}", note_msg.cim);
+    _ = writeln!(&mut f, "| Időpont: {}", note_msg.datum.pretty());
+    _ = writeln!(&mut f, "| {}", note_msg.keszito_tanar_neve);
+    _ = write!(
+        &mut f,
+        "\n{}",
+        Rendr::render_html(&note_msg.tartalom_formazott).trim()
+    );
+    f
 }
-
-/// additional notes/system messages
-impl NoteMsg {}
-impl fmt::Display for NoteMsg {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "| {}", self.title)?;
-        writeln!(f, "| Időpont: {}", self.date.pretty())?;
-        writeln!(f, "| {}", self.teacher,)?;
-        write!(f, "\n{}", Rendr::render_html(&self.msg).trim())?;
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests;

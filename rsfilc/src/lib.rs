@@ -2,7 +2,6 @@
 
 use chrono::{DateTime, Datelike, Local, Timelike};
 use log::*;
-use serde::Serialize;
 use std::{
     fs::{self, File},
     io::Write,

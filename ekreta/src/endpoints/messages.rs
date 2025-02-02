@@ -1,4 +1,8 @@
 use super::Endpoint;
+use crate::{
+    types::{Rektip, Uid},
+    LDateTime, OptIrval, Result,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -57,6 +61,38 @@ impl Endpoint for MessageOverview {
 
     fn path(id: impl AsRef<str>) -> String {
         format!("/api/v1/kommunikacio/postaladaelemek/{}", id.as_ref())
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct NoteMessage {
+    pub uid: String,
+    pub cim: String,
+    pub datum: LDateTime,
+    pub keszito_tanar_neve: String,
+    pub keszites_datuma: LDateTime,
+    pub lattamozas_datuma: Option<LDateTime>,
+    pub osztaly_csoport: Option<Uid>,
+    pub tartalom: String,
+    pub tartalom_formazott: String,
+    pub tipus: Rektip,
+}
+impl Endpoint for NoteMessage {
+    type QueryInput = OptIrval;
+
+    fn path(_: impl AsRef<str>) -> String {
+        "/ellenorzo/v3/sajat/Feljegyzesek".into()
+    }
+    fn query(input: &Self::QueryInput) -> Result<impl Serialize> {
+        let mut q = vec![];
+        if let Some(from) = input.0 {
+            q.push(("datumTol", from.to_string()));
+        }
+        if let Some(to) = input.1 {
+            q.push(("datumIg", to.to_string()));
+        }
+        Ok(q)
     }
 }
 

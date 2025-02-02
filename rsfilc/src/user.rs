@@ -2,7 +2,6 @@ use crate::{timetable::next_lesson, token::Token, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Days, Local, NaiveDate};
 use ekreta::{MessageItem, MessageKind as MsgKind, MessageOverview, OptIrval, UserInfo};
-use messages::NoteMsg;
 use reqwest::{
     blocking::Client,
     header::{self, HeaderMap},
@@ -339,11 +338,6 @@ impl User {
 
 // interacting with API
 impl User {
-    /// base url of school with `school_id`
-    /// <https://{school_id}.e-kreta.hu>
-    fn base(&self) -> String {
-        format!("https://{}.e-kreta.hu", self.school_id)
-    }
     /// get headers which are necessary for making certain requests
     fn headers(&self) -> Res<HeaderMap> {
         let mut headers = HeaderMap::new();
@@ -356,9 +350,11 @@ impl User {
     }
 
     fn fetch_token(&self) -> Res<Token> {
-        if let Some(cached_content) = uncache("token") {
-            let cached_token = serde_json::from_str(&cached_content.1)?;
-            return Ok(cached_token);
+        if let Some((cache_t, cache_content)) = uncache("token") {
+            if Local::now().signed_duration_since(cache_t) < chrono::Duration::seconds(1800) {
+                let cached_token = serde_json::from_str(&cache_content)?;
+                return Ok(cached_token);
+            }
         }
         // Create a client with cookie store enable
         let client = Client::builder()
@@ -730,25 +726,6 @@ impl User {
     {
         self.fetch_single::<E, Vec<E>>(query, path_args)
     }
-
-    /// Fetch data from `url` with `query`, save log to [`log_file(`log`)`].
-    fn fetch(&self, url: &str, log: &str, query: &[(&str, String)]) -> Res<String> {
-        let client = Client::new();
-        let res = client
-            .get(url)
-            .query(&query)
-            .headers(self.headers()?)
-            .timeout(TIMEOUT)
-            .send()?;
-        let text = res.text()?;
-
-        let mut logf = log_file(log)?;
-        write!(logf, "{text}")?;
-        // cache(log, &text)?;
-        // info!("cached.");
-
-        Ok(text)
-    }
 }
 
 /// [`Msg`]s and [`Attachment`]s
@@ -906,36 +883,28 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn fetch_note_msgs(&self, interval: OptIrval) -> Res<Vec<NoteMsg>> {
+    pub fn fetch_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMessage>> {
         let (cache_t, cache_content) = uncache("note_messages").unzip();
         let mut note_msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<NoteMsg>>(cached)?
+            serde_json::from_str::<Vec<ekreta::NoteMessage>>(cached)?
         } else {
             vec![]
         };
 
-        let mut query = vec![];
         if let Some(ct) = cache_t {
             info!("from cached");
-            query.push(("datumTol", ct.make_kreta_valid()));
+            interval.0 = Some(ct.to_day_with_hms());
         } else if let Some(from) = interval.0 {
-            query.push(("datumTol", from.make_kreta_valid()));
+            interval.0 = Some(from.to_day_with_hms());
         }
         if let Some(to) = interval.1 {
-            query.push(("datumIg", to.make_kreta_valid()));
+            interval.1 = Some(to.to_day_with_hms());
         }
 
         let mut fetch_err = false;
-        let txt = self
-            .fetch(&(self.base() + endpoints::NOTES), "note_messages", &[])
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't reach E-Kréta server: {e:?}");
-            })
-            .unwrap_or_default();
-        let fetched_note_msgs = serde_json::from_str::<Vec<NoteMsg>>(&txt).inspect_err(|e| {
+        let fetched_note_msgs = self.fetch_vec(interval, "").inspect_err(|e| {
             fetch_err = true;
-            warn!("couldn't deserialize data: {e:?}");
+            warn!("couldn't reach E-Kréta server: {e:?}");
         });
 
         note_msgs.extend(fetched_note_msgs.unwrap_or_default());
