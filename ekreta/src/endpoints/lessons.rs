@@ -12,7 +12,7 @@ pub struct Lesson {
     pub nev: String,
     pub oraszam: i64,
     pub ora_eves_sorszama: i64,
-    pub osztaly_csoport: OsztalyCsoport,
+    pub osztaly_csoport: Uid,
     pub tanar_neve: Option<String>,
     pub tantargy: Tantargy,
     pub tema: Option<String>,

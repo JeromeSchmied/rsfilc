@@ -676,15 +676,13 @@ impl User {
         Ok(absences)
     }
 
-    /// get groups the [`User`] is a member of
+    /// get classes the [`User`] is a member of
     ///
     /// # Errors
     ///
     /// - net
-    pub fn fetch_groups(&self) -> Res<String> {
-        let txt = self.fetch(&(self.base() + endpoints::CLASSES), "groups", &[])?;
-        // let all_announced = serde_json::from_str(&text)?;
-        Ok(txt)
+    pub fn fetch_classes(&self) -> Res<ekreta::Class> {
+        Ok(self.fetch_single::<ekreta::Class, ekreta::Class>(())?)
     }
 
     fn fetch_single<E, D>(&self, query: E::QueryInput) -> Res<D>

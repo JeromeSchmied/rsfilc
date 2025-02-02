@@ -1,6 +1,13 @@
 use crate::{Bytes, Result, Str};
 use serde::Serialize;
 
+pub mod absences;
+pub mod announced_tests;
+pub mod evaluations;
+pub mod groups;
+pub mod lessons;
+pub mod user_info;
+
 // uri
 // method
 // query
@@ -35,12 +42,6 @@ pub trait Endpoint {
         Ok(None)
     }
 }
-
-pub mod absences;
-pub mod announced_tests;
-pub mod evaluations;
-pub mod lessons;
-pub mod user_info;
 
 pub mod base {
     use crate::Str;

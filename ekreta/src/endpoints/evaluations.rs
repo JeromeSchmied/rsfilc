@@ -1,6 +1,6 @@
 use super::Endpoint;
 use crate::{
-    types::{OsztalyCsoport, Rektip, Tantargy},
+    types::{Rektip, Tantargy, Uid},
     LDateTime, OptIrval,
 };
 use serde::{Deserialize, Serialize};
@@ -23,7 +23,7 @@ pub struct Evaluation {
     pub szoveges_ertek: String,
     pub suly_szazalek_erteke: Option<u16>,
     pub szoveges_ertekeles_rovid_nev: Option<String>,
-    pub osztaly_csoport: OsztalyCsoport,
+    pub osztaly_csoport: Uid,
     pub sort_index: i64,
 }
 impl Evaluation {

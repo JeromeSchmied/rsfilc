@@ -1,4 +1,4 @@
-use crate::types::{OsztalyCsoport, Rektip, Tantargy};
+use crate::types::{Uid, Rektip, Tantargy};
 use crate::{Endpoint, LDateTime, OptIrval};
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,7 @@ pub struct AnnouncedTest {
     pub tantargy_neve: String,
     pub temaja: Option<String>,
     pub modja: Rektip,
-    pub osztaly_csoport: OsztalyCsoport,
+    pub osztaly_csoport: Uid,
 }
 
 impl Endpoint for AnnouncedTest {

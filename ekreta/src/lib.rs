@@ -6,6 +6,7 @@ pub use anyhow::Result;
 pub use endpoints::absences::Absence;
 pub use endpoints::announced_tests::AnnouncedTest;
 pub use endpoints::evaluations::Evaluation;
+pub use endpoints::groups::Class;
 pub use endpoints::lessons::Lesson;
 pub use endpoints::user_info::UserInfo;
 pub use endpoints::Endpoint;

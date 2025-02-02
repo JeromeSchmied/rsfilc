@@ -28,7 +28,7 @@ pub struct Ora {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct OsztalyCsoport {
+pub struct Uid {
     pub uid: String,
 }
 
@@ -80,4 +80,11 @@ pub struct TestreszabasBeallitasok {
     pub is_elerhetoseg_szerkesztheto: bool,
     pub ertekelesek_megjelenitesenek_kesleltetesenek_merteke: i64,
     pub kovetkezo_telepites_datuma: LDateTime,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct Tagsag {
+    pub besorolas_datuma: LDateTime,
+    pub kisorolas_datuma: LDateTime,
 }

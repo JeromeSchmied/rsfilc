@@ -1,4 +1,4 @@
-use crate::types::{Ora, OsztalyCsoport, Rektip, Tantargy};
+use crate::types::{Ora, Uid, Rektip, Tantargy};
 use crate::LDateTime;
 use crate::{Endpoint, OptIrval, Result};
 use serde::{Deserialize, Serialize};
@@ -17,7 +17,7 @@ pub struct Absence {
     pub keszites_datuma: LDateTime,
     pub igazolas_allapota: String,
     pub igazolas_tipusa: Rektip,
-    pub osztaly_csoport: OsztalyCsoport,
+    pub osztaly_csoport: Uid,
 }
 impl Absence {
     /// Returns whether the [`Abs`] has been verified.
