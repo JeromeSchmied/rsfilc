@@ -40,6 +40,7 @@ pub mod absences;
 pub mod announced_tests;
 pub mod evaluations;
 pub mod lessons;
+pub mod user_info;
 
 pub mod base {
     use crate::Str;
