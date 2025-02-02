@@ -11,7 +11,7 @@ pub struct Lesson {
     pub veg_idopont: LDateTime,
     pub nev: String,
     pub oraszam: u8,
-    pub ora_eves_sorszama: i64,
+    pub ora_eves_sorszama: Option<u32>,
     pub osztaly_csoport: Uid,
     pub tanar_neve: Option<String>,
     pub tantargy: Tantargy,
