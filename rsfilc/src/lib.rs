@@ -10,7 +10,6 @@ use std::{
 
 pub mod absences;
 pub mod announced;
-mod api_urls;
 pub mod args;
 pub mod endpoints;
 pub mod evals;
