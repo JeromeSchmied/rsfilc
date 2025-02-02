@@ -82,7 +82,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 write!(f, "{content}")?;
             }
 
-            user.print_day(&lessons);
+            user.print_day(lessons);
         }
 
         Commands::Evals {

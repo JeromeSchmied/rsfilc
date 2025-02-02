@@ -10,7 +10,7 @@ pub struct Lesson {
     pub kezdet_idopont: LDateTime,
     pub veg_idopont: LDateTime,
     pub nev: String,
-    pub oraszam: i64,
+    pub oraszam: u8,
     pub ora_eves_sorszama: i64,
     pub osztaly_csoport: Uid,
     pub tanar_neve: Option<String>,

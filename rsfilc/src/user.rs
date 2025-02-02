@@ -243,7 +243,7 @@ impl User {
     }
 
     /// print all lessons of a day
-    pub fn print_day(&self, lessons: &[Lesson]) {
+    pub fn print_day(&self, mut lessons: Vec<Lesson>) {
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "    {} ({})",
@@ -267,24 +267,29 @@ impl User {
             // info!("all announced: {todays_tests:?}");
 
             // number of lessons at the same time
-            let mut same_count = 0;
+            lessons.retain(|l| !l.kamu_smafu());
 
-            for (i, lesson) in lessons.iter().filter(|l| !l.kamu_smafu()).enumerate() {
+            for (n, lesson) in lessons.iter().enumerate() {
                 // calculate `n`. this lesson is
-                let n = if let Some(prev) = lessons.get((i as isize - 1) as usize) {
-                    if prev.same_time(lesson) {
-                        same_count += 1;
-                    }
-                    i + 1 - same_count
-                } else {
-                    i + 1 - same_count
-                };
+                let nth = lesson.oraszam;
+                if n as u8 + 2 == nth
+                    && lessons
+                        .get(n - 1)
+                        .is_none_or(|prev| prev.oraszam == n as u8)
+                {
+                    let no_lesson_buf = format!(
+                        "\n\n{}. Lyukas (avagy Lukas) óra\n| Erre az időpontra nincsen tanóra rögzítve.",
+                        n + 1
+                    );
+                    println!("{no_lesson_buf}");
+                    fill(&no_lesson_buf, '^', Some("Juhé"));
+                }
                 // so fill_under() works fine
-                let mut printer = format!("\n\n{n}. {}", timetable::disp(lesson));
+                let mut printer = format!("\n\n{nth}. {}", timetable::disp(lesson));
 
                 if let Some(test) = todays_tests
                     .iter()
-                    .find(|ancd| ancd.orarendi_ora_oraszama.is_some_and(|x| x as usize == n))
+                    .find(|ancd| ancd.orarendi_ora_oraszama.is_some_and(|x| x == nth))
                 {
                     printer += &format!(
                         "\n| {}{}",
