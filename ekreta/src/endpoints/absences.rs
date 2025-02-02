@@ -1,6 +1,6 @@
 use crate::types::{Ora, OsztalyCsoport, Rektip, Tantargy};
-use crate::DateTime;
-use crate::{Endpoint, Interval, Result};
+use crate::LDateTime;
+use crate::{Endpoint, OptIrval, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9,12 +9,12 @@ pub struct Absence {
     pub uid: String,
     pub tantargy: Tantargy,
     pub ora: Ora,
-    pub datum: DateTime,
+    pub datum: LDateTime,
     pub rogzito_tanar_neve: String,
     pub tipus: Rektip,
     pub r#mod: Rektip,
     pub keses_percben: Option<u8>,
-    pub keszites_datuma: DateTime,
+    pub keszites_datuma: LDateTime,
     pub igazolas_allapota: String,
     pub igazolas_tipusa: Rektip,
     pub osztaly_csoport: OsztalyCsoport,
@@ -27,7 +27,7 @@ impl Absence {
 }
 
 impl Endpoint for Absence {
-    type QueryInput = Interval;
+    type QueryInput = OptIrval;
 
     fn path() -> &'static str {
         "/ellenorzo/V3/Sajat/Mulasztasok"

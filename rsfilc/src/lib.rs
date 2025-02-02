@@ -27,8 +27,9 @@ pub use args::{Args, Commands};
 pub use ekreta::Absence;
 pub use ekreta::AnnouncedTest;
 pub use ekreta::Evaluation;
+pub use ekreta::Lesson;
+pub use ekreta::{LDateTime, OptIrval};
 pub use school_list::School;
-pub use timetable::Lesson;
 pub use user::User;
 
 /// Result from `T` and `Box<dyn Error>`

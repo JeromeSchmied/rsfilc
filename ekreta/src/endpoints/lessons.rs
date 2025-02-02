@@ -1,4 +1,4 @@
-use crate::{types::*, DateTime, Endpoint};
+use crate::{types::*, Endpoint, LDateTime};
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 
@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize};
 pub struct Lesson {
     pub uid: String,
     pub datum: String,
-    pub kezdet_idopont: DateTime,
-    pub veg_idopont: DateTime,
+    pub kezdet_idopont: LDateTime,
+    pub veg_idopont: LDateTime,
     pub nev: String,
     pub oraszam: i64,
     pub ora_eves_sorszama: i64,
     pub osztaly_csoport: OsztalyCsoport,
     pub tanar_neve: Option<String>,
-    pub tantargy: Option<Tantargy>,
+    pub tantargy: Tantargy,
     pub tema: Option<String>,
     pub terem_neve: Option<String>,
     pub tipus: Rektip,
@@ -29,11 +29,11 @@ pub struct Lesson {
     pub is_hazi_feladat_megoldva: bool,
     pub csatolmanyok: Vec<String>,
     pub is_digitalis_ora: bool,
-    pub digitalis_eszkoz_tipus: String,
-    pub digitalis_platform_tipus: String,
+    pub digitalis_eszkoz_tipus: Option<String>,
+    pub digitalis_platform_tipus: Option<String>,
     pub digitalis_tamogato_eszkoz_tipus_list: Vec<String>,
     pub letrehozas: String,
-    pub utolso_modositas: DateTime,
+    pub utolso_modositas: chrono::NaiveDateTime,
 }
 impl Lesson {
     /// The two goddamn [`Lesson`]s should happen in the same time.
@@ -51,8 +51,8 @@ impl Lesson {
             .is_some_and(|absence| absence.nev == "Hianyzas")
     }
     /// Returns the subject id of this [`Lesson`].
-    pub fn subject_id(&self) -> Option<&String> {
-        Some(&self.tantargy.as_ref()?.kategoria.nev)
+    pub fn subject_id(&self) -> &String {
+        &self.tantargy.kategoria.nev
     }
     /// Returns whether this [`Lesson`] is just false positive, meaning it's just a title for a day.
     pub fn kamu_smafu(&self) -> bool {
@@ -75,7 +75,7 @@ impl Lesson {
 }
 
 impl Endpoint for Lesson {
-    type QueryInput = (DateTime, DateTime);
+    type QueryInput = (LDateTime, LDateTime);
 
     fn path() -> &'static str {
         "/ellenorzo/V3/Sajat/OrarendElemek"
@@ -148,7 +148,7 @@ mod tests {
         "DigitalisPlatformTipus": "Na",
         "DigitalisTamogatoEszkozTipusList": ["Na"],
         "Letrehozas": "2023-08-26T18:15:00",
-        "UtolsoModositas": "2023-08-26T18:15:00Z"
+        "UtolsoModositas": "2023-08-26T18:15:00"
     }"#;
 
         let lesson = serde_json::from_str::<Lesson>(lesson_json);
@@ -156,7 +156,7 @@ mod tests {
         assert!(lesson.is_ok(), "{:?}", lesson);
         let lesson = lesson.unwrap();
 
-        assert_eq!(lesson.tantargy.as_ref().unwrap().nev, "fizika");
+        assert_eq!(lesson.tantargy.nev, "fizika");
         assert_eq!(lesson.terem_neve, Some("Fizika".to_string()));
         assert_eq!(lesson.tema, Some("Félvezetők".to_string()));
         // assert_eq!(lesson.start, "2024-03-18T08:50:00Z");
@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(lesson.helyettes_tanar_neve, None);
         assert!(!lesson.cancelled());
         assert!(!lesson.absent());
-        assert_eq!(lesson.subject_id(), Some(&"fizika".to_string()));
+        assert_eq!(lesson.subject_id().as_str(), "fizika");
         assert!(!lesson.kamu_smafu());
     }
 }

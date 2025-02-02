@@ -12,7 +12,9 @@ pub use endpoints::lessons::Lesson;
 pub use endpoints::Endpoint;
 // pub use error::Error;
 
-pub type Interval = (Option<DateTime>, Option<DateTime>);
-pub type DateTime = chrono::DateTime<chrono::Local>;
+/// optional interval
+pub type OptIrval = (Option<LDateTime>, Option<LDateTime>);
+/// Local DateTime
+pub type LDateTime = chrono::DateTime<chrono::Local>;
 pub type Str = Cow<'static, str>;
 pub type Bytes = Cow<'static, [u8]>;

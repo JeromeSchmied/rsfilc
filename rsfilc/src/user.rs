@@ -261,25 +261,29 @@ impl User {
         if let Some(first_lesson) = lessons.first() {
             println!(
                 "    {} ({})",
-                &first_lesson.start.pretty(),
-                first_lesson.start.hun_day_of_week()
+                &first_lesson.kezdet_idopont.pretty(),
+                first_lesson.kezdet_idopont.hun_day_of_week()
             );
-            if first_lesson.shite() {
-                println!("{first_lesson}");
-                fill(&first_lesson.to_string(), '|', None);
+            if first_lesson.kamu_smafu() {
+                let as_str = timetable::disp(first_lesson);
+                println!("{as_str}");
+                fill(&as_str, '|', None);
             }
             let todays_tests = self
-                .fetch_all_announced((Some(first_lesson.start), Some(lessons.last().unwrap().end)))
+                .fetch_all_announced((
+                    Some(first_lesson.kezdet_idopont),
+                    Some(lessons.last().unwrap().veg_idopont),
+                ))
                 .expect("couldn't fetch announced tests");
             let all_lessons_till_day = self
-                .get_timetable(first_lesson.start.date_naive(), true)
+                .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
                 .unwrap_or_default();
             // info!("all announced: {todays_tests:?}");
 
             // number of lessons at the same time
             let mut same_count = 0;
 
-            for (i, lesson) in lessons.iter().filter(|l| !l.shite()).enumerate() {
+            for (i, lesson) in lessons.iter().filter(|l| !l.kamu_smafu()).enumerate() {
                 // calculate `n`. this lesson is
                 let n = if let Some(prev) = lessons.get((i as isize - 1) as usize) {
                     if prev.same_time(lesson) {
@@ -290,7 +294,7 @@ impl User {
                     i + 1 - same_count
                 };
                 // so fill_under() works fine
-                let mut printer = format!("\n\n{n}. {lesson}");
+                let mut printer = format!("\n\n{n}. {}", timetable::disp(lesson));
 
                 if let Some(test) = todays_tests
                     .iter()
@@ -313,7 +317,7 @@ impl User {
                         '$',
                         Some(format!(
                             "{} perc",
-                            (lesson.end - Local::now()).num_minutes()
+                            (lesson.veg_idopont - Local::now()).num_minutes()
                         )),
                     )
                 } else if next_lesson(&all_lessons_till_day).is_some_and(|nxt| nxt == lesson) {
@@ -321,7 +325,7 @@ impl User {
                         '>',
                         Some(format!(
                             "{} perc",
-                            (lesson.start - Local::now()).num_minutes()
+                            (lesson.kezdet_idopont - Local::now()).num_minutes()
                         )),
                     )
                 } else if lesson.cancelled() {
@@ -557,13 +561,13 @@ impl User {
             .unwrap_or_default();
 
         lessons.extend(fetched_lessons_week);
-        lessons.sort_by(|a, b| a.start.cmp(&b.start));
+        lessons.sort_by(|a, b| a.kezdet_idopont.cmp(&b.kezdet_idopont));
         lessons.dedup();
         if !fetch_err {
             cache("timetable", &serde_json::to_string(&lessons)?)?;
         }
         if !everything_till_day {
-            lessons.retain(|lsn| lsn.start.date_naive() == day);
+            lessons.retain(|lsn| lsn.kezdet_idopont.date_naive() == day);
         }
         Ok(lessons)
     }
@@ -577,16 +581,14 @@ impl User {
     /// # Panics
     ///
     /// - sorting
-    fn fetch_timetable(&self, from: DateTime<Local>, to: DateTime<Local>) -> Res<Vec<Lesson>> {
-        let txt = self.fetch(
-            &(self.base() + timetable::ep()),
-            "timetable",
-            &[("datumTol", from.to_string()), ("datumIg", to.to_string())],
-        )?;
-
-        let mut lessons = serde_json::from_str::<Vec<Lesson>>(&txt)?;
+    fn fetch_timetable(
+        &self,
+        from: DateTime<Local>,
+        to: DateTime<Local>,
+    ) -> Res<Vec<ekreta::Lesson>> {
+        let mut lessons: Vec<Lesson> = self.fetch_from_endpoint("timetable", (from, to))?;
         info!("recieved lessons");
-        lessons.sort_by(|a, b| a.start.partial_cmp(&b.start).unwrap());
+        lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
         Ok(lessons)
     }
 

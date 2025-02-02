@@ -1,13 +1,13 @@
 use crate::types::{OsztalyCsoport, Rektip, Tantargy};
-use crate::{DateTime, Endpoint, Interval};
+use crate::{LDateTime, Endpoint, OptIrval};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct AnnouncedTest {
     pub uid: String,
-    pub datum: DateTime,
-    pub bejelentes_datuma: DateTime,
+    pub datum: LDateTime,
+    pub bejelentes_datuma: LDateTime,
     pub rogzito_tanar_neve: String,
     pub orarendi_ora_oraszama: Option<u8>,
     pub tantargy: Tantargy,
@@ -18,7 +18,7 @@ pub struct AnnouncedTest {
 }
 
 impl Endpoint for AnnouncedTest {
-    type QueryInput = Interval;
+    type QueryInput = OptIrval;
 
     fn path() -> &'static str {
         "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek"

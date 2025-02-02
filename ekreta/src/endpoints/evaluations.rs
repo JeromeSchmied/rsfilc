@@ -1,7 +1,7 @@
 use super::Endpoint;
 use crate::{
     types::{OsztalyCsoport, Rektip, Tantargy},
-    DateTime, Interval,
+    LDateTime, OptIrval,
 };
 use serde::{Deserialize, Serialize};
 
@@ -9,9 +9,9 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "PascalCase")]
 pub struct Evaluation {
     pub uid: String,
-    pub rogzites_datuma: DateTime,
-    pub keszites_datuma: DateTime,
-    pub lattamozas_datuma: Option<DateTime>,
+    pub rogzites_datuma: LDateTime,
+    pub keszites_datuma: LDateTime,
+    pub lattamozas_datuma: Option<LDateTime>,
     pub tantargy: Tantargy,
     pub tema: Option<String>,
     pub tipus: Rektip,
@@ -42,7 +42,7 @@ impl Evaluation {
     }
 }
 impl Endpoint for Evaluation {
-    type QueryInput = Interval;
+    type QueryInput = OptIrval;
 
     fn path() -> &'static str {
         "/ellenorzo/V3/Sajat/Ertekelesek"

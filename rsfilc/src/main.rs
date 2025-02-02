@@ -60,15 +60,15 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 if let Some(nxt) = timetable::next_lesson(&all_lessons_till_day) {
                     println!(
                         "{}m -> {}",
-                        (nxt.start - Local::now()).num_minutes(), // minutes remaining
-                        nxt.subject
+                        (nxt.kezdet_idopont - Local::now()).num_minutes(), // minutes remaining
+                        nxt.tantargy.nev
                     );
                 }
                 for current_lesson in current_lessons {
                     println!(
                         "{}, {}m",
-                        current_lesson.subject,
-                        (current_lesson.end - Local::now()).num_minutes() // minutes remaining
+                        current_lesson.tantargy.nev,
+                        (current_lesson.veg_idopont - Local::now()).num_minutes() // minutes remaining
                     );
                 }
 
