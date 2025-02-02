@@ -89,3 +89,48 @@ pub struct Attachment {
     pub azonosito: u32,
     pub fajl_nev: String,
 }
+
+/// kinds of [`Msg`]
+#[derive(Debug, PartialEq)]
+pub enum MessageKind {
+    /// recieved
+    Recv,
+    /// sent
+    Sent,
+    /// deleted/trashed
+    Del,
+}
+
+impl From<&String> for MessageKind {
+    fn from(value: &String) -> Self {
+        match value.to_lowercase().trim_matches('"') {
+            "beerkezett" => Self::Recv,
+            "elkuldott" => Self::Sent,
+            "torolt" => Self::Del,
+            v => unreachable!("{v} would be invalid, `Kréta` doesn't do that"),
+        }
+    }
+}
+impl MessageKind {
+    /// get value for this [`MsgKind`]
+    pub fn val(&self) -> String {
+        match self {
+            MessageKind::Recv => "beerkezett".to_owned(),
+            MessageKind::Sent => "elkuldott".to_owned(),
+            MessageKind::Del => "torolt".to_owned(),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn message_overview_parsing() {
+        let message_json = r#"{ "azonosito": 137283859, "uzenetAzonosito": 26669244, "uzenetKuldesDatum": "2022-09-07T08:18:17", "uzenetFeladoNev": "Schultz Zoltán", "uzenetFeladoTitulus": "intézményvezető", "uzenetTargy": "Tájékoztató - Elf Bar - Rendőrség", "hasCsatolmany": true, "isElolvasva": true }"#;
+        let message = serde_json::from_str::<MessageOverview>(message_json);
+        let message = message.unwrap();
+        assert_eq!(message.azonosito, 137283859);
+    }
+}

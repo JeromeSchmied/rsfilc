@@ -1,7 +1,7 @@
-use crate::{messages::MsgKind, timetable::next_lesson, token::Token, *};
+use crate::{timetable::next_lesson, token::Token, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Days, Local, NaiveDate};
-use ekreta::{MessageItem, MessageOverview, OptIrval, UserInfo};
+use ekreta::{MessageItem, MessageKind as MsgKind, MessageOverview, OptIrval, UserInfo};
 use messages::NoteMsg;
 use reqwest::{
     blocking::Client,
