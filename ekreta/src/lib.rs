@@ -11,6 +11,7 @@ pub use endpoints::lessons::Lesson;
 pub use endpoints::messages::{
     Attachment, Message, MessageItem, MessageKind, MessageOverview, NoteMessage,
 };
+pub use endpoints::schools::School;
 pub use endpoints::user_info::UserInfo;
 pub use endpoints::Endpoint;
 use std::borrow::Cow;

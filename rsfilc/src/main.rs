@@ -1,7 +1,7 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
-use rsfilc::{School, User, *};
+use rsfilc::*;
 use std::{
     fs::{File, OpenOptions},
     io::Write,
@@ -268,18 +268,22 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
         }
 
         Commands::Schools { search } => {
-            let schools = School::get_from_refilc()?;
+            // let schools = School::get_from_refilc()?;
+            let mut schools = schools::fetch()?;
             if let Some(school_name) = search {
-                let found = School::search(&schools, &school_name);
-                for school in found {
-                    println!("\n\n{school}");
-                    fill(&school.to_string(), '-', None);
+                // let found = School::search(&schools, &school_name);
+                schools::filter(&mut schools, &school_name);
+                for school in schools {
+                    let as_str = schools::disp(&school);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             } else {
                 info!("listing schools");
                 for school in schools {
-                    println!("\n\n{school}");
-                    fill(&school.to_string(), '-', None);
+                    let as_str = schools::disp(&school);
+                    println!("\n\n{as_str}");
+                    fill(&as_str, '-', None);
                 }
             }
         }

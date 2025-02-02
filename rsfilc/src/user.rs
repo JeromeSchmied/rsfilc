@@ -19,11 +19,6 @@ use std::{
 /// default timeout for api requests
 const TIMEOUT: Duration = Duration::new(24, 0);
 
-/// endpoint
-pub const fn ep() -> &'static str {
-    "/ellenorzo/V3/Sajat/TanuloAdatlap"
-}
-
 /// Kréta, app user
 #[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
 pub struct User {
@@ -456,9 +451,8 @@ impl User {
 
     /// get [`User`] info
     pub fn fetch_info(&self) -> Res<UserInfo> {
-        info!("recieved information about user");
-
         let user_info = self.fetch_single::<UserInfo, UserInfo>((), "")?;
+        info!("recieved information about user");
         Ok(user_info)
     }
 
@@ -689,8 +683,8 @@ impl User {
     where
         E: ekreta::Endpoint + for<'a> Deserialize<'a>,
     {
-        let base = E::base_url(&self.school_id).into_owned();
-        let uri = [base, E::path(path_args)].concat();
+        let base = E::base_url(&self.school_id);
+        let uri = [base.as_ref(), &E::path(path_args)].concat();
         log::info!("sending request to {uri}");
         let query = E::query(&query)?;
         log::info!("query: {}", serde_json::to_string(&query).unwrap());
@@ -798,7 +792,7 @@ impl User {
     pub fn fetch_full_msg(&self, msg_oview: &MessageOverview) -> Res<MessageItem> {
         let msg =
             self.fetch_single::<MessageItem, MessageItem>((), msg_oview.azonosito.to_string())?;
-        info!("recieved full message: {:?}", msg);
+        debug!("recieved full message: {:?}", msg);
         Ok(msg)
     }
     // pub fn fetch_messages(&self) -> Res<Vec<MessageItem>> {

@@ -7,6 +7,7 @@ pub mod evaluations;
 pub mod groups;
 pub mod lessons;
 pub mod messages;
+pub mod schools;
 pub mod user_info;
 
 // uri

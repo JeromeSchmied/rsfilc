@@ -15,7 +15,7 @@ pub mod endpoints;
 pub mod evals;
 pub mod information;
 pub mod messages;
-pub mod school_list;
+pub mod schools;
 pub mod timetable;
 pub mod token;
 pub mod user;
@@ -27,7 +27,6 @@ pub use ekreta::AnnouncedTest;
 pub use ekreta::Evaluation;
 pub use ekreta::Lesson;
 pub use ekreta::{LDateTime, OptIrval};
-pub use school_list::School;
 pub use user::User;
 
 /// Result from `T` and `Box<dyn Error>`
