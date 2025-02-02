@@ -1,5 +1,5 @@
 use crate::types::{OsztalyCsoport, Rektip, Tantargy};
-use crate::{LDateTime, Endpoint, OptIrval};
+use crate::{Endpoint, LDateTime, OptIrval};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -37,49 +37,18 @@ impl Endpoint for AnnouncedTest {
 }
 
 #[cfg(test)]
-mod test {
+#[test]
+fn works() {
+    let lesson_json = r#"{ "Uid": "00000", "Datum": "2023-09-10T22:00:00Z", "BejelentesDatuma": "2023-09-08T13:35:07Z", "RogzitoTanarNeve": "Teszt Mónika", "OrarendiOraOraszama": 6, "Tantargy": { "Uid": "000000", "Nev": "matematika", "Kategoria": { "Uid": "0000,matematika", "Nev": "matematika", "Leiras": "Matematika" }, "SortIndex": 0 }, "TantargyNeve": "matematika", "Temaja": "Matematikai logika", "Modja": { "Uid": "0000,irasbeli_ropdolgozat", "Nev": "irasbeli_ropdolgozat", "Leiras": "Írásbeli röpdolgozat" }, "OsztalyCsoport": { "Uid": "000000" } }"#;
 
-    use super::*;
+    let anc = serde_json::from_str::<AnnouncedTest>(lesson_json);
 
-    #[test]
-    fn works() {
-        let lesson_json = r#"{
-        "Uid": "00000",
-        "Datum": "2023-09-10T22:00:00Z",
-        "BejelentesDatuma": "2023-09-08T13:35:07Z",
-        "RogzitoTanarNeve": "Teszt Mónika",
-        "OrarendiOraOraszama": 6,
-        "Tantargy": {
-            "Uid": "000000",
-            "Nev": "matematika",
-            "Kategoria": {
-                "Uid": "0000,matematika",
-                "Nev": "matematika",
-                "Leiras": "Matematika"
-            },
-            "SortIndex": 0
-        },
-        "TantargyNeve": "matematika",
-        "Temaja": "Matematikai logika",
-        "Modja": {
-            "Uid": "0000,irasbeli_ropdolgozat",
-            "Nev": "irasbeli_ropdolgozat",
-            "Leiras": "Írásbeli röpdolgozat"
-        },
-        "OsztalyCsoport": {
-            "Uid": "000000"
-        }
-    }"#;
+    assert!(anc.is_ok(), "{anc:?}");
+    let abs = anc.unwrap();
 
-        let anc = serde_json::from_str::<AnnouncedTest>(lesson_json);
-
-        assert!(anc.is_ok(), "{:?}", anc);
-        let abs = anc.unwrap();
-
-        assert_eq!(abs.rogzito_tanar_neve, "Teszt Mónika");
-        assert_eq!(abs.orarendi_ora_oraszama, Some(6));
-        assert_eq!(abs.tantargy_neve, "matematika");
-        assert_eq!(abs.temaja, Some("Matematikai logika".into()));
-        assert_eq!(abs.modja.leiras, "Írásbeli röpdolgozat");
-    }
+    assert_eq!(abs.rogzito_tanar_neve, "Teszt Mónika");
+    assert_eq!(abs.orarendi_ora_oraszama, Some(6));
+    assert_eq!(abs.tantargy_neve, "matematika");
+    assert_eq!(abs.temaja, Some("Matematikai logika".into()));
+    assert_eq!(abs.modja.leiras, "Írásbeli röpdolgozat");
 }
