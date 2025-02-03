@@ -1,4 +1,4 @@
-use crate::{paths::cred_path, time::MyDate, timetable::next_lesson, *};
+use crate::{paths::cred_path, time::MyDate, timetable::next_lesson, *, config::Config};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
@@ -8,13 +8,14 @@ use ekreta::{
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::BTreeSet,
     fmt::Debug,
-    fs::{self, File, OpenOptions},
+    fs::File,
     io::{self, Write},
 };
 
 /// Kréta, app user
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
+#[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Deserialize, Serialize, Debug)]
 pub struct User(pub ekreta::User);
 // basic stuff
 impl User {
@@ -94,13 +95,7 @@ impl User {
         info!("recieved school_id {school_id} from cli");
 
         let user = Self::new(username, &password, school_id);
-        if let Ok(name) = user.name() {
-            println!("Hi {name}, nice to see you!");
-        } else {
-            println!("Sorry, couldn't authenticate, make sure you have internet connection and all your credentials are correct.");
-            return None;
-        }
-        user.save();
+        user.save().ok()?;
         Some(user)
     }
 
@@ -109,124 +104,38 @@ impl User {
     /// # Panics
     ///
     /// Panics if cred path does not exist.
-    pub fn load_all() -> Vec<Self> {
+    pub fn load_all() -> Res<BTreeSet<User>> {
+        let config = config::Config::load()?;
         info!("loading users");
-        let cred_path = cred_path().expect("couldn't find credential path");
 
-        if !cred_path.exists() {
-            warn!("credential path doesn't exist");
-            return vec![];
-        }
-
-        let content = fs::read_to_string(cred_path).expect("couldn't read credentials.toml");
-        // migth not be necessary
-        if content.is_empty() {
-            warn!("ain't no user credentials saved");
-            return vec![];
-        }
-
-        let users: Users =
-            toml::from_str(&content).expect("couldn't read user credentials from file");
-
-        users.into()
+        Ok(config.users)
     }
     /// save [`User`] credentials if not empty
-    fn save(&self) {
+    fn save(&self) -> Res<()> {
         info!("saving user");
-        if Self::load_all().contains(self) {
-            warn!("{:?} is already saved, not saving", self);
-            return;
-        }
-        let cred_path = paths::cred_path().expect("couldn't find config dir");
-        if !cred_path.exists() {
-            info!("creating credential path");
-            fs::create_dir_all(cred_path.parent().expect("couldn't get credential dir"))
-                .expect("couldn't create credential dir");
-        }
-        let mut cred_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(cred_path)
-            .expect("couldn't save user credentials");
+        let mut config = config::Config::load()?;
 
-        // don't save if a value is missing
-        if self.0.username.is_empty() || self.0.password.is_empty() || self.0.schoolid.is_empty() {
-            warn!("user {:?} is missing data, not saving", self);
-            return;
-        }
-        write!(
-            cred_file,
-            "{}",
-            toml::to_string(&Users::from(vec![self.clone()])).expect("couldn't serialize user")
-        )
-        .expect("couldn't save user");
+        config.users.insert(self.clone());
+
+        Config::save(&config)?;
+        Ok(())
+    }
+    pub fn load_default() -> Option<Self> {
+        let conf = Config::load().ok()?;
+        let def_user = conf.default_username;
+        Self::load(&def_user)
     }
 
     /// load [`User`] with [`User::username`] or [`User::name()`] from [`cred_path()`] and save it to [`config_path()`]
-    pub fn load(username: &str) -> Option<Self> {
-        info!("loading user with {username}");
-        let mut matching_users = Vec::new();
-        for user in Self::load_all() {
-            if user
-                .0
-                .username
-                .to_lowercase()
-                .contains(&username.to_lowercase())
-                || user
-                    .name()
-                    .is_ok_and(|nm| nm.to_lowercase().contains(&username.to_lowercase()))
-            {
-                matching_users.push(user);
-            }
-        }
-        let user = matching_users.first()?;
-        user.save_to_conf();
+    /// load by om id
+    pub fn load(id: &str) -> Option<Self> {
+        info!("loading user with {id}");
+        let all_users = Self::load_all().ok()?;
+        let matching_user = all_users.iter().find(|u| u.0.username == id)?;
 
-        Some(user.clone())
-    }
-    /// save [`User`] as default to config.toml
-    ///
-    /// # Panics
-    ///
-    /// - no config path
-    /// - no parent dir
-    /// - deser
-    /// - writeln
-    fn save_to_conf(&self) {
-        info!("saving preferred user's name to config");
-        let conf_path = paths::config_path().expect("couldn't find config path");
-        if !conf_path.exists() {
-            fs::create_dir_all(conf_path.parent().expect("couldn't get config dir"))
-                .expect("couldn't create config dir");
-        }
-        let mut conf_file = File::create(conf_path).expect("couldn't create config file");
+        matching_user.save().ok()?;
 
-        writeln!(
-            conf_file,
-            "{}",
-            toml::to_string(&Config {
-                default_username: self.0.username.clone()
-            })
-            .expect("couldn't deserialize user")
-        )
-        .expect("couldn't save user");
-    }
-    /// load `] configured in [`config_path()`]
-    ///
-    /// # Panics
-    ///
-    /// - can't read config content
-    /// - invalid config
-    pub fn load_conf() -> Option<Self> {
-        info!("loading config");
-        let conf_path = paths::config_path()?;
-        if !conf_path.exists() {
-            return None;
-        }
-        let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
-        let config = toml::from_str::<Config>(&config_content).expect("couldn't deser config");
-
-        Self::load(&config.default_username)
+        Some(matching_user.clone())
     }
 
     /// print all lessons of a day
@@ -743,29 +652,6 @@ impl User {
 
         Ok(note_msgs)
     }
-}
-
-/// Vec of [`User`]s, needed for deser
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
-struct Users {
-    users: Vec<User>,
-}
-impl From<Vec<User>> for Users {
-    fn from(users: Vec<User>) -> Self {
-        Users { users }
-    }
-}
-impl From<Users> for Vec<User> {
-    fn from(val: Users) -> Self {
-        val.users
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-/// [`User`] preferences/config
-struct Config {
-    /// the default [`User`]s name to load
-    default_username: String,
 }
 
 #[cfg(test)]

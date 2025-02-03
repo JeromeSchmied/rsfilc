@@ -13,6 +13,7 @@ use user::User;
 mod absences;
 mod announced;
 mod args;
+mod config;
 mod cache;
 mod evals;
 mod information;
@@ -272,7 +273,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
                 User::create();
             } else if list {
                 println!("\nFelhasználók:\n");
-                for current_user in User::load_all() {
+                for current_user in User::load_all()? {
                     let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
                     let as_str = information::disp(&user_info);
                     println!("\n\n{as_str}");
@@ -312,8 +313,8 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
 
 fn create_user(cli_args: &Args) -> Res<User> {
     if cli_args.command.user_needed() {
-        let users = User::load_all(); // load every saved user
-        if let Some(default_user) = User::load_conf() {
+        let users = User::load_all()?; // load every saved user
+        if let Some(default_user) = User::load_default() {
             Ok(default_user) // if specified, load preferred user
         } else if let Some(loaded_user) = users.first() {
             Ok(loaded_user.clone()) // load first user
