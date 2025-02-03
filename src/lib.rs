@@ -13,6 +13,7 @@ pub mod absences;
 pub mod announced;
 mod api_urls;
 pub mod args;
+pub mod config;
 pub mod endpoints;
 pub mod evals;
 pub mod information;
