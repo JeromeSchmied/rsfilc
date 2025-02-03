@@ -93,7 +93,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             reverse,
             ghost,
         } => {
-            let mut evals = user.fetch_evals((None, None))?;
+            let mut evals = user.get_evals((None, None))?;
             info!("got evals");
             if let Some(kind) = filter {
                 evals::filter_by_kind_or_title(&mut evals, &kind);
@@ -138,7 +138,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             notes,
         } => {
             if notes {
-                let notes = user.fetch_note_msgs((None, None))?;
+                let notes = user.get_note_msgs((None, None))?;
                 if reverse {
                     for note in notes.iter().take(number).rev() {
                         let as_str = messages::disp_note_msg(note);
@@ -179,7 +179,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             subject,
             reverse,
         } => {
-            let mut absences = user.fetch_absences((None, None))?;
+            let mut absences = user.get_absences((None, None))?;
             if let Some(subject) = subject {
                 absences::filter_by_subject(&mut absences, &subject);
             }
@@ -215,7 +215,7 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             past,
         } => {
             let from = if past { None } else { Some(Local::now()) };
-            let mut all_announced = user.fetch_all_announced((from, None))?;
+            let mut all_announced = user.get_all_announced((from, None))?;
             if let Some(subject) = subject {
                 announced::filter_by_subject(&mut all_announced, &subject);
             }
@@ -257,13 +257,16 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             } else if list {
                 println!("\nFelhasználók:\n");
                 for current_user in User::load_all() {
-                    let user_info = current_user.fetch_info()?;
+                    let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
                     let as_str = information::disp(&user_info);
                     println!("\n\n{as_str}");
                     fill(&as_str, '-', None);
                 }
             } else {
-                println!("{}", information::disp(&user.fetch_info()?));
+                println!(
+                    "{}",
+                    information::disp(&user.0.fetch_info(&user.headers()?)?)
+                );
             }
         }
 

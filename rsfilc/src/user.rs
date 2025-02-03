@@ -1,38 +1,18 @@
 use crate::{timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Days, Local, NaiveDate};
-use ekreta::{
-    Endpoint, MessageItem, MessageKind as MsgKind, MessageOverview, OptIrval, Token, UserInfo,
-};
-use endpoints::CLIENT_ID;
-use reqwest::{
-    blocking::{Client, Response},
-    header::{self, HeaderMap},
-    redirect, Url,
-};
-use scraper::{Html, Selector};
+use ekreta::{consts, MessageItem, MessageKind, MessageOverview, Token};
+use reqwest::header::{self, HeaderMap};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
     fs::{self, File, OpenOptions},
     io::{self, Write},
-    time::Duration,
 };
-
-/// default timeout for api requests
-const TIMEOUT: Duration = Duration::new(24, 0);
 
 /// Kréta, app user
 #[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
-pub struct User {
-    /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
-    username: String,
-    /// the password, usually it defaults to the date of birth of the user: `YYYY-MM-DD`
-    /// base64 encoded
-    password: String,
-    /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
-    school_id: String,
-}
+pub struct User(pub ekreta::User);
 // basic stuff
 impl User {
     /// get name of [`User`]
@@ -41,17 +21,17 @@ impl User {
     ///
     /// net
     pub fn name(&self) -> Res<String> {
-        Ok(self.fetch_info()?.nev)
+        Ok(self.0.fetch_info(&self.headers()?)?.nev)
     }
 
     /// create new instance of [`User`]
     pub fn new(username: &str, password: &str, school_id: &str) -> Self {
         let password = STANDARD.encode(password);
-        Self {
+        Self(ekreta::User {
             username: username.to_string(),
             password: password.to_string(),
-            school_id: school_id.to_string(),
-        }
+            schoolid: school_id.to_string(),
+        })
     }
     /// Returns the decoded password of this [`User`].
     ///
@@ -59,7 +39,7 @@ impl User {
     ///
     /// Panics if decode fails.
     fn decode_password(&self) -> String {
-        let decoded_password = STANDARD.decode(&self.password).unwrap();
+        let decoded_password = STANDARD.decode(&self.0.password).unwrap();
         String::from_utf8(decoded_password).unwrap()
     }
     /// creates dummy [`User`], that won't be saved and shouldn't be used
@@ -167,7 +147,7 @@ impl User {
             .expect("couldn't save user credentials");
 
         // don't save if a value is missing
-        if self.username.is_empty() || self.password.is_empty() || self.school_id.is_empty() {
+        if self.0.username.is_empty() || self.0.password.is_empty() || self.0.schoolid.is_empty() {
             warn!("user {:?} is missing data, not saving", self);
             return;
         }
@@ -185,6 +165,7 @@ impl User {
         let mut matching_users = Vec::new();
         for user in Self::load_all() {
             if user
+                .0
                 .username
                 .to_lowercase()
                 .contains(&username.to_lowercase())
@@ -221,7 +202,7 @@ impl User {
             conf_file,
             "{}",
             toml::to_string(&Config {
-                default_username: self.username.clone()
+                default_username: self.0.username.clone()
             })
             .expect("couldn't deserialize user")
         )
@@ -259,7 +240,7 @@ impl User {
                 fill(&as_str, '|', None);
             }
             let todays_tests = self
-                .fetch_all_announced((
+                .get_all_announced((
                     Some(first_lesson.kezdet_idopont),
                     Some(lessons.last().unwrap().veg_idopont),
                 ))
@@ -342,17 +323,17 @@ impl User {
 // interacting with API
 impl User {
     /// get headers which are necessary for making certain requests
-    fn headers(&self) -> Res<HeaderMap> {
+    pub fn headers(&self) -> Res<HeaderMap> {
         Ok(HeaderMap::from_iter([
             (
                 header::AUTHORIZATION,
-                format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
+                format!("Bearer {}", self.get_token()?.access_token).parse()?,
             ),
-            (header::USER_AGENT, endpoints::USER_AGENT.parse()?),
+            (header::USER_AGENT, consts::USER_AGENT.parse()?),
         ]))
     }
 
-    fn fetch_token(&self) -> Res<Token> {
+    fn get_token(&self) -> Res<Token> {
         if let Some((cache_t, cache_content)) = uncache("token") {
             let cached_token: Token = serde_json::from_str(&cache_content)?;
             if Local::now().signed_duration_since(cache_t)
@@ -361,93 +342,13 @@ impl User {
                 return Ok(cached_token);
             }
         }
-        // Create a client with cookie store enable
-        let client = Client::builder()
-            .cookie_store(true)
-            .redirect(redirect::Policy::none()) // this is needed so the client doesnt follow redirects by itself like a dumb little sheep
-            .build()?;
-
-        // initial login page
-        let initial_url = format!("https://idp.e-kreta.hu/Account/Login?ReturnUrl=%2Fconnect%2Fauthorize%2Fcallback%3Fprompt%3Dlogin%26nonce%3DwylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU%26response_type%3Dcode%26code_challenge_method%3DS256%26scope%3Dopenid%2520email%2520offline_access%2520kreta-ellenorzo-webapi.public%2520kreta-eugyintezes-webapi.public%2520kreta-fileservice-webapi.public%2520kreta-mobile-global-webapi.public%2520kreta-dkt-webapi.public%2520kreta-ier-webapi.public%26code_challenge%3DHByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ%26redirect_uri%3Dhttps%253A%252F%252Fmobil.e-kreta.hu%252Fellenorzo-student%252Fprod%252Foauthredirect%26client_id%3D{CLIENT_ID}%26state%3Dkreten_student_mobile%26suppressed_prompt%3Dlogin");
-        let response = client.get(initial_url).send()?;
-        let raw_login_page_html = response.text()?;
-
-        // Parse RVT token from HTML
-        let login_page_html = Html::parse_document(&raw_login_page_html);
-        let selector = Selector::parse("input[name='__RequestVerificationToken']")
-            .map_err(|e| format!("Selector parse error: {e}"))?;
-
-        let rvt = login_page_html
-            .select(&selector)
-            .next()
-            .ok_or("RVT token not found in HTML")?
-            .value()
-            .attr("value")
-            .ok_or("RVT token value missing")?; // shouldn't really ever happen but still
-
-        // Perform login with credentials
         let decoded_password = self.decode_password();
-        let login_url = "https://idp.e-kreta.hu/account/login";
-        let form_data = (
-            self.username.clone(),
-            decoded_password.clone(),
-            self.school_id.clone(),
-            rvt.to_string(),
-        );
-        // it's called query, but that doesn't matter
-        let form_data = Token::query(&form_data)?;
-
-        let headers = Token::headers(&"")?.unwrap();
-        let response = client
-            .post(login_url)
-            .headers(headers)
-            .form(&form_data)
-            .send()?;
-
-        // Check if the response status is 200 (OK)
-        if !response.status().is_success() {
-            return Err(format!(
-                "Login failed: check your credentials. Status: {}",
-                response.status()
-            )
-            .into());
-        }
-
-        let response = client.get(format!("https://idp.e-kreta.hu/connect/authorize/callback?prompt=login&nonce=wylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU&response_type=code&code_challenge_method=S256&scope=openid%20email%20offline_access%20kreta-ellenorzo-webapi.public%20kreta-eugyintezes-webapi.public%20kreta-fileservice-webapi.public%20kreta-mobile-global-webapi.public%20kreta-dkt-webapi.public%20kreta-ier-webapi.public&code_challenge=HByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ&redirect_uri=https%3A%2F%2Fmobil.e-kreta.hu%2Fellenorzo-student%2Fprod%2Foauthredirect&client_id={CLIENT_ID}&state=kreten_student_mobile&suppressed_prompt=login")).send()?;
-
-        // Follow the redirect manually to get the code
-        let location = response
-            .headers()
-            .get(header::LOCATION)
-            .ok_or("No Location header after login redirect")?
-            .to_str()?;
-
-        // Extract code from the location header
-        let code = Url::parse(location)?
-            .query_pairs()
-            .find(|(k, _)| k == "code")
-            .map(|(_, v)| v.into_owned())
-            .ok_or("Authorization code not found")?; // this also shouldn't ever happen probably
-
-        // Exchange code for access token
-        let token_data = [
-            ("code", code.as_str()),
-            (
-                "code_verifier",
-                "DSpuqj_HhDX4wzQIbtn8lr8NLE5wEi1iVLMtMK0jY6c",
-            ),
-            (
-                "redirect_uri",
-                "https://mobil.e-kreta.hu/ellenorzo-student/prod/oauthredirect",
-            ),
-            ("client_id", CLIENT_ID),
-            ("grant_type", "authorization_code"),
-        ];
-
-        let token_url = [Token::base_url("").as_ref(), &Token::path("")].concat();
-        let response = client.post(token_url).form(&token_data).send()?;
-
-        let text = response.text()?;
+        let tmp_user = ekreta::User {
+            password: decoded_password,
+            ..self.clone().0
+        };
+        let resp = tmp_user.get_token_resp()?;
+        let text = resp.text()?;
         let mut logf = log_file("token")?;
         write!(logf, "{text}")?;
 
@@ -455,13 +356,6 @@ impl User {
         cache("token", &text)?;
         info!("received token");
         Ok(token)
-    }
-
-    /// get [`User`] info
-    pub fn fetch_info(&self) -> Res<UserInfo> {
-        let user_info = self.fetch_single::<UserInfo, UserInfo>((), "")?;
-        info!("recieved information about user");
-        Ok(user_info)
     }
 
     /// get all [`Eval`]s with `from` `to` or all
@@ -473,7 +367,7 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn fetch_evals(&self, mut interval: OptIrval) -> Res<Vec<Evaluation>> {
+    pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Evaluation>> {
         let (cache_t, cache_content) = uncache("evals").unzip();
         let mut evals = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Evaluation>>(cached)?
@@ -492,10 +386,13 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_evals = self.fetch_vec(interval, "").inspect_err(|e| {
-            fetch_err = true;
-            warn!("couldn't fetch from E-Kréta server: {e:?}");
-        });
+        let fetched_evals = self
+            .0
+            .fetch_vec(interval, &self.headers()?)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't fetch from E-Kréta server: {e:?}");
+            });
 
         info!("recieved evals");
 
@@ -573,7 +470,7 @@ impl User {
     ///
     /// - sorting
     fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<Lesson>> {
-        let mut lessons: Vec<Lesson> = self.fetch_vec((from, to), "")?;
+        let mut lessons: Vec<Lesson> = self.0.fetch_vec((from, to), &self.headers()?)?;
         info!("recieved lessons");
         lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
         Ok(lessons)
@@ -588,7 +485,7 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn fetch_all_announced(&self, mut interval: OptIrval) -> Res<Vec<AnnouncedTest>> {
+    pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<AnnouncedTest>> {
         let (cache_t, cache_content) = uncache("announced").unzip();
         let mut tests = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<AnnouncedTest>>(cached)?
@@ -607,10 +504,13 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_tests = self.fetch_vec(interval, "").inspect_err(|e| {
-            fetch_err = true;
-            warn!("couldn't reach E-Kréta server: {e:?}");
-        });
+        let fetched_tests = self
+            .0
+            .fetch_vec(interval, &self.headers()?)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't reach E-Kréta server: {e:?}");
+            });
 
         tests.extend(fetched_tests.unwrap_or_default());
         tests.sort_by(|a, b| b.datum.partial_cmp(&a.datum).unwrap());
@@ -639,7 +539,7 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn fetch_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
+    pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
         let (cache_t, cache_content) = uncache("absences").unzip();
         let mut absences = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Absence>>(cached)?
@@ -658,10 +558,13 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_absences = self.fetch_vec(interval, "").inspect_err(|e| {
-            fetch_err = true;
-            warn!("couldn't fetch from E-Kréta server: {e:?}")
-        });
+        let fetched_absences = self
+            .0
+            .fetch_vec(interval, &self.headers()?)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't fetch from E-Kréta server: {e:?}")
+            });
 
         info!("recieved absences");
         absences.extend(fetched_absences.unwrap_or_default());
@@ -672,57 +575,6 @@ impl User {
         }
 
         Ok(absences)
-    }
-
-    /// get classes the [`User`] is a member of
-    ///
-    /// # Errors
-    ///
-    /// - net
-    pub fn fetch_classes(&self) -> Res<ekreta::Class> {
-        Ok(self.fetch_single::<ekreta::Class, ekreta::Class>((), "")?)
-    }
-
-    fn get_response<E>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<Response>
-    where
-        E: ekreta::Endpoint + for<'a> Deserialize<'a>,
-    {
-        let base = E::base_url(&self.school_id);
-        let uri = [base.as_ref(), &E::path(path_args)].concat();
-        log::info!("sending request to {uri}");
-        let query = E::query(&query)?;
-        log::info!("query: {}", serde_json::to_string(&query).unwrap());
-        let resp = Client::new()
-            .get(uri)
-            .query(&query)
-            .headers(self.headers()?)
-            .timeout(TIMEOUT);
-        info!("sending request: {resp:?}");
-        Ok(resp.send()?)
-    }
-    fn fetch_single<E, D>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<D>
-    where
-        E: ekreta::Endpoint + for<'a> Deserialize<'a>,
-        D: for<'a> Deserialize<'a>,
-    {
-        let resp = self.get_response::<E>(query, path_args)?;
-        let txt = resp.text()?;
-        let log_name = std::any::type_name::<E>()
-            .split("::")
-            .last()
-            .unwrap()
-            .to_lowercase();
-        let mut logf = log_file(&log_name).unwrap();
-        write!(logf, "{txt}")?;
-        // serde
-        Ok(serde_json::from_str(&txt)?)
-    }
-
-    fn fetch_vec<E>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<Vec<E>>
-    where
-        E: ekreta::Endpoint + for<'a> Deserialize<'a>,
-    {
-        self.fetch_single::<E, Vec<E>>(query, path_args)
     }
 }
 
@@ -741,10 +593,8 @@ impl User {
                 info!("not downloading, already done");
                 continue;
             }
-            let mut f = File::create(download_to)?;
-
-            let mut resp = self.get_response::<ekreta::Attachment>((), am.azonosito.to_string())?;
-            resp.copy_to(&mut f)?;
+            self.0
+                .download_attachment_to(am.azonosito, download_to, &self.headers()?)?;
 
             info!("recieved file {}", &am.fajl_nev);
         }
@@ -756,49 +606,12 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: &MsgKind) -> Res<Vec<MessageOverview>> {
-        let msgs = self.fetch_vec((), msg_kind.val())?;
+    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: MessageKind) -> Res<Vec<MessageOverview>> {
+        let msgs = self.0.fetch_vec(msg_kind, &self.headers()?)?;
         info!("recieved message overviews of kind: {:?}", msg_kind);
         Ok(msgs)
     }
 
-    /// get up to `n` [`MsgOview`]s, of any [`MsgKind`]
-    ///
-    /// # Panics
-    ///
-    /// - sorting
-    pub fn msg_oviews(&self, n: usize) -> Res<Vec<MessageOverview>> {
-        let mut msg_oviews = [
-            self.fetch_msg_oviews_of_kind(&MsgKind::Recv).unwrap(),
-            self.fetch_msg_oviews_of_kind(&MsgKind::Sent).unwrap(),
-            self.fetch_msg_oviews_of_kind(&MsgKind::Del).unwrap(),
-        ]
-        .concat();
-
-        msg_oviews.sort_by(|a, b| {
-            b.uzenet_kuldes_datum
-                .partial_cmp(&a.uzenet_kuldes_datum)
-                .unwrap()
-        });
-        let max_n = msg_oviews.len();
-        // don't exceed the lenght of msg_oviews
-        let n = if n < max_n { n } else { max_n };
-        let msg_oviews = msg_oviews.drain(0..n).collect();
-        info!("recieved every message overview");
-        Ok(msg_oviews)
-    }
-
-    /// Get whole [`Msg`] from the `id` of a [`MsgOview`]
-    ///
-    /// # Errors
-    ///
-    /// net
-    pub fn fetch_full_msg(&self, msg_oview: &MessageOverview) -> Res<MessageItem> {
-        let msg =
-            self.fetch_single::<MessageItem, MessageItem>((), msg_oview.azonosito.to_string())?;
-        debug!("recieved full message: {:?}", msg);
-        Ok(msg)
-    }
     // pub fn fetch_messages(&self) -> Res<Vec<MessageItem>> {
     //     let msgs = self.fetch_vec((), "")?;
     //     Ok(msgs)
@@ -826,7 +639,11 @@ impl User {
         let mut handles = Vec::new();
 
         let mut fetch_err = false;
-        for msg_oview in self.msg_oviews(usize::MAX).unwrap_or_default() {
+        for msg_oview in self
+            .0
+            .fetch_msg_oviews(&self.headers()?)
+            .unwrap_or_default()
+        {
             // if isn't between `from`-`to`
             if from.is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.date_naive().into())
                 || interval
@@ -837,7 +654,7 @@ impl User {
             }
             let s = self.clone();
             let h = std::thread::spawn(move || {
-                s.fetch_full_msg(&msg_oview)
+                s.0.fetch_full_msg(Some(&msg_oview), &s.headers().unwrap())
                     .inspect_err(|e| {
                         fetch_err = true;
                         warn!("couldn't fetch from E-Kréta server: {e:?}");
@@ -881,7 +698,7 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn fetch_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMessage>> {
+    pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMessage>> {
         let (cache_t, cache_content) = uncache("note_messages").unzip();
         let mut note_msgs = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<ekreta::NoteMessage>>(cached)?
@@ -900,10 +717,13 @@ impl User {
         }
 
         let mut fetch_err = false;
-        let fetched_note_msgs = self.fetch_vec(interval, "").inspect_err(|e| {
-            fetch_err = true;
-            warn!("couldn't reach E-Kréta server: {e:?}");
-        });
+        let fetched_note_msgs = self
+            .0
+            .fetch_vec(interval, &self.headers()?)
+            .inspect_err(|e| {
+                fetch_err = true;
+                warn!("couldn't reach E-Kréta server: {e:?}");
+            });
 
         note_msgs.extend(fetched_note_msgs.unwrap_or_default());
         if interval.0.is_none() && !fetch_err {

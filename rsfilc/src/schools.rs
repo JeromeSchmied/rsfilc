@@ -13,7 +13,7 @@ pub fn fetch() -> Res<Vec<ekreta::School>> {
     }
     let uri = [
         ekreta::School::base_url("").as_ref(),
-        ekreta::School::path("").as_str(),
+        ekreta::School::path(&()).as_str(),
     ]
     .concat();
     let resp = reqwest::blocking::get(uri)?;

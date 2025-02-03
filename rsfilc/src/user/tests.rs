@@ -4,7 +4,7 @@ use super::*;
 fn en_then_decode() {
     let orig_passwd = "it's_magic×2004.12.30";
     let usr = User::new("simon", orig_passwd, "klik00000000");
-    let encoded_passwd = &usr.password;
+    let encoded_passwd = &usr.0.password;
 
     assert_ne!(orig_passwd, encoded_passwd);
     assert_eq!(orig_passwd, usr.decode_password());
