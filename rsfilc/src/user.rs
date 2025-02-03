@@ -552,8 +552,8 @@ impl User {
             .unwrap_or_default();
 
         lessons.extend(fetched_lessons_week);
-        lessons.sort_by(|a, b| a.kezdet_idopont.cmp(&b.kezdet_idopont));
-        lessons.dedup();
+        lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
+        lessons.dedup_by_key(|l| l.kezdet_idopont);
         if !fetch_err {
             cache("timetable", &serde_json::to_string(&lessons)?)?;
         }
