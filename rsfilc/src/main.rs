@@ -260,6 +260,9 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
         } => {
             if let Some(switch_to) = switch {
                 delete_cache_dir()?;
+                let mut conf = config::Config::load()?;
+                conf.default_username = switch_to.clone();
+                config::Config::save(&conf)?;
                 let switched_to = User::load(&switch_to).expect("couldn't load user");
                 info!("switched to user {switch_to}");
                 println!("switched to {switch_to}");
