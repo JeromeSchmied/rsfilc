@@ -11,11 +11,11 @@ use std::{fs::File, path::PathBuf};
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct User {
     /// the username, usually the `oktatási azonosító szám`: "7" + 10 numbers `7XXXXXXXXXX`
-    username: String,
+    pub username: String,
     /// the password, usually it defaults to the date of birth of the user: `YYYY-MM-DD`
-    password: String,
+    pub password: String,
     /// the id of the school the user goes to, usually looks like:  "klik" + 9 numbers: `klikXXXXXXXXX`
-    schoolid: String,
+    pub schoolid: String,
 }
 // fetch_.*
 impl User {
@@ -68,7 +68,7 @@ impl User {
 }
 // token
 impl User {
-    pub fn fetch_token(&self) -> Res<Token> {
+    pub fn get_token_resp(&self) -> Res<Response> {
         // Create a client with cookie store enable
         let client = Client::builder()
             .cookie_store(true)
@@ -154,10 +154,11 @@ impl User {
         let token_url = [Token::base_url("").as_ref(), &Token::path(&query_data)].concat();
         let response = client.post(token_url).form(&token_data).send()?;
 
-        let text = response.text()?;
-        let token = serde_json::from_str(&text)?;
-
-        Ok(token)
+        Ok(response)
+    }
+    pub fn fetch_token(&self) -> Res<Token> {
+        let text = self.get_token_resp()?.text()?;
+        Ok(serde_json::from_str(&text)?)
     }
 }
 impl User {
