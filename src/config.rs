@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use crate::Res;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +11,7 @@ const CONFIG_NAME: &str = "config";
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Config {
     pub default_username: String,
-    pub users: Vec<User>,
+    pub users: BTreeSet<User>,
 }
 impl Config {
     pub fn load() -> Res<Config> {
