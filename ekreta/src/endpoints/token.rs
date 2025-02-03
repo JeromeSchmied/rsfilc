@@ -1,6 +1,7 @@
 //! Bearer token, that's used to access any user-related data
 
 use super::Endpoint;
+use crate::Res;
 use serde::Deserialize;
 
 /// Token
@@ -30,7 +31,7 @@ impl Endpoint for Token {
     fn base_url(_args: impl AsRef<str>) -> crate::Str {
         super::base::IDP.into()
     }
-    fn query(input: &Self::QueryInput) -> anyhow::Result<impl serde::Serialize> {
+    fn query(input: &Self::QueryInput) -> Res<impl serde::Serialize> {
         Ok(vec![
             ("ReturnUrl", "/connect/authorize/callback?prompt=login&nonce=wylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU&response_type=code&code_challenge_method=S256&scope=openid%20email%20offline_access%20kreta-ellenorzo-webapi.public%20kreta-eugyintezes-webapi.public%20kreta-fileservice-webapi.public%20kreta-mobile-global-webapi.public%20kreta-dkt-webapi.public%20kreta-ier-webapi.public&code_challenge=HByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ&redirect_uri=https%3A%2F%2Fmobil.e-kreta.hu%2Fellenorzo-student%2Fprod%2Foauthredirect&client_id=kreta-ellenorzo-student-mobile-ios&state=kreten_student_mobile&suppressed_prompt=login"),
             ("UserName", &input.0),
@@ -44,7 +45,7 @@ impl Endpoint for Token {
     fn method() -> http::Method {
         http::Method::POST
     }
-    fn headers(_input: &impl serde::Serialize) -> anyhow::Result<Option<http::HeaderMap>> {
+    fn headers(_input: &impl serde::Serialize) -> Res<Option<http::HeaderMap>> {
         let hm = http::HeaderMap::from_iter([
                 (http::header::USER_AGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36".parse()?),
                 (http::header::CONTENT_TYPE, "application/x-www-form-urlencoded".parse()?)

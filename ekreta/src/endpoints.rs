@@ -1,4 +1,4 @@
-use crate::{Bytes, Result, Str};
+use crate::{Bytes, Res, Str};
 use serde::Serialize;
 
 pub mod absences;
@@ -31,17 +31,17 @@ pub trait Endpoint {
         http::Method::GET
     }
 
-    fn query(_input: &Self::QueryInput) -> Result<impl Serialize> {
+    fn query(_input: &Self::QueryInput) -> Res<impl Serialize> {
         Ok(Vec::<String>::new())
     }
 
     /// Gather the request headers to set.
-    fn headers(_input: &impl Serialize) -> Result<Option<http::HeaderMap>> {
+    fn headers(_input: &impl Serialize) -> Res<Option<http::HeaderMap>> {
         Ok(None)
     }
 
     /// Retrieve the request's body.
-    fn body(_input: &impl Serialize) -> Result<Option<Bytes>> {
+    fn body(_input: &impl Serialize) -> Res<Option<Bytes>> {
         Ok(None)
     }
 }

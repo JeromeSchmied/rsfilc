@@ -1,7 +1,7 @@
 use super::Endpoint;
 use crate::{
     types::{Rektip, Tantargy, Uid},
-    LDateTime, OptIrval,
+    LDateTime, OptIrval, Res,
 };
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +48,7 @@ impl Endpoint for Evaluation {
         "/ellenorzo/V3/Sajat/Ertekelesek".into()
     }
 
-    fn query(input: &Self::QueryInput) -> anyhow::Result<impl Serialize> {
+    fn query(input: &Self::QueryInput) -> Res<impl Serialize> {
         let mut q = vec![];
         if let Some(from) = input.0 {
             q.push(("datumTol", from.to_string()));

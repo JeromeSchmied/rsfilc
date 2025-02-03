@@ -1,4 +1,4 @@
-use crate::{types::*, Endpoint, LDateTime};
+use crate::{types::*, Endpoint, LDateTime, Res};
 use chrono::Local;
 use serde::{Deserialize, Serialize};
 
@@ -81,7 +81,7 @@ impl Endpoint for Lesson {
         "/ellenorzo/V3/Sajat/OrarendElemek".into()
     }
 
-    fn query(input: &Self::QueryInput) -> anyhow::Result<impl Serialize> {
+    fn query(input: &Self::QueryInput) -> Res<impl Serialize> {
         let mut q = vec![];
         q.push(("datumTol", input.0.to_string()));
         q.push(("datumIg", input.1.to_string()));

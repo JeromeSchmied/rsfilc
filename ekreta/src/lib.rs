@@ -1,8 +1,10 @@
+pub mod consts;
 mod endpoints;
 mod types;
+mod user;
 // mod error;
+pub type Res<T> = Result<T, Box<dyn std::error::Error>>;
 
-pub use anyhow::Result;
 pub use endpoints::absences::Absence;
 pub use endpoints::announced_tests::AnnouncedTest;
 pub use endpoints::evaluations::Evaluation;

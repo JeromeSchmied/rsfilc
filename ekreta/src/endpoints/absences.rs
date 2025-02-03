@@ -1,6 +1,6 @@
 use crate::types::{Ora, Rektip, Tantargy, Uid};
 use crate::LDateTime;
-use crate::{Endpoint, OptIrval, Result};
+use crate::{Endpoint, OptIrval, Res};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -33,7 +33,7 @@ impl Endpoint for Absence {
         "/ellenorzo/V3/Sajat/Mulasztasok".into()
     }
 
-    fn query(input: &Self::QueryInput) -> Result<impl Serialize> {
+    fn query(input: &Self::QueryInput) -> Res<impl Serialize> {
         let mut q = vec![];
         if let Some(from) = input.0 {
             q.push(("datumTol", from.to_string()));

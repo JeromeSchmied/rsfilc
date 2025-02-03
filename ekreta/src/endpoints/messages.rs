@@ -1,7 +1,7 @@
 use super::Endpoint;
 use crate::{
     types::{Rektip, Uid},
-    LDateTime, OptIrval, Result,
+    LDateTime, OptIrval, Res,
 };
 use serde::{Deserialize, Serialize};
 
@@ -84,7 +84,7 @@ impl Endpoint for NoteMessage {
     fn path(_: impl AsRef<str>) -> String {
         "/ellenorzo/v3/sajat/Feljegyzesek".into()
     }
-    fn query(input: &Self::QueryInput) -> Result<impl Serialize> {
+    fn query(input: &Self::QueryInput) -> Res<impl Serialize> {
         let mut q = vec![];
         if let Some(from) = input.0 {
             q.push(("datumTol", from.to_string()));

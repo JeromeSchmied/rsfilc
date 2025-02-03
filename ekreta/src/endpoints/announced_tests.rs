@@ -1,5 +1,5 @@
 use crate::types::{Rektip, Tantargy, Uid};
-use crate::{Endpoint, LDateTime, OptIrval};
+use crate::{Endpoint, LDateTime, OptIrval, Res};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -24,7 +24,7 @@ impl Endpoint for AnnouncedTest {
         "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek".into()
     }
 
-    fn query(input: &Self::QueryInput) -> anyhow::Result<impl Serialize> {
+    fn query(input: &Self::QueryInput) -> Res<impl Serialize> {
         let mut q = vec![];
         if let Some(from) = input.0 {
             q.push(("datumTol", from.to_string()));
