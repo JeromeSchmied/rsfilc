@@ -1,5 +1,5 @@
 use crate::{
-    consts::{self, CLIENT_ID, TIMEOUT},
+    consts::{CLIENT_ID, TIMEOUT},
     *,
 };
 use http::{header, HeaderMap};
@@ -19,49 +19,74 @@ pub struct User {
 }
 // fetch_.*
 impl User {
-    pub fn fetch_info(&self) -> Res<UserInfo> {
-        self.fetch_single::<UserInfo, UserInfo>(())
+    pub fn fetch_info(&self, headers: &HeaderMap) -> Res<UserInfo> {
+        self.fetch_single::<UserInfo, UserInfo>((), headers)
     }
-    pub fn fetch_evals(&self, interval: OptIrval) -> Res<Vec<Evaluation>> {
-        self.fetch_vec(interval)
+    pub fn fetch_evals(&self, interval: OptIrval, headers: &HeaderMap) -> Res<Vec<Evaluation>> {
+        self.fetch_vec(interval, headers)
     }
-    pub fn fetch_timetable(&self, interval: (LDateTime, LDateTime)) -> Res<Vec<Lesson>> {
-        self.fetch_vec(interval)
+    pub fn fetch_timetable(
+        &self,
+        interval: (LDateTime, LDateTime),
+        headers: &HeaderMap,
+    ) -> Res<Vec<Lesson>> {
+        self.fetch_vec(interval, headers)
     }
-    pub fn fetch_absences(&self, interval: OptIrval) -> Res<Vec<Absence>> {
-        self.fetch_vec(interval)
+    pub fn fetch_absences(&self, interval: OptIrval, headers: &HeaderMap) -> Res<Vec<Absence>> {
+        self.fetch_vec(interval, headers)
     }
-    pub fn fetch_classes(&self) -> Res<Vec<Class>> {
-        self.fetch_vec(())
+    pub fn fetch_classes(&self, headers: &HeaderMap) -> Res<Vec<Class>> {
+        self.fetch_vec((), headers)
     }
-    pub fn fetch_announced_tests(&self, interval: OptIrval) -> Res<Vec<AnnouncedTest>> {
-        self.fetch_vec(interval)
+    pub fn fetch_announced_tests(
+        &self,
+        interval: OptIrval,
+        headers: &HeaderMap,
+    ) -> Res<Vec<AnnouncedTest>> {
+        self.fetch_vec(interval, headers)
     }
 }
 
 // messages
 impl User {
-    pub fn fetch_full_msg(&self, msg_oview: Option<&MessageOverview>) -> Res<MessageItem> {
+    pub fn fetch_full_msg(
+        &self,
+        msg_oview: Option<&MessageOverview>,
+        headers: &HeaderMap,
+    ) -> Res<MessageItem> {
         let id = msg_oview.map(|mov| mov.azonosito);
-        self.fetch_single::<MessageItem, MessageItem>(id)
+        self.fetch_single::<MessageItem, MessageItem>(id, headers)
     }
-    pub fn fetch_note_msgs(&self, interval: OptIrval) -> Res<Vec<NoteMessage>> {
-        self.fetch_vec(interval)
+    pub fn fetch_note_msgs(
+        &self,
+        interval: OptIrval,
+        headers: &HeaderMap,
+    ) -> Res<Vec<NoteMessage>> {
+        self.fetch_vec(interval, headers)
     }
-    pub fn fetch_msg_oview_of_kind(&self, msg_kind: MessageKind) -> Res<Vec<MessageOverview>> {
-        self.fetch_vec(msg_kind)
+    pub fn fetch_msg_oview_of_kind(
+        &self,
+        msg_kind: MessageKind,
+        headers: &HeaderMap,
+    ) -> Res<Vec<MessageOverview>> {
+        self.fetch_vec(msg_kind, headers)
     }
-    pub fn fetch_msg_oviews(&self) -> Res<Vec<MessageOverview>> {
+    pub fn fetch_msg_oviews(&self, headers: &HeaderMap) -> Res<Vec<MessageOverview>> {
         Ok([
-            self.fetch_msg_oview_of_kind(MessageKind::Recv)?,
-            self.fetch_msg_oview_of_kind(MessageKind::Sent)?,
-            self.fetch_msg_oview_of_kind(MessageKind::Del)?,
+            self.fetch_msg_oview_of_kind(MessageKind::Recv, headers)?,
+            self.fetch_msg_oview_of_kind(MessageKind::Sent, headers)?,
+            self.fetch_msg_oview_of_kind(MessageKind::Del, headers)?,
         ]
         .concat())
     }
-    pub fn download_attachment_to(&self, id: u32, out_path: PathBuf) -> Res<()> {
+    pub fn download_attachment_to(
+        &self,
+        id: u32,
+        out_path: PathBuf,
+        headers: &HeaderMap,
+    ) -> Res<()> {
         let mut f = File::create(out_path)?;
-        let mut resp = self.get_response::<Attachment>(id)?;
+        let mut resp = self.get_response::<Attachment>(id, headers)?;
         resp.copy_to(&mut f)?;
         Ok(())
     }
@@ -162,18 +187,18 @@ impl User {
     }
 }
 impl User {
-    /// get headers which are necessary for making certain requests
-    pub fn headers(&self) -> Res<HeaderMap> {
-        Ok(HeaderMap::from_iter([
-            (
-                header::AUTHORIZATION,
-                format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
-            ),
-            (header::USER_AGENT, consts::USER_AGENT.parse()?),
-        ]))
-    }
+    // /// get headers which are necessary for making certain requests
+    // pub fn headers(&self) -> Res<HeaderMap> {
+    //     Ok(HeaderMap::from_iter([
+    //         (
+    //             header::AUTHORIZATION,
+    //             format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
+    //         ),
+    //         (header::USER_AGENT, consts::USER_AGENT.parse()?),
+    //     ]))
+    // }
 
-    pub fn get_response<E>(&self, query: E::Args) -> Res<Response>
+    pub fn get_response<E>(&self, query: E::Args, headers: &HeaderMap) -> Res<Response>
     where
         E: crate::Endpoint + for<'a> Deserialize<'a>,
     {
@@ -183,24 +208,24 @@ impl User {
         let resp = Client::new()
             .get(uri)
             .query(&query)
-            .headers(self.headers()?)
+            .headers(headers.clone())
             .timeout(TIMEOUT);
         Ok(resp.send()?)
     }
-    pub fn fetch_single<E, D>(&self, query: E::Args) -> Res<D>
+    pub fn fetch_single<E, D>(&self, query: E::Args, headers: &HeaderMap) -> Res<D>
     where
         E: crate::Endpoint + for<'a> Deserialize<'a>,
         D: for<'a> Deserialize<'a>,
     {
-        let resp = self.get_response::<E>(query)?;
+        let resp = self.get_response::<E>(query, headers)?;
         let txt = resp.text()?;
         Ok(serde_json::from_str(&txt)?)
     }
 
-    pub fn fetch_vec<E>(&self, query: E::Args) -> Res<Vec<E>>
+    pub fn fetch_vec<E>(&self, query: E::Args, headers: &HeaderMap) -> Res<Vec<E>>
     where
         E: crate::Endpoint + for<'a> Deserialize<'a>,
     {
-        self.fetch_single::<E, Vec<E>>(query)
+        self.fetch_single::<E, Vec<E>>(query, headers)
     }
 }
