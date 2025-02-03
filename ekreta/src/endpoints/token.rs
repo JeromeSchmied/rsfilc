@@ -23,15 +23,15 @@ pub struct Token {
 }
 impl Endpoint for Token {
     /// username, password, institute-code
-    type QueryInput = (String, String, String, String);
+    type Args = (String, String, String, String);
 
-    fn path(_args: impl AsRef<str>) -> String {
+    fn path(_args: &Self::Args) -> String {
         "/connect/token".into()
     }
     fn base_url(_args: impl AsRef<str>) -> crate::Str {
         super::base::IDP.into()
     }
-    fn query(input: &Self::QueryInput) -> Res<impl serde::Serialize> {
+    fn query(input: &Self::Args) -> Res<impl serde::Serialize> {
         Ok(vec![
             ("ReturnUrl", "/connect/authorize/callback?prompt=login&nonce=wylCrqT4oN6PPgQn2yQB0euKei9nJeZ6_ffJ-VpSKZU&response_type=code&code_challenge_method=S256&scope=openid%20email%20offline_access%20kreta-ellenorzo-webapi.public%20kreta-eugyintezes-webapi.public%20kreta-fileservice-webapi.public%20kreta-mobile-global-webapi.public%20kreta-dkt-webapi.public%20kreta-ier-webapi.public&code_challenge=HByZRRnPGb-Ko_wTI7ibIba1HQ6lor0ws4bcgReuYSQ&redirect_uri=https%3A%2F%2Fmobil.e-kreta.hu%2Fellenorzo-student%2Fprod%2Foauthredirect&client_id=kreta-ellenorzo-student-mobile-ios&state=kreten_student_mobile&suppressed_prompt=login"),
             ("UserName", &input.0),

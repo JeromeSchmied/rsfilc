@@ -75,13 +75,13 @@ impl Lesson {
 }
 
 impl Endpoint for Lesson {
-    type QueryInput = (LDateTime, LDateTime);
+    type Args = (LDateTime, LDateTime);
 
-    fn path(_args: impl AsRef<str>) -> String {
+    fn path(_args: &Self::Args) -> String {
         "/ellenorzo/V3/Sajat/OrarendElemek".into()
     }
 
-    fn query(input: &Self::QueryInput) -> Res<impl Serialize> {
+    fn query(input: &Self::Args) -> Res<impl Serialize> {
         let mut q = vec![];
         q.push(("datumTol", input.0.to_string()));
         q.push(("datumIg", input.1.to_string()));

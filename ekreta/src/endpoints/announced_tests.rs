@@ -18,13 +18,13 @@ pub struct AnnouncedTest {
 }
 
 impl Endpoint for AnnouncedTest {
-    type QueryInput = OptIrval;
+    type Args = OptIrval;
 
-    fn path(_args: impl AsRef<str>) -> String {
+    fn path(_args: &Self::Args) -> String {
         "/ellenorzo/V3/Sajat/BejelentettSzamonkeresek".into()
     }
 
-    fn query(input: &Self::QueryInput) -> Res<impl Serialize> {
+    fn query(input: &Self::Args) -> Res<impl Serialize> {
         let mut q = vec![];
         if let Some(from) = input.0 {
             q.push(("datumTol", from.to_string()));

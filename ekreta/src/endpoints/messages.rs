@@ -15,17 +15,20 @@ pub struct MessageItem {
     pub uzenet: Message,
 }
 impl Endpoint for MessageItem {
-    type QueryInput = ();
+    type Args = Option<u32>;
 
     fn base_url(_args: impl AsRef<str>) -> crate::Str {
         super::base::ADMIN.into()
     }
 
-    fn path(id: impl AsRef<str>) -> String {
-        let id = id.as_ref();
+    fn path(id: &Self::Args) -> String {
         format!(
             "/api/v1/kommunikacio/postaladaelemek/{}",
-            if id.is_empty() { "sajat" } else { id }
+            if let Some(id) = id {
+                id.to_string()
+            } else {
+                String::from("sajat")
+            }
         )
     }
 }
@@ -53,14 +56,14 @@ pub struct MessageOverview {
     pub is_elolvasva: bool,
 }
 impl Endpoint for MessageOverview {
-    type QueryInput = ();
+    type Args = MessageKind;
 
     fn base_url(_args: impl AsRef<str>) -> crate::Str {
         super::base::ADMIN.into()
     }
 
-    fn path(id: impl AsRef<str>) -> String {
-        format!("/api/v1/kommunikacio/postaladaelemek/{}", id.as_ref())
+    fn path(id: &Self::Args) -> String {
+        format!("/api/v1/kommunikacio/postaladaelemek/{}", id.val())
     }
 }
 
@@ -79,12 +82,12 @@ pub struct NoteMessage {
     pub tipus: Rektip,
 }
 impl Endpoint for NoteMessage {
-    type QueryInput = OptIrval;
+    type Args = OptIrval;
 
-    fn path(_: impl AsRef<str>) -> String {
+    fn path(_: &Self::Args) -> String {
         "/ellenorzo/v3/sajat/Feljegyzesek".into()
     }
-    fn query(input: &Self::QueryInput) -> Res<impl Serialize> {
+    fn query(input: &Self::Args) -> Res<impl Serialize> {
         let mut q = vec![];
         if let Some(from) = input.0 {
             q.push(("datumTol", from.to_string()));
@@ -126,19 +129,19 @@ pub struct Attachment {
     pub fajl_nev: String,
 }
 impl Endpoint for Attachment {
-    type QueryInput = ();
+    type Args = u32;
 
     fn base_url(_args: impl AsRef<str>) -> crate::Str {
         super::base::ADMIN.into()
     }
 
-    fn path(id: impl AsRef<str>) -> String {
-        format!("/api/v1/dokumentumok/uzenetek/{}", id.as_ref())
+    fn path(msg_kind: &Self::Args) -> String {
+        format!("/api/v1/dokumentumok/uzenetek/{}", msg_kind)
     }
 }
 
 /// kinds of [`Msg`]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy, Deserialize, Serialize, Eq, PartialOrd, Ord)]
 pub enum MessageKind {
     /// recieved
     Recv,

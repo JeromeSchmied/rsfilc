@@ -18,9 +18,9 @@ pub struct Class {
 }
 
 impl Endpoint for Class {
-    type QueryInput = ();
+    type Args = ();
 
-    fn path(_args: impl AsRef<str>) -> String {
+    fn path(_args: &Self::Args) -> String {
         "/ellenorzo/V3/Sajat/OsztalyCsoportok".into()
     }
 }

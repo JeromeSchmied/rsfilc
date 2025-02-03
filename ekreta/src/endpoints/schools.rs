@@ -22,9 +22,9 @@ pub struct School {
 }
 
 impl Endpoint for School {
-    type QueryInput = ();
+    type Args = ();
 
-    fn path(_args: impl AsRef<str>) -> String {
+    fn path(_args: &Self::Args) -> String {
         "/intezmenyek/kreta/publikus".into()
     }
 

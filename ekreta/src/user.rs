@@ -20,48 +20,48 @@ pub struct User {
 // fetch_.*
 impl User {
     pub fn fetch_info(&self) -> Res<UserInfo> {
-        self.fetch_single::<UserInfo, UserInfo>((), "")
+        self.fetch_single::<UserInfo, UserInfo>(())
     }
     pub fn fetch_evals(&self, interval: OptIrval) -> Res<Vec<Evaluation>> {
-        self.fetch_vec(interval, "")
+        self.fetch_vec(interval)
     }
     pub fn fetch_timetable(&self, interval: (LDateTime, LDateTime)) -> Res<Vec<Lesson>> {
-        self.fetch_vec(interval, "")
+        self.fetch_vec(interval)
     }
     pub fn fetch_absences(&self, interval: OptIrval) -> Res<Vec<Absence>> {
-        self.fetch_vec(interval, "")
+        self.fetch_vec(interval)
     }
     pub fn fetch_classes(&self) -> Res<Vec<Class>> {
-        self.fetch_vec((), "")
+        self.fetch_vec(())
     }
     pub fn fetch_announced_tests(&self, interval: OptIrval) -> Res<Vec<AnnouncedTest>> {
-        self.fetch_vec(interval, "")
+        self.fetch_vec(interval)
     }
 }
 
 // messages
 impl User {
-    pub fn fetch_full_msg(&self, msg_oview: &MessageOverview) -> Res<MessageItem> {
-        let id = msg_oview.azonosito.to_string();
-        self.fetch_single::<MessageItem, MessageItem>((), id)
+    pub fn fetch_full_msg(&self, msg_oview: Option<&MessageOverview>) -> Res<MessageItem> {
+        let id = msg_oview.map(|mov| mov.azonosito);
+        self.fetch_single::<MessageItem, MessageItem>(id)
     }
     pub fn fetch_note_msgs(&self, interval: OptIrval) -> Res<Vec<NoteMessage>> {
-        self.fetch_vec(interval, "")
+        self.fetch_vec(interval)
     }
-    pub fn fetch_msg_oview_of_kind(&self, msg_kind: &MessageKind) -> Res<Vec<MessageOverview>> {
-        self.fetch_vec((), msg_kind.val())
+    pub fn fetch_msg_oview_of_kind(&self, msg_kind: MessageKind) -> Res<Vec<MessageOverview>> {
+        self.fetch_vec(msg_kind)
     }
     pub fn fetch_msg_oviews(&self) -> Res<Vec<MessageOverview>> {
         Ok([
-            self.fetch_msg_oview_of_kind(&MessageKind::Recv)?,
-            self.fetch_msg_oview_of_kind(&MessageKind::Sent)?,
-            self.fetch_msg_oview_of_kind(&MessageKind::Del)?,
+            self.fetch_msg_oview_of_kind(MessageKind::Recv)?,
+            self.fetch_msg_oview_of_kind(MessageKind::Sent)?,
+            self.fetch_msg_oview_of_kind(MessageKind::Del)?,
         ]
         .concat())
     }
-    pub fn download_attachment_to(&self, id: &str, out_path: PathBuf) -> Res<()> {
+    pub fn download_attachment_to(&self, id: u32, out_path: PathBuf) -> Res<()> {
         let mut f = File::create(out_path)?;
-        let mut resp = self.get_response::<Attachment>((), id)?;
+        let mut resp = self.get_response::<Attachment>(id)?;
         resp.copy_to(&mut f)?;
         Ok(())
     }
@@ -95,14 +95,14 @@ impl User {
 
         // Perform login with credentials
         let login_url = "https://idp.e-kreta.hu/account/login";
-        let form_data = (
+        let query_data = (
             self.username.clone(),
             self.password.clone(),
             self.schoolid.clone(),
             rvt.to_string(),
         );
         // it's called query, but that doesn't matter
-        let form_data = Token::query(&form_data)?;
+        let form_data = Token::query(&query_data)?;
 
         let headers = Token::headers(&"")?.unwrap();
         let response = client
@@ -151,7 +151,7 @@ impl User {
             ("grant_type", "authorization_code"),
         ];
 
-        let token_url = [Token::base_url("").as_ref(), &Token::path("")].concat();
+        let token_url = [Token::base_url("").as_ref(), &Token::path(&query_data)].concat();
         let response = client.post(token_url).form(&token_data).send()?;
 
         let text = response.text()?;
@@ -168,16 +168,16 @@ impl User {
                 header::AUTHORIZATION,
                 format!("Bearer {}", self.fetch_token()?.access_token).parse()?,
             ),
-            (header::USER_AGENT, consts::modname::USER_AGENT.parse()?),
+            (header::USER_AGENT, consts::USER_AGENT.parse()?),
         ]))
     }
 
-    pub fn get_response<E>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<Response>
+    pub fn get_response<E>(&self, query: E::Args) -> Res<Response>
     where
         E: crate::Endpoint + for<'a> Deserialize<'a>,
     {
         let base = E::base_url(&self.schoolid);
-        let uri = [base.as_ref(), &E::path(path_args)].concat();
+        let uri = [base.as_ref(), &E::path(&query)].concat();
         let query = E::query(&query)?;
         let resp = Client::new()
             .get(uri)
@@ -186,20 +186,20 @@ impl User {
             .timeout(TIMEOUT);
         Ok(resp.send()?)
     }
-    pub fn fetch_single<E, D>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<D>
+    pub fn fetch_single<E, D>(&self, query: E::Args) -> Res<D>
     where
         E: crate::Endpoint + for<'a> Deserialize<'a>,
         D: for<'a> Deserialize<'a>,
     {
-        let resp = self.get_response::<E>(query, path_args)?;
+        let resp = self.get_response::<E>(query)?;
         let txt = resp.text()?;
         Ok(serde_json::from_str(&txt)?)
     }
 
-    pub fn fetch_vec<E>(&self, query: E::QueryInput, path_args: impl AsRef<str>) -> Res<Vec<E>>
+    pub fn fetch_vec<E>(&self, query: E::Args) -> Res<Vec<E>>
     where
         E: crate::Endpoint + for<'a> Deserialize<'a>,
     {
-        self.fetch_single::<E, Vec<E>>(query, path_args)
+        self.fetch_single::<E, Vec<E>>(query)
     }
 }

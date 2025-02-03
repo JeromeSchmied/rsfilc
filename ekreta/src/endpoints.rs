@@ -16,7 +16,7 @@ pub mod user_info;
 // query
 // headers
 pub trait Endpoint {
-    type QueryInput;
+    type Args;
 
     /// if differs from BASE_URL
     fn base_url(args: impl AsRef<str>) -> Str {
@@ -25,13 +25,13 @@ pub trait Endpoint {
     }
 
     /// after BASE_URL
-    fn path(args: impl AsRef<str>) -> String;
+    fn path(args: &Self::Args) -> String;
 
     fn method() -> http::Method {
         http::Method::GET
     }
 
-    fn query(_input: &Self::QueryInput) -> Res<impl Serialize> {
+    fn query(_input: &Self::Args) -> Res<impl Serialize> {
         Ok(Vec::<String>::new())
     }
 

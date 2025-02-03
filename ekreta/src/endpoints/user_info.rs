@@ -28,9 +28,9 @@ pub struct UserInfo {
 }
 
 impl Endpoint for UserInfo {
-    type QueryInput = ();
+    type Args = ();
 
-    fn path(_args: impl AsRef<str>) -> String {
+    fn path(_args: &Self::Args) -> String {
         "/ellenorzo/V3/Sajat/TanuloAdatlap".into()
     }
 }
