@@ -93,6 +93,23 @@ impl User {
 }
 // token
 impl User {
+    pub fn refresh_token_resp(schoolid: &str, refresh_token: &str) -> Res<Response> {
+        let response = reqwest::blocking::Client::new()
+            .post("https://idp.e-kreta.hu/connect/token")
+            .form(&[
+                ("institute_code", schoolid),
+                ("grant_type", "refresh_token"),
+                ("client_id", consts::CLIENT_ID),
+                ("refresh_token", refresh_token),
+            ])
+            .header(header::USER_AGENT, consts::USER_AGENT)
+            .send()?;
+        Ok(response)
+    }
+    pub fn refresh_token(&self, refresh_token: &str) -> Res<Token> {
+        let text = Self::refresh_token_resp(&self.schoolid, refresh_token)?.text()?;
+        Ok(serde_json::from_str(&text)?)
+    }
     pub fn get_token_resp(&self) -> Res<Response> {
         // Create a client with cookie store enable
         let client = Client::builder()

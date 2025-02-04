@@ -341,6 +341,14 @@ impl User {
             {
                 return Ok(cached_token);
             }
+            // refresh token
+            let response =
+                ekreta::User::refresh_token_resp(&self.0.schoolid, &cached_token.refresh_token)?;
+            let txt = response.text()?;
+            info!("got token: {txt:?}");
+            let token = serde_json::from_str(&txt)?;
+            cache("token", &txt)?;
+            return Ok(token);
         }
         let decoded_password = self.decode_password();
         let tmp_user = ekreta::User {
