@@ -1,7 +1,7 @@
 //! messages from teachers and staff
 
 use crate::*;
-use ekreta::MessageKind;
+use ekreta::MsgKind;
 use std::{
     char,
     fmt::{self, Write},
@@ -37,7 +37,7 @@ fn fix_file_name() {
         download_attachment_to(&f)
     );
 }
-pub fn disp_msg(msg: &ekreta::MessageItem) -> String {
+pub fn disp_msg(msg: &ekreta::MsgItem) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| Tárgy: {}", msg.uzenet.targy);
     for am in &msg.uzenet.csatolmanyok {
@@ -213,15 +213,15 @@ impl fmt::Display for Rendr {
     }
 }
 
-pub fn disp_msgkind(msgkind: MessageKind) -> &'static str {
+pub fn disp_msgkind(msgkind: MsgKind) -> &'static str {
     match msgkind {
-        MessageKind::Recv => "Beérkezett",
-        MessageKind::Sent => "Elküldve",
-        MessageKind::Del => "Törölve",
+        MsgKind::Recv => "Beérkezett",
+        MsgKind::Sent => "Elküldve",
+        MsgKind::Del => "Törölve",
     }
 }
 
-pub fn disp_note_msg(note_msg: &ekreta::NoteMessage) -> String {
+pub fn disp_note_msg(note_msg: &ekreta::NoteMsg) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| {}", note_msg.cim);
     _ = writeln!(&mut f, "| Időpont: {}", note_msg.datum.pretty());

@@ -49,31 +49,27 @@ impl User {
 impl User {
     pub fn fetch_full_msg(
         &self,
-        msg_oview: Option<&MessageOverview>,
+        msg_oview: Option<&MsgOview>,
         headers: &HeaderMap,
-    ) -> Res<MessageItem> {
+    ) -> Res<MsgItem> {
         let id = msg_oview.map(|mov| mov.azonosito);
-        self.fetch_single::<MessageItem, MessageItem>(id, headers)
+        self.fetch_single::<MsgItem, MsgItem>(id, headers)
     }
-    pub fn fetch_note_msgs(
-        &self,
-        interval: OptIrval,
-        headers: &HeaderMap,
-    ) -> Res<Vec<NoteMessage>> {
+    pub fn fetch_note_msgs(&self, interval: OptIrval, headers: &HeaderMap) -> Res<Vec<NoteMsg>> {
         self.fetch_vec(interval, headers)
     }
     pub fn fetch_msg_oview_of_kind(
         &self,
-        msg_kind: MessageKind,
+        msg_kind: MsgKind,
         headers: &HeaderMap,
-    ) -> Res<Vec<MessageOverview>> {
+    ) -> Res<Vec<MsgOview>> {
         self.fetch_vec(msg_kind, headers)
     }
-    pub fn fetch_msg_oviews(&self, headers: &HeaderMap) -> Res<Vec<MessageOverview>> {
+    pub fn fetch_msg_oviews(&self, headers: &HeaderMap) -> Res<Vec<MsgOview>> {
         Ok([
-            self.fetch_msg_oview_of_kind(MessageKind::Recv, headers)?,
-            self.fetch_msg_oview_of_kind(MessageKind::Sent, headers)?,
-            self.fetch_msg_oview_of_kind(MessageKind::Del, headers)?,
+            self.fetch_msg_oview_of_kind(MsgKind::Recv, headers)?,
+            self.fetch_msg_oview_of_kind(MsgKind::Sent, headers)?,
+            self.fetch_msg_oview_of_kind(MsgKind::Del, headers)?,
         ]
         .concat())
     }

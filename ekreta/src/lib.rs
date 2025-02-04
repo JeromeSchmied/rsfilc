@@ -8,9 +8,7 @@ pub use endpoints::announced_tests::AnnouncedTest;
 pub use endpoints::classes::Class;
 pub use endpoints::evaluations::Evaluation;
 pub use endpoints::lessons::Lesson;
-pub use endpoints::messages::{
-    Attachment, Message, MessageItem, MessageKind, MessageOverview, NoteMessage,
-};
+pub use endpoints::messages::{Attachment, Msg, MsgItem, MsgKind, MsgOview, NoteMsg};
 pub use endpoints::schools::School;
 pub use endpoints::token::Token;
 pub use endpoints::user_info::UserInfo;

@@ -1,7 +1,7 @@
 use crate::{timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Days, Local, NaiveDate};
-use ekreta::{consts, header, HeaderMap, MessageItem, MessageKind, MessageOverview, Token};
+use ekreta::{consts, header, HeaderMap, MsgItem, MsgKind, MsgOview, Token};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
@@ -591,7 +591,7 @@ impl User {
     ///
     /// # Errors
     /// - net
-    pub fn download_attachments(&self, msg: &MessageItem) -> Res<()> {
+    pub fn download_attachments(&self, msg: &MsgItem) -> Res<()> {
         for am in &msg.uzenet.csatolmanyok {
             let download_to = messages::download_attachment_to(&am);
             info!("downloading file://{}", download_to.display());
@@ -613,13 +613,13 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: MessageKind) -> Res<Vec<MessageOverview>> {
+    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: MsgKind) -> Res<Vec<MsgOview>> {
         let msgs = self.0.fetch_vec(msg_kind, &self.headers()?)?;
         info!("recieved message overviews of kind: {:?}", msg_kind);
         Ok(msgs)
     }
 
-    // pub fn fetch_messages(&self) -> Res<Vec<MessageItem>> {
+    // pub fn fetch_messages(&self) -> Res<Vec<MsgItem>> {
     //     let msgs = self.fetch_vec((), "")?;
     //     Ok(msgs)
     // }
@@ -629,10 +629,10 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn msgs(&self, interval: OptIrval) -> Res<Vec<MessageItem>> {
+    pub fn msgs(&self, interval: OptIrval) -> Res<Vec<MsgItem>> {
         let (cache_t, cache_content) = uncache("messages").unzip();
         let mut msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<MessageItem>>(cached)?
+            serde_json::from_str::<Vec<MsgItem>>(cached)?
         } else {
             vec![]
         };
@@ -705,10 +705,10 @@ impl User {
     /// # Errors
     ///
     /// - net
-    pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMessage>> {
+    pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
         let (cache_t, cache_content) = uncache("note_messages").unzip();
         let mut note_msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<ekreta::NoteMessage>>(cached)?
+            serde_json::from_str::<Vec<ekreta::NoteMsg>>(cached)?
         } else {
             vec![]
         };

@@ -7,14 +7,15 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MessageItem {
+/// Message/Mailbox Item
+pub struct MsgItem {
     pub azonosito: u32,
     pub is_elolvasva: bool,
     pub is_torolt_elem: bool,
     pub tipus: Tipus,
-    pub uzenet: Message,
+    pub uzenet: Msg,
 }
-impl Endpoint for MessageItem {
+impl Endpoint for MsgItem {
     type Args = Option<u32>;
 
     fn base_url(_args: impl AsRef<str>) -> String {
@@ -45,7 +46,8 @@ pub struct Tipus {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MessageOverview {
+/// Message Overview
+pub struct MsgOview {
     pub azonosito: u32,
     pub uzenet_azonosito: u32,
     pub uzenet_kuldes_datum: chrono::NaiveDateTime,
@@ -55,8 +57,8 @@ pub struct MessageOverview {
     pub has_csatolmany: bool,
     pub is_elolvasva: bool,
 }
-impl Endpoint for MessageOverview {
-    type Args = MessageKind;
+impl Endpoint for MsgOview {
+    type Args = MsgKind;
 
     fn base_url(_args: impl AsRef<str>) -> String {
         super::base::ADMIN.into()
@@ -69,7 +71,8 @@ impl Endpoint for MessageOverview {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct NoteMessage {
+/// some kind of additional/system Messag
+pub struct NoteMsg {
     pub uid: String,
     pub cim: String,
     pub datum: LDateTime,
@@ -81,7 +84,7 @@ pub struct NoteMessage {
     pub tartalom_formazott: String,
     pub tipus: Rektip,
 }
-impl Endpoint for NoteMessage {
+impl Endpoint for NoteMsg {
     type Args = OptIrval;
 
     fn path(_: &Self::Args) -> String {
@@ -101,7 +104,8 @@ impl Endpoint for NoteMessage {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Message {
+/// Message
+pub struct Msg {
     pub azonosito: u32,
     pub kuldes_datum: chrono::NaiveDateTime,
     pub felado_nev: String,
@@ -142,7 +146,7 @@ impl Endpoint for Attachment {
 
 /// kinds of [`Msg`]
 #[derive(Debug, PartialEq, Clone, Copy, Deserialize, Serialize, Eq, PartialOrd, Ord)]
-pub enum MessageKind {
+pub enum MsgKind {
     /// recieved
     Recv,
     /// sent
@@ -151,7 +155,7 @@ pub enum MessageKind {
     Del,
 }
 
-impl From<&String> for MessageKind {
+impl From<&String> for MsgKind {
     fn from(value: &String) -> Self {
         match value.to_lowercase().trim_matches('"') {
             "beerkezett" => Self::Recv,
@@ -161,13 +165,13 @@ impl From<&String> for MessageKind {
         }
     }
 }
-impl MessageKind {
+impl MsgKind {
     /// get value for this [`MsgKind`]
     pub fn val(&self) -> String {
         match self {
-            MessageKind::Recv => "beerkezett".to_owned(),
-            MessageKind::Sent => "elkuldott".to_owned(),
-            MessageKind::Del => "torolt".to_owned(),
+            MsgKind::Recv => "beerkezett".to_owned(),
+            MsgKind::Sent => "elkuldott".to_owned(),
+            MsgKind::Del => "torolt".to_owned(),
         }
     }
 }
@@ -179,7 +183,7 @@ mod tests {
     #[test]
     fn message_overview_parsing() {
         let message_json = r#"{ "azonosito": 137283859, "uzenetAzonosito": 26669244, "uzenetKuldesDatum": "2022-09-07T08:18:17", "uzenetFeladoNev": "Schultz Zoltán", "uzenetFeladoTitulus": "intézményvezető", "uzenetTargy": "Tájékoztató - Elf Bar - Rendőrség", "hasCsatolmany": true, "isElolvasva": true }"#;
-        let message = serde_json::from_str::<MessageOverview>(message_json);
+        let message = serde_json::from_str::<MsgOview>(message_json);
         let message = message.unwrap();
         assert_eq!(message.azonosito, 137283859);
     }
