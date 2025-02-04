@@ -30,4 +30,3 @@ rpassword = "7.3.1"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
 toml = "0.8.12"
-scraper = { version = "0.22.0", default-features = false }
