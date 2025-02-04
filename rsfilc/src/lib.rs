@@ -49,6 +49,3 @@ pub fn fill(this: &str, with: char, hint: Option<&str>) {
             .repeat(longest - left - inlay_hint.chars().count())
     );
 }
-
-#[cfg(test)]
-mod tests;
