@@ -1,7 +1,6 @@
 //! every school that uses the `Kréta` system
 
 use crate::{cache, uncache, Res};
-use ekreta::Endpoint;
 use std::fmt::Write;
 
 pub fn fetch() -> Res<Vec<ekreta::School>> {
@@ -11,12 +10,7 @@ pub fn fetch() -> Res<Vec<ekreta::School>> {
         let cached_schools = serde_json::from_str(&content)?;
         return Ok(cached_schools);
     }
-    let uri = [
-        ekreta::School::base_url("").as_ref(),
-        ekreta::School::path(&()).as_str(),
-    ]
-    .concat();
-    let resp = reqwest::blocking::get(uri)?;
+    let resp = ekreta::School::fetch_schools_resp()?;
 
     log::info!("recieved schools from refilc api");
     let json = &resp.text()?;

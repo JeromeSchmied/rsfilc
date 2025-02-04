@@ -20,6 +20,13 @@ pub struct School {
     pub fenntarto_azonosito: String,
     pub fenntarto_nev: String,
 }
+impl School {
+    pub fn fetch_schools_resp() -> Result<reqwest::blocking::Response, Box<dyn std::error::Error>> {
+        let uri = [School::base_url("").as_ref(), School::path(&()).as_str()].concat();
+        let resp = reqwest::blocking::get(uri)?;
+        Ok(resp)
+    }
+}
 
 impl Endpoint for School {
     type Args = ();
