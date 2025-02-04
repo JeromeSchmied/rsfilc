@@ -17,7 +17,7 @@ fn ser_user() {
     let user_toml = "\
 username = \"Test Paul\"
 password = \"MjAwMC4wMS4wMQ==\"
-school_id = \"klik0000001\"
+schoolid = \"klik0000001\"
 ";
 
     assert_eq!(Ok(user_toml.to_owned()), toml::to_string(&user));
@@ -29,7 +29,7 @@ fn deser_user() {
         r#"
             username = "Test Paul"
             password = "MjAwMC4wMS4wMQ=="
-            school_id = "klik0000001"
+            schoolid = "klik0000001"
             "#,
     );
     assert_eq!(
@@ -49,12 +49,12 @@ fn ser_users() {
     let user_toml = r#"[[users]]
 username = "Test Paul"
 password = "MjAwMC4wMS4wMQ=="
-school_id = "klik0000001"
+schoolid = "klik0000001"
 
 [[users]]
 username = "Test Paulina"
 password = "MjAwMC4wMS4wMg=="
-school_id = "klik0000002"
+schoolid = "klik0000002"
 "#;
 
     assert_eq!(Ok(user_toml.to_owned()), toml::to_string(&users));
@@ -71,12 +71,12 @@ fn deser_users() {
     let user_toml = r#"[[users]]
 username = "Test Paul"
 password = "MjAwMC4wMS4wMQ=="
-school_id = "klik0000001"
+schoolid = "klik0000001"
 
 [[users]]
 username = "Test Paulina"
 password = "MjAwMC4wMS4wMg=="
-school_id = "klik0000002"
+schoolid = "klik0000002"
 "#;
 
     assert_eq!(toml::to_string(&users), Ok(user_toml.to_owned()));
