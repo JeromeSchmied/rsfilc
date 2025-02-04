@@ -1,14 +1,14 @@
-use crate::{paths::cred_path, timetable::next_lesson, *};
+use crate::{paths::cred_path, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{Days, Local, NaiveDate};
+use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{consts, header, HeaderMap, LDateTime, MsgItem, MsgKind, MsgOview, Token};
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
     fs::{self, File, OpenOptions},
     io::{self, Write},
 };
-use time::MyDate;
 
 /// Kréta, app user
 #[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]

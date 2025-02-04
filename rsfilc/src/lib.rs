@@ -1,9 +1,5 @@
 //! `RsFilc`: `Kréta` API and client
 
-use chrono::{Datelike, Local};
-use log::*;
-use std::path::PathBuf;
-
 pub mod absences;
 pub mod announced;
 pub mod args;

@@ -1,13 +1,13 @@
 //! evaluations/grades the user recieved
 
-use crate::{info, time::MyDate};
+use crate::time::MyDate;
 use ekreta::Evaluation;
 use std::fmt::Write;
 
 /// Filter `evals` by `kind`
 pub fn filter_by_kind_or_title(evals: &mut Vec<Evaluation>, filter: &str) {
     let filter = filter.to_lowercase();
-    info!("filtering evals by kind: {}", filter);
+    log::info!("filtering evals by kind: {}", filter);
     evals.retain(|eval| {
         eval.r#mod
             .as_ref()
@@ -21,7 +21,7 @@ pub fn filter_by_kind_or_title(evals: &mut Vec<Evaluation>, filter: &str) {
 
 /// Filter `evals` by `subject`
 pub fn filter_by_subject(evals: &mut Vec<Evaluation>, subj: &str) {
-    info!("filtering evals by subject: {}", subj);
+    log::info!("filtering evals by subject: {}", subj);
     evals.retain(|eval| {
         eval.tantargy
             .kategoria
@@ -39,7 +39,7 @@ pub fn filter_by_subject(evals: &mut Vec<Evaluation>, subj: &str) {
 
 /// Calculate average of `evals` and `ghosts` evals
 pub fn average(evals: &[Evaluation], ghosts: &[u8]) -> f32 {
-    info!("calculating average for evals");
+    log::info!("calculating average for evals");
     let evals = evals
         .iter()
         .filter(|eval| !eval.evvegi() && !eval.felevi() && eval.szam_ertek.is_some());

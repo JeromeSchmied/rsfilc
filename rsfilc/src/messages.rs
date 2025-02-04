@@ -23,7 +23,7 @@ use time::MyDate;
 //     }
 // }
 
-pub fn download_attachment_to(am: &ekreta::Attachment) -> PathBuf {
+pub fn download_attachment_to(am: &ekreta::Attachment) -> std::path::PathBuf {
     download_dir().join(am.fajl_nev.replace(char::is_whitespace, "_"))
 }
 #[cfg(test)]
@@ -55,7 +55,7 @@ pub fn disp_msg(msg: &ekreta::MsgItem) -> String {
         msg.tipus.nev,
         &msg.uzenet
             .kuldes_datum
-            .and_local_timezone(Local)
+            .and_local_timezone(chrono::Local)
             .unwrap()
             .pretty()
     );
