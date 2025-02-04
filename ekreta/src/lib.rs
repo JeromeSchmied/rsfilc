@@ -5,8 +5,8 @@ mod user;
 
 pub use endpoints::absences::Absence;
 pub use endpoints::announced_tests::AnnouncedTest;
+pub use endpoints::classes::Class;
 pub use endpoints::evaluations::Evaluation;
-pub use endpoints::groups::Class;
 pub use endpoints::lessons::Lesson;
 pub use endpoints::messages::{
     Attachment, Message, MessageItem, MessageKind, MessageOverview, NoteMessage,

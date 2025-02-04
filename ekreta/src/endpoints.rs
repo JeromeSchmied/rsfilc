@@ -2,8 +2,8 @@ use serde::Serialize;
 
 pub mod absences;
 pub mod announced_tests;
+pub mod classes;
 pub mod evaluations;
-pub mod groups;
 pub mod lessons;
 pub mod messages;
 pub mod schools;
