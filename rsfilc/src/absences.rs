@@ -1,6 +1,6 @@
 //! Absences
 
-use crate::MyDate;
+use crate::time::MyDate;
 use ekreta::Absence;
 use std::fmt::Write;
 

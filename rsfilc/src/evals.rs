@@ -1,6 +1,6 @@
 //! evaluations/grades the user recieved
 
-use crate::{info, MyDate};
+use crate::{info, time::MyDate};
 use ekreta::Evaluation;
 use std::fmt::Write;
 

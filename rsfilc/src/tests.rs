@@ -1,4 +1,4 @@
-use super::*;
+use super::paths::*;
 
 #[test]
 fn cache_path_exists() {

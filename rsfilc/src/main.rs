@@ -1,7 +1,8 @@
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use log::*;
-use rsfilc::*;
+use paths::{delete_cache_dir, log_path};
+use rsfilc::{paths::log_file, *};
 use std::{
     fs::{File, OpenOptions},
     io::Write,

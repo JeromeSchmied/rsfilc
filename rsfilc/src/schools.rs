@@ -1,10 +1,10 @@
 //! every school that uses the `Kréta` system
 
-use crate::{cache, uncache, Res};
+use crate::{cache, Res};
 use std::fmt::Write;
 
 pub fn fetch() -> Res<Vec<ekreta::School>> {
-    let cached = uncache("schools");
+    let cached = cache::load("schools");
     if let Some((_t, content)) = cached {
         log::info!("loading schools from cache");
         let cached_schools = serde_json::from_str(&content)?;
@@ -15,7 +15,7 @@ pub fn fetch() -> Res<Vec<ekreta::School>> {
     log::info!("recieved schools from refilc api");
     let json = &resp.text()?;
     let vec = serde_json::from_str(json)?;
-    cache("schools", json)?;
+    cache::store("schools", json)?;
     Ok(vec)
 }
 

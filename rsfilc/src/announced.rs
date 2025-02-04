@@ -1,6 +1,6 @@
 //! Announced tests
 
-use crate::MyDate;
+use crate::time::MyDate;
 use ekreta::AnnouncedTest;
 use log::info;
 use std::fmt::Write;

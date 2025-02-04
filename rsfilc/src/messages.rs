@@ -1,5 +1,6 @@
 //! messages from teachers and staff
 
+use crate::paths::download_dir;
 use crate::*;
 use ekreta::MsgKind;
 use std::{
@@ -8,6 +9,7 @@ use std::{
     io::Read,
     process::{Child, Command, Stdio},
 };
+use time::MyDate;
 
 // impl fmt::Display for MsgOverview {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -27,7 +29,6 @@ pub fn download_attachment_to(am: &ekreta::Attachment) -> PathBuf {
 #[cfg(test)]
 #[test]
 fn fix_file_name() {
-    use super::*;
     let f = ekreta::Attachment {
         fajl_nev: "ain't a good filename is it ted? .txt .doksi .docx".to_string(),
         azonosito: 38,
