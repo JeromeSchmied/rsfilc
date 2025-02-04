@@ -1,7 +1,5 @@
-use crate::{
-    consts::{CLIENT_ID, TIMEOUT},
-    *,
-};
+use crate::consts::{CLIENT_ID, TIMEOUT};
+use crate::*;
 use http::{header, HeaderMap};
 use reqwest::blocking::{Client, Response};
 use reqwest::Url;
@@ -193,7 +191,7 @@ impl User {
             ("grant_type", "authorization_code"),
         ];
 
-        let token_url = [Token::base_url("").as_ref(), &Token::path(&query_data)].concat();
+        let token_url = [Token::base_url(""), Token::path(&query_data)].concat();
         let response = client.post(token_url).form(&token_data).send()?;
 
         Ok(response)
@@ -220,7 +218,7 @@ impl User {
         E: crate::Endpoint + for<'a> Deserialize<'a>,
     {
         let base = E::base_url(&self.schoolid);
-        let uri = [base.as_ref(), &E::path(&query)].concat();
+        let uri = [base, E::path(&query)].concat();
         let query = E::query(&query)?;
         let resp = Client::new()
             .get(uri)

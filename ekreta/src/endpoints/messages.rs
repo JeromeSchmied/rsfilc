@@ -17,7 +17,7 @@ pub struct MessageItem {
 impl Endpoint for MessageItem {
     type Args = Option<u32>;
 
-    fn base_url(_args: impl AsRef<str>) -> crate::Str {
+    fn base_url(_args: impl AsRef<str>) -> String {
         super::base::ADMIN.into()
     }
 
@@ -58,7 +58,7 @@ pub struct MessageOverview {
 impl Endpoint for MessageOverview {
     type Args = MessageKind;
 
-    fn base_url(_args: impl AsRef<str>) -> crate::Str {
+    fn base_url(_args: impl AsRef<str>) -> String {
         super::base::ADMIN.into()
     }
 
@@ -131,7 +131,7 @@ pub struct Attachment {
 impl Endpoint for Attachment {
     type Args = u32;
 
-    fn base_url(_args: impl AsRef<str>) -> crate::Str {
+    fn base_url(_args: impl AsRef<str>) -> String {
         super::base::ADMIN.into()
     }
 

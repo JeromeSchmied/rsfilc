@@ -1,4 +1,3 @@
-use crate::{Bytes, Res, Str};
 use serde::Serialize;
 
 pub mod absences;
@@ -19,7 +18,7 @@ pub trait Endpoint {
     type Args;
 
     /// if differs from BASE_URL
-    fn base_url(args: impl AsRef<str>) -> Str {
+    fn base_url(args: impl AsRef<str>) -> String {
         base::school_base(args.as_ref())
         // base::IDP.into()
     }
@@ -31,28 +30,21 @@ pub trait Endpoint {
         http::Method::GET
     }
 
-    fn query(_input: &Self::Args) -> Res<impl Serialize> {
+    fn query(_input: &Self::Args) -> crate::Res<impl Serialize> {
         Ok(Vec::<String>::new())
     }
 
     /// Gather the request headers to set.
-    fn headers(_input: &impl Serialize) -> Res<Option<http::HeaderMap>> {
-        Ok(None)
-    }
-
-    /// Retrieve the request's body.
-    fn body(_input: &impl Serialize) -> Res<Option<Bytes>> {
+    fn headers(_input: &impl Serialize) -> crate::Res<Option<http::HeaderMap>> {
         Ok(None)
     }
 }
 
 pub mod base {
-    use crate::Str;
-
     pub const IDP: &str = "https://idp.e-kreta.hu";
     pub const ADMIN: &str = "https://eugyintezes.e-kreta.hu";
 
-    pub fn school_base(school_id: impl AsRef<str>) -> Str {
+    pub fn school_base(school_id: impl AsRef<str>) -> String {
         format!("https://{}.e-kreta.hu", school_id.as_ref()).into()
     }
 }

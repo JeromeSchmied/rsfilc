@@ -21,7 +21,7 @@ pub struct School {
     pub fenntarto_nev: String,
 }
 impl School {
-    pub fn fetch_schools_resp() -> Result<reqwest::blocking::Response, Box<dyn std::error::Error>> {
+    pub fn fetch_schools_resp() -> crate::Res<reqwest::blocking::Response> {
         let uri = [School::base_url("").as_ref(), School::path(&()).as_str()].concat();
         let resp = reqwest::blocking::get(uri)?;
         Ok(resp)
@@ -35,7 +35,7 @@ impl Endpoint for School {
         "/intezmenyek/kreta/publikus".into()
     }
 
-    fn base_url(_args: impl AsRef<str>) -> crate::Str {
+    fn base_url(_args: impl AsRef<str>) -> String {
         "https://kretaglobalapi.e-kreta.hu".into()
     }
 }

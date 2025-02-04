@@ -28,7 +28,7 @@ impl Endpoint for Token {
     fn path(_args: &Self::Args) -> String {
         "/connect/token".into()
     }
-    fn base_url(_args: impl AsRef<str>) -> crate::Str {
+    fn base_url(_args: impl AsRef<str>) -> String {
         super::base::IDP.into()
     }
     fn query(input: &Self::Args) -> Res<impl serde::Serialize> {
