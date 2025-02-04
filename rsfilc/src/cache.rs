@@ -1,7 +1,6 @@
 use crate::{paths::cache_path, Res};
 use chrono::{DateTime, Local};
 use ekreta::LDateTime;
-use log::info;
 use std::fs::{self, File};
 use std::io::Write;
 
@@ -10,7 +9,7 @@ pub fn store(kind: &str, content: &str) -> Res<()> {
     let cp = cache_path(kind);
     // let mut f = OpenOptions::new().create(true).append(true).open(&cp)?;
     let mut f = File::create(&cp)?;
-    info!("caching to {cp:?}");
+    log::info!("caching to {cp:?}");
 
     // let content = serde_json::to_string(content)?;
     writeln!(f, "{}", Local::now().to_rfc3339())?;
@@ -26,7 +25,7 @@ pub fn load(kind: &str) -> Option<(LDateTime, String)> {
     if !cp.exists() {
         return None;
     }
-    info!("loading cache from {cp:?}");
+    log::info!("loading cache from {cp:?}");
     let content = if let Ok(cont) = fs::read_to_string(cp) {
         cont
     } else {

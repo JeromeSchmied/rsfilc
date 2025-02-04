@@ -2,12 +2,11 @@
 
 use crate::time::MyDate;
 use ekreta::AnnouncedTest;
-use log::info;
 use std::fmt::Write;
 
 /// filter [`Ancd`] tests by `subj`ect
 pub fn filter_by_subject(ancds: &mut Vec<AnnouncedTest>, subj: &str) {
-    info!("filtering announced tests by subject: {}", subj);
+    log::info!("filtering announced tests by subject: {}", subj);
     ancds.retain(|ancd| {
         ancd.tantargy_neve
             .to_lowercase()

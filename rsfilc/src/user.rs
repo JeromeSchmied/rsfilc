@@ -1,7 +1,10 @@
 use crate::{paths::cred_path, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
-use ekreta::{consts, header, HeaderMap, LDateTime, MsgItem, MsgKind, MsgOview, Token};
+use ekreta::{
+    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
+    Lesson, MsgItem, MsgKind, MsgOview, OptIrval, Token,
+};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -375,10 +378,10 @@ impl User {
     /// # Errors
     ///
     /// net
-    pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Evaluation>> {
+    pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
         let (cache_t, cache_content) = cache::load("evals").unzip();
         let mut evals = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Evaluation>>(cached)?
+            serde_json::from_str::<Vec<Eval>>(cached)?
         } else {
             vec![]
         };
@@ -493,10 +496,10 @@ impl User {
     /// # Panics
     ///
     /// sorting
-    pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<AnnouncedTest>> {
+    pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
         let (cache_t, cache_content) = cache::load("announced").unzip();
         let mut tests = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<AnnouncedTest>>(cached)?
+            serde_json::from_str::<Vec<Ancd>>(cached)?
         } else {
             vec![]
         };

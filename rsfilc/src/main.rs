@@ -1,35 +1,27 @@
+use args::{Args, Commands};
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
+use ekreta::Res;
 use log::*;
 use paths::{delete_cache_dir, log_file, log_path};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
 };
+use user::User;
 
-// reexports
-pub use args::{Args, Commands};
-pub use ekreta::Absence;
-pub use ekreta::AnnouncedTest;
-pub use ekreta::Evaluation;
-pub use ekreta::Lesson;
-pub use ekreta::OptIrval;
-pub use ekreta::Res;
-pub use user::User;
-
-pub mod absences;
-pub mod announced;
-pub mod args;
-pub mod cache;
-pub mod endpoints;
-pub mod evals;
-pub mod information;
-pub mod messages;
-pub mod paths;
-pub mod schools;
+mod absences;
+mod announced;
+mod args;
+mod cache;
+mod evals;
+mod information;
+mod messages;
+mod paths;
+mod schools;
 mod time;
-pub mod timetable;
-pub mod user;
+mod timetable;
+mod user;
 
 fn main() -> Res<()> {
     // set up fern

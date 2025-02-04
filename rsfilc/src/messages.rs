@@ -1,15 +1,13 @@
 //! messages from teachers and staff
 
-use crate::paths::download_dir;
-use crate::*;
-use ekreta::MsgKind;
+use crate::{paths::download_dir, time::MyDate};
+use ekreta::{MsgKind, Res};
 use std::{
     char,
     fmt::{self, Write},
     io::Read,
     process::{Child, Command, Stdio},
 };
-use time::MyDate;
 
 // impl fmt::Display for MsgOverview {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
