@@ -17,6 +17,7 @@ pub use endpoints::schools::School;
 pub use endpoints::token::Token;
 pub use endpoints::user_info::UserInfo;
 pub use endpoints::Endpoint;
+pub use http::header::{self, HeaderMap};
 use std::borrow::Cow;
 pub use user::User;
 // pub use error::Error;

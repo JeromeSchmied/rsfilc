@@ -20,12 +20,6 @@ clap_complete = "4.5.2"
 dirs = "5.0.1"
 fern = "0.6.2"
 log = "0.4.21"
-reqwest = { version = "0.12.1", default-features = false, features = [
-  "blocking",
-  "rustls-tls-native-roots",
-  "cookies",
-  "json",
-] }
 rpassword = "7.3.1"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"

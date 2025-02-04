@@ -1,8 +1,7 @@
 use crate::{timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Days, Local, NaiveDate};
-use ekreta::{consts, MessageItem, MessageKind, MessageOverview, Token};
-use reqwest::header::{self, HeaderMap};
+use ekreta::{consts, header, HeaderMap, MessageItem, MessageKind, MessageOverview, Token};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
