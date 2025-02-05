@@ -8,23 +8,18 @@ use std::path::PathBuf;
 const NUM: usize = usize::MAX;
 
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
+#[command(version, about)]
 pub struct Args {
     #[command(subcommand)]
     pub command: Commands,
+    #[arg(value_enum, short, long)]
+    pub completions: Option<clap_complete::Shell>,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
     /// starts the Text User Interface
     Tui {},
-
-    /// generate shell completions
-    Completions {
-        /// the shell to generate the completions for
-        #[arg(value_enum)]
-        shell: clap_complete::Shell,
-    },
 
     /// information about lessons, today by default
     #[clap(visible_alias = "tt")]
@@ -153,7 +148,6 @@ impl Commands {
         !matches!(
             self,
             Commands::Tui {}
-                | Commands::Completions { shell: _ }
                 | Commands::Schools { search: _ }
                 | Commands::User {
                     delete: _,

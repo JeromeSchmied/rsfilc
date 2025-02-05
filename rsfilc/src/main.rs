@@ -41,19 +41,14 @@ fn main() -> Res<()> {
 }
 
 fn run(cli_args: Args, user: &User) -> Res<()> {
+    if let Some(sh) = cli_args.completions {
+        info!("creating shell completions for {sh}");
+        clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
+    }
     match cli_args.command {
         Commands::Tui {} => {
             warn!("TUI is not yet written");
             todo!("TUI is to be written (soon)");
-        }
-        Commands::Completions { shell } => {
-            info!("creating shell completions for {shell}");
-            clap_complete::generate(
-                shell,
-                &mut Args::command(),
-                "rsfilc",
-                &mut std::io::stdout(),
-            );
         }
         Commands::Timetable {
             day,
