@@ -141,20 +141,10 @@ impl Commands {
             list,
         } = &self
         {
-            if !delete && !create && switch.is_none() && !list {
-                return true;
-            }
+            // we do need one on: nothing, switching, listing
+            let nothing_specified = !delete && !create && switch.is_none() && !list;
+            return nothing_specified || switch.is_some() || *list;
         }
-        !matches!(
-            self,
-            Commands::Tui {}
-                | Commands::Schools { search: _ }
-                | Commands::User {
-                    delete: _,
-                    create: _,
-                    switch: _,
-                    list: _
-                }
-        )
+        !matches!(self, Commands::Tui {} | Commands::Schools { search: _ })
     }
 }
