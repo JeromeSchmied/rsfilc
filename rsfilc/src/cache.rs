@@ -40,3 +40,14 @@ pub fn load(kind: &str) -> Option<(LDateTime, String)> {
 
     Some((t.into(), c))
 }
+/// delete all cache and logs as well
+pub fn delete_dir() -> Res<()> {
+    if let Some(cd) = crate::paths::cache_dir() {
+        if cd.exists() {
+            log::warn!("deleting cache dir");
+            fs::remove_dir_all(cd)?;
+            log::info!("done");
+        }
+    }
+    Ok(())
+}

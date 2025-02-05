@@ -1,5 +1,4 @@
 use super::Res;
-use log::{info, warn};
 use std::fs::{self, File};
 use std::path::PathBuf;
 
@@ -20,21 +19,9 @@ pub fn cache_path(kind: &str) -> PathBuf {
     cache_dir().unwrap().join(format!("{}_cache.json", kind))
 }
 
-/// delete all cache and logs as well
-pub fn delete_cache_dir() -> Res<()> {
-    if let Some(cd) = cache_dir() {
-        if cd.exists() {
-            warn!("deleting cache dir");
-            fs::remove_dir_all(cd)?;
-            info!("done");
-        }
-    }
-    Ok(())
-}
-
 /// get log file with the help of [`log_path()`]
 pub fn log_file(kind: &str) -> Res<File> {
-    Ok(File::create(log_path(kind))?)
+    Ok(File::create(log_for(kind))?)
 }
 
 /// get log path for `kind`: `kind`.log
@@ -42,7 +29,7 @@ pub fn log_file(kind: &str) -> Res<File> {
 /// # Panics
 ///
 /// no `cache_path`
-pub fn log_path(kind: &str) -> PathBuf {
+pub fn log_for(kind: &str) -> PathBuf {
     cache_dir()
         .expect("couldn't find cache path")
         .join([kind, ".log"].concat())

@@ -4,7 +4,6 @@ use clap::{CommandFactory, Parser};
 use config::Config;
 use ekreta::Res;
 use log::*;
-use paths::{delete_cache_dir, log_file, log_path};
 use std::{
     fs::{File, OpenOptions},
     io::Write,
@@ -120,7 +119,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                 evals::filter_by_subject(&mut evals, &subject);
             }
 
-            let mut logf = log_file("evals_filtered")?;
+            let mut logf = paths::log_file("evals_filtered")?;
             write!(logf, "{evals:?}")?;
 
             // ghost without average has no effect
@@ -264,7 +263,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                 println!("\nFelhasználók:\n");
                 for current_user in &conf.users {
                     // definitely overkill, but does the job ;)
-                    delete_cache_dir()?;
+                    cache::delete_dir()?;
                     let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
                     let as_str = information::disp(&user_info);
                     println!("\n\n{as_str}");
@@ -280,7 +279,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                 conf.delete(&name);
                 println!("deleted");
             } else if switch {
-                delete_cache_dir()?;
+                cache::delete_dir()?;
                 conf.switch_user_to(name);
                 println!("switched");
             }
@@ -329,7 +328,7 @@ fn set_up_logger() -> Res<()> {
             OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open(log_path("rsfilc"))?,
+                .open(paths::log_for("rsfilc"))?,
         )
         // Apply globally
         .apply()?;
