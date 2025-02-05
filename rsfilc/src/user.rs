@@ -8,16 +8,15 @@ use ekreta::{
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeSet,
     fmt::Debug,
     io::{self, Write},
 };
 
 /// Kréta, app user
 #[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Deserialize, Serialize, Debug)]
-pub struct User(pub ekreta::User);
+pub struct Usr(pub ekreta::User);
 // basic stuff
-impl User {
+impl Usr {
     /// get name of [`User`]
     ///
     /// # Errors
@@ -28,12 +27,12 @@ impl User {
     }
 
     /// create new instance of [`User`]
-    pub fn new(username: &str, password: &str, school_id: &str) -> Self {
-        let password = STANDARD.encode(password);
+    pub fn new(username: impl ToString, password: impl ToString, schoolid: impl ToString) -> Self {
+        let password = STANDARD.encode(password.to_string());
         Self(ekreta::User {
             username: username.to_string(),
-            password: password.to_string(),
-            schoolid: school_id.to_string(),
+            password,
+            schoolid: schoolid.to_string(),
         })
     }
     /// Returns the decoded password of this [`User`].
@@ -51,90 +50,52 @@ impl User {
         Self::new("", "", "")
     }
 
-    /// create a [`User`] from cli and save it!
+    /// create a [`User`] from cli and write it to `conf`!
     ///
     /// # Panics
     ///
     /// `std::io::std(in/out)`
-    pub fn create() -> Option<Self> {
+    pub fn create(username: String, conf: &mut Config) -> Option<Self> {
         info!("creating user from cli");
+        info!("recieved username from cli");
 
-        println!("please log in");
-        print!("username: ");
-        io::stdout().flush().unwrap();
-        let mut username = String::new();
-        io::stdin()
-            .read_line(&mut username)
-            .expect("couldn't read username");
-        let username = username.trim();
-        if username.is_empty() {
-            println!("username is required");
-            return None;
-        }
-        info!("recieved username {username} from cli");
-
-        let password = rpassword::prompt_password("password: ").unwrap_or_default();
-        if password.is_empty() {
+        let Ok(password) = rpassword::prompt_password("password: ") else {
             println!("password is required");
             return None;
-        }
-        info!("recieved password {password} from cli");
+        };
+        info!("recieved password {} from cli", "*".repeat(password.len()));
 
-        print!("school_id: ");
+        print!("schoolid: ");
         io::stdout().flush().unwrap();
-        let mut school_id = String::new();
+        let mut schoolid = String::new();
         io::stdin()
-            .read_line(&mut school_id)
-            .expect("couldn't read school_id");
-        let school_id = school_id.trim();
-        if school_id.is_empty() {
-            println!("school_id is required");
+            .read_line(&mut schoolid)
+            .expect("couldn't read schoolid");
+        let schoolid = schoolid.trim();
+        if schoolid.is_empty() {
+            println!("schoolid is required");
             return None;
         }
-        info!("recieved school_id {school_id} from cli");
+        info!("recieved schoolid {schoolid} from cli");
 
-        let user = Self::new(username, &password, school_id);
-        user.save().ok()?;
+        let user = Self::new(&username, &password, schoolid);
+        user.save(conf);
         Some(user)
     }
 
-    /// Load every saved [`User`] from [`cred_path()`]
-    ///
-    /// # Panics
-    ///
-    /// Panics if cred path does not exist.
-    pub fn load_all() -> Res<BTreeSet<User>> {
-        let config = Config::load()?;
-        info!("loading users");
-
-        Ok(config.users)
-    }
-    /// save [`User`] credentials if not empty
-    fn save(&self) -> Res<()> {
-        info!("saving user");
-        let mut config = Config::load()?;
-
-        config.users.insert(self.clone());
-
-        Config::save(&config)?;
-        Ok(())
-    }
-    pub fn load_default() -> Option<Self> {
-        let conf = Config::load().ok()?;
-        let def_user = conf.default_username;
-        Self::load(&def_user)
+    /// save [`User`] credentials
+    /// also set as default
+    fn save(&self, conf: &mut Config) {
+        conf.users.insert(self.clone());
+        conf.switch_user_to(self.0.username.clone());
     }
 
-    /// load [`User`] with [`User::username`] or [`User::name()`] from [`cred_path()`] and save it to [`config_path()`]
-    /// load by om id
-    pub fn load(id: &str) -> Option<Self> {
-        info!("loading user with {id}");
-        let all_users = Self::load_all().ok()?;
-        let matching_user = all_users.iter().find(|u| u.0.username == id)?;
-
-        matching_user.save().ok()?;
-
-        Some(matching_user.clone())
+    /// load default [`User`]
+    pub fn load(conf: &Config) -> Option<Self> {
+        conf.users
+            .iter()
+            .find(|u| u.0.username == conf.default_username)
+            .cloned()
     }
 
     /// print all lessons of a day
@@ -232,7 +193,7 @@ impl User {
 }
 
 // interacting with API
-impl User {
+impl Usr {
     /// get headers which are necessary for making certain requests
     pub fn headers(&self) -> Res<HeaderMap> {
         Ok(HeaderMap::from_iter([
@@ -498,7 +459,7 @@ impl User {
 }
 
 /// [`Msg`]s and [`Attachment`]s
-impl User {
+impl Usr {
     /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
     ///
     /// # Errors

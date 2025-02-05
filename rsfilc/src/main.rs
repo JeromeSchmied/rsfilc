@@ -1,6 +1,7 @@
 use args::{Args, Commands};
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
+use config::Config;
 use ekreta::Res;
 use log::*;
 use paths::{delete_cache_dir, log_file, log_path};
@@ -8,7 +9,7 @@ use std::{
     fs::{File, OpenOptions},
     io::Write,
 };
-use user::User;
+use user::Usr;
 
 mod absences;
 mod announced;
@@ -30,22 +31,27 @@ fn main() -> Res<()> {
 
     // parse args
     let cli_args = Args::parse();
-
-    // have a valid user
-    let user = create_user(&cli_args)?;
+    let mut config = Config::load()?;
 
     // handle cli args and execute program
-    run(cli_args, &user)?;
+    run(cli_args, &mut config)?;
 
     Ok(())
 }
 
-fn run(cli_args: Args, user: &User) -> Res<()> {
-    if let Some(sh) = cli_args.completions {
+fn run(args: Args, conf: &mut Config) -> Res<()> {
+    // have a valid user
+    let user = if args.command.user_needed() {
+        Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
+    } else {
+        Usr::dummy()
+    };
+
+    if let Some(sh) = args.completions {
         info!("creating shell completions for {sh}");
         clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
     }
-    match cli_args.command {
+    match args.command {
         Commands::Tui {} => {
             warn!("TUI is not yet written");
             todo!("TUI is to be written (soon)");
@@ -252,37 +258,33 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
             create,
             switch,
             list,
+            username,
         } => {
-            if let Some(switch_to) = switch {
-                delete_cache_dir()?;
-                let mut conf = config::Config::load()?;
-                conf.default_username = switch_to.clone();
-                config::Config::save(&conf)?;
-                let switched_to = User::load(&switch_to).expect("couldn't load user");
-                info!("switched to user {switch_to}");
-                println!("switched to {switch_to}");
-                println!("Hello {}!", switched_to.name()?);
-
-                return Ok(());
-            }
-            if delete {
-                todo!("user deletion is not yet ready");
-            } else if create {
-                User::create();
-            } else if list {
+            if list {
                 println!("\nFelhasználók:\n");
-                for current_user in User::load_all()? {
+                for current_user in &conf.users {
+                    // definitely overkill, but does the job ;)
+                    delete_cache_dir()?;
                     let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
                     let as_str = information::disp(&user_info);
                     println!("\n\n{as_str}");
                     fill(&as_str, '-', None);
                 }
-            } else {
-                println!(
-                    "{}",
-                    information::disp(&user.0.fetch_info(&user.headers()?)?)
-                );
+                return Ok(());
             }
+            let name = username.ok_or("no user name found, please pass it as an arg")?;
+            if create {
+                Usr::create(name, conf);
+                println!("created");
+            } else if delete {
+                conf.delete(&name);
+                println!("deleted");
+            } else if switch {
+                delete_cache_dir()?;
+                conf.switch_user_to(name);
+                println!("switched");
+            }
+            conf.save()?;
         }
 
         Commands::Schools { search } => {
@@ -307,27 +309,6 @@ fn run(cli_args: Args, user: &User) -> Res<()> {
         }
     };
     Ok(())
-}
-
-fn create_user(cli_args: &Args) -> Res<User> {
-    if cli_args.command.user_needed() {
-        let users = User::load_all()?; // load every saved user
-        if let Some(default_user) = User::load_default() {
-            Ok(default_user) // if specified, load preferred user
-        } else if let Some(loaded_user) = users.first() {
-            Ok(loaded_user.clone()) // load first user
-        } else if let Some(created) = User::create() {
-            Ok(created)
-        } else {
-            return Err("couldn't find valid user".into());
-        }
-    } else {
-        info!(
-            "created dummy user, as it's not needed for {:?}",
-            cli_args.command
-        );
-        Ok(User::dummy()) // dummy user
-    }
 }
 
 fn set_up_logger() -> Res<()> {
