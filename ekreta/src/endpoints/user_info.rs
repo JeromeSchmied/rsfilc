@@ -15,7 +15,7 @@ pub struct UserInfo {
     pub szuletesi_nev: String,
     pub szuletesi_hely: String,
     pub anyja_neve: String,
-    pub telefonszam: String,
+    pub telefonszam: Option<String>,
     pub email_cim: String,
     pub cimek: Vec<String>,
     pub szuletesi_datum: LDateTime,

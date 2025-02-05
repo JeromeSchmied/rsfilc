@@ -1,4 +1,4 @@
-use crate::{paths::cred_path, time::MyDate, timetable::next_lesson, *, config::Config};
+use crate::{config::Config, paths::cred_path, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
