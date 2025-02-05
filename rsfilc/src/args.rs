@@ -27,6 +27,7 @@ pub enum Commands {
     },
 
     /// information about lessons, today by default
+    #[clap(visible_alias = "tt")]
     Timetable {
         /// which day to show: `name_of_day` or +n/n- (`n` is the number of days added to today) or YYYY/MM/DD
         day: Option<String>,
@@ -41,6 +42,7 @@ pub enum Commands {
     },
 
     /// evaluations/grades the user recieved
+    #[clap(visible_alias = "e")]
     Evals {
         /// filter by `subject`
         #[arg(short, long)]
@@ -62,6 +64,7 @@ pub enum Commands {
     },
 
     /// messages the user either recieved or sent
+    #[clap(visible_alias = "msg")]
     Messages {
         /// number of entries to show
         #[arg(short, long, default_value_t = NUM)]
@@ -75,6 +78,7 @@ pub enum Commands {
     },
 
     /// information about lessons the user missed
+    #[clap(visible_alias = "a")]
     Absences {
         /// filter the subject to show
         #[arg(short, long)]
@@ -91,6 +95,7 @@ pub enum Commands {
     },
 
     /// information about forecoming exams/tests
+    #[clap(visible_alias = "t")]
     Tests {
         /// filter the subject to show
         #[arg(short, long)]
@@ -107,6 +112,7 @@ pub enum Commands {
     },
 
     /// managing users of this program
+    #[clap(visible_alias = "u")]
     User {
         /// delete an existing account
         #[arg(short, long, default_value_t = false)]
@@ -123,6 +129,7 @@ pub enum Commands {
     },
 
     /// information about all schools in the `Kréta` database
+    #[clap(visible_alias = "s")]
     Schools {
         /// search for school
         #[arg(short, long, name = "SCHOOL_PROPERTY")]
