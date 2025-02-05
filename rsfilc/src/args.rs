@@ -11,15 +11,15 @@ const NUM: usize = usize::MAX;
 #[command(version, about)]
 pub struct Args {
     #[command(subcommand)]
-    pub command: Commands,
-    #[arg(value_enum, short, long)]
-    pub completions: Option<clap_complete::Shell>,
+    pub command: Command,
 }
 
 #[derive(Subcommand, Debug)]
-pub enum Commands {
+pub enum Command {
     /// starts the Text User Interface
     Tui {},
+    /// generate completions for <SHELL>
+    Completions { shell: clap_complete::Shell },
 
     /// information about lessons, today by default
     #[clap(visible_alias = "tt")]
@@ -133,10 +133,10 @@ pub enum Commands {
         search: Option<String>,
     },
 }
-impl Commands {
+impl Command {
     pub fn user_needed(&self) -> bool {
         info!("checking whether user is needed for task");
-        if let Commands::User {
+        if let Command::User {
             delete,
             create,
             switch,
@@ -148,6 +148,6 @@ impl Commands {
             let nothing_specified = !delete && !create && !switch && !list;
             return nothing_specified || *switch || *list;
         }
-        !matches!(self, Commands::Tui {} | Commands::Schools { search: _ })
+        !matches!(self, Command::Tui {} | Command::Schools { search: _ })
     }
 }

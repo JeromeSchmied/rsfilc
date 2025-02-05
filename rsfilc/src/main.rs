@@ -1,4 +1,4 @@
-use args::{Args, Commands};
+use args::{Args, Command};
 use chrono::{Datelike, Local};
 use clap::{CommandFactory, Parser};
 use config::Config;
@@ -39,23 +39,26 @@ fn main() -> Res<()> {
 }
 
 fn run(args: Args, conf: &mut Config) -> Res<()> {
+    let cmd = args.command;
+
     // have a valid user
-    let user = if args.command.user_needed() {
+    let user = if cmd.user_needed() {
         Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
     } else {
         Usr::dummy()
     };
 
-    if let Some(sh) = args.completions {
-        info!("creating shell completions for {sh}");
-        clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
-    }
-    match args.command {
-        Commands::Tui {} => {
+    match cmd {
+        Command::Completions { shell: sh } => {
+            info!("creating shell completions for {sh}");
+            clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
+            return Ok(());
+        }
+        Command::Tui {} => {
             warn!("TUI is not yet written");
             todo!("TUI is to be written (soon)");
         }
-        Commands::Timetable {
+        Command::Timetable {
             day,
             current,
             export_day,
@@ -102,7 +105,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             user.print_day(lessons);
         }
 
-        Commands::Evals {
+        Command::Evals {
             subject,
             filter,
             number,
@@ -149,7 +152,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             }
         }
 
-        Commands::Messages {
+        Command::Messages {
             number,
             reverse,
             notes,
@@ -190,7 +193,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             }
         }
 
-        Commands::Absences {
+        Command::Absences {
             number,
             count,
             subject,
@@ -225,7 +228,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             }
         }
 
-        Commands::Tests {
+        Command::Tests {
             number,
             subject,
             reverse,
@@ -252,7 +255,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             }
         }
 
-        Commands::User {
+        Command::User {
             delete,
             create,
             switch,
@@ -286,7 +289,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             conf.save()?;
         }
 
-        Commands::Schools { search } => {
+        Command::Schools { search } => {
             // let schools = School::get_from_refilc()?;
             let mut schools = schools::fetch()?;
             if let Some(school_name) = search {
