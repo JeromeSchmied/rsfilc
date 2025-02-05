@@ -1,16 +1,15 @@
-use crate::{config::Config, paths::cred_path, time::MyDate, timetable::next_lesson, *};
+use crate::{config::Config, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
     consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
-    Lesson, MsgItem, MsgKind, MsgOview, OptIrval, Token,
+    Lesson, MsgItem, OptIrval, Token,
 };
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
     fmt::Debug,
-    fs::File,
     io::{self, Write},
 };
 
@@ -105,7 +104,7 @@ impl User {
     ///
     /// Panics if cred path does not exist.
     pub fn load_all() -> Res<BTreeSet<User>> {
-        let config = config::Config::load()?;
+        let config = Config::load()?;
         info!("loading users");
 
         Ok(config.users)
@@ -113,7 +112,7 @@ impl User {
     /// save [`User`] credentials if not empty
     fn save(&self) -> Res<()> {
         info!("saving user");
-        let mut config = config::Config::load()?;
+        let mut config = Config::load()?;
 
         config.users.insert(self.clone());
 
@@ -519,17 +518,6 @@ impl User {
             info!("recieved file {}", &am.fajl_nev);
         }
         Ok(())
-    }
-
-    /// get all [`MsgOview`]s of a [`MsgKind`]
-    ///
-    /// # Errors
-    ///
-    /// net
-    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: MsgKind) -> Res<Vec<MsgOview>> {
-        let msgs = self.0.fetch_vec(msg_kind, &self.headers()?)?;
-        info!("recieved message overviews of kind: {:?}", msg_kind);
-        Ok(msgs)
     }
 
     // pub fn fetch_messages(&self) -> Res<Vec<MsgItem>> {
