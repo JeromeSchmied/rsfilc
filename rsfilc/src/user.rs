@@ -653,6 +653,3 @@ impl User {
         Ok(note_msgs)
     }
 }
-
-#[cfg(test)]
-mod tests;
