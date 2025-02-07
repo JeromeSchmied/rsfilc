@@ -12,6 +12,9 @@ const NUM: usize = usize::MAX;
 pub struct Args {
     #[command(subcommand)]
     pub command: Command,
+    /// enable verbose logging into the log file
+    #[arg(short, long, default_value_t = false)]
+    pub verbose: bool,
 }
 
 #[derive(Subcommand, Debug)]

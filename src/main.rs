@@ -25,11 +25,11 @@ mod timetable;
 mod user;
 
 fn main() -> Res<()> {
-    // set up fern
-    set_up_logger()?;
-
     // parse args
     let cli_args = Args::parse();
+    // set up fern
+    set_up_logger(cli_args.verbose)?;
+    // load config from file, eg.: users
     let mut config = Config::load()?;
 
     // handle cli args and execute program
@@ -312,7 +312,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
     Ok(())
 }
 
-fn set_up_logger() -> Res<()> {
+fn set_up_logger(verbose: bool) -> Res<()> {
     fern::Dispatch::new()
         // Perform allocation-free log formatting
         .format(|out, message, record| {
@@ -323,8 +323,12 @@ fn set_up_logger() -> Res<()> {
                 record.target(),
             ));
         })
-        // Add blanket level filter -
-        .level(log::LevelFilter::Info)
+        // Add blanket level filter
+        .level(if verbose {
+            log::LevelFilter::Debug
+        } else {
+            log::LevelFilter::Info
+        })
         // Output to stdout, files, and other Dispatch configurations
         .chain(
             OpenOptions::new()
