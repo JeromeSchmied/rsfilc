@@ -101,33 +101,6 @@
 -   androidon Termuxon
 -   mindenen amit támogat a Rust
 
-## API
-
--   [x] Kréta API Url-ek lekérése (nem tudom mire jók)
--   [x] iskolák lekérése [reFilc API](https://api.refilc.hu/v1/public/school-list)-ból
-
--   [x] felhasználó adatainak lekérése (json)
-
-    -   [x] token
-    -   [x] általános információk
-    -   [x] jegyek
-    -   [x] órarend
-    -   [x] üzenetek
-        -   [x] csatolmányok
-    -   [x] előre bejelentett számonkérések
-    -   [x] hiányzások
-
--   [x] felhasználó adatainak használhatóvá tétele (struktúrák)
-
-    -   [x] token
-    -   [x] általános információk
-    -   [x] jegyek
-    -   [x] órarend
-    -   [x] üzenetek
-        -   [x] csatolmányok
-    -   [x] előre bejelentett számonkérések
-    -   [x] hiányzások
-
 ## CLI
 
 -   [x] API alapvető használata
@@ -168,6 +141,5 @@
 
 ## Elismerések
 
-Az API alapvetően [ez alapján a dokumentáció](https://github.com/bczsalba/ekreta-docs-v3) alapján valósult meg.
-Kódinspiráció a [reFilc](https://github.com/refilc/naplo)ből.
+Tessék egy pillantást vetni az [ekreta-rs](https://codeberg.org/jark/ekreta-rs)-re, mely a használt API kliens az E-Krétahoz
 Autókitöltés leírás innen: [zoxide](https://github.com/ajeetdsouza/zoxide)
