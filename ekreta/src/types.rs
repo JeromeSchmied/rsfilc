@@ -48,7 +48,7 @@ pub struct Gondviselo {
 #[serde(rename_all = "PascalCase")]
 pub struct Bankszamla {
     pub bankszamla_szam: String,
-    pub bankszamla_tulajdonos_tipus_id: Option<String>,
+    pub bankszamla_tulajdonos_tipus_id: Option<u32>,
     pub bankszamla_tulajdonos_neve: Option<String>,
     pub is_read_only: bool,
 }

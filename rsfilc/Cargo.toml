@@ -1,6 +1,6 @@
 [package]
 name = "rsfilc"
-version = "0.8.16"
+version = "0.9.4"
 description = "An E-Kréta console client: cli and todo!(\"TUI\"), written entirely in Rust from the ground up."
 keywords = ["kreta", "client", "hungarian"]
 categories = ["command-line-interface"]
@@ -23,4 +23,4 @@ log = "0.4.21"
 rpassword = "7.3.1"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"
-toml = "0.8.12"
+confy = "0.6.1"

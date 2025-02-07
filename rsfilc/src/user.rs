@@ -1,23 +1,22 @@
-use crate::{paths::cred_path, time::MyDate, timetable::next_lesson, *};
+use crate::{config::Config, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
     consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
-    Lesson, MsgItem, MsgKind, MsgOview, OptIrval, Token,
+    Lesson, MsgItem, OptIrval, Token,
 };
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
-    fs::{self, File, OpenOptions},
     io::{self, Write},
 };
 
 /// Kréta, app user
-#[derive(Clone, PartialEq, Deserialize, Serialize, Debug)]
-pub struct User(pub ekreta::User);
+#[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Deserialize, Serialize, Debug)]
+pub struct Usr(pub ekreta::User);
 // basic stuff
-impl User {
+impl Usr {
     /// get name of [`User`]
     ///
     /// # Errors
@@ -28,12 +27,12 @@ impl User {
     }
 
     /// create new instance of [`User`]
-    pub fn new(username: &str, password: &str, school_id: &str) -> Self {
-        let password = STANDARD.encode(password);
+    pub fn new(username: impl ToString, password: impl ToString, schoolid: impl ToString) -> Self {
+        let password = STANDARD.encode(password.to_string());
         Self(ekreta::User {
             username: username.to_string(),
-            password: password.to_string(),
-            schoolid: school_id.to_string(),
+            password,
+            schoolid: schoolid.to_string(),
         })
     }
     /// Returns the decoded password of this [`User`].
@@ -51,182 +50,52 @@ impl User {
         Self::new("", "", "")
     }
 
-    /// create a [`User`] from cli and save it!
+    /// create a [`User`] from cli and write it to `conf`!
     ///
     /// # Panics
     ///
     /// `std::io::std(in/out)`
-    pub fn create() -> Option<Self> {
+    pub fn create(username: String, conf: &mut Config) -> Option<Self> {
         info!("creating user from cli");
+        info!("recieved username from cli");
 
-        println!("please log in");
-        print!("username: ");
-        io::stdout().flush().unwrap();
-        let mut username = String::new();
-        io::stdin()
-            .read_line(&mut username)
-            .expect("couldn't read username");
-        let username = username.trim();
-        if username.is_empty() {
-            println!("username is required");
-            return None;
-        }
-        info!("recieved username {username} from cli");
-
-        let password = rpassword::prompt_password("password: ").unwrap_or_default();
-        if password.is_empty() {
+        let Ok(password) = rpassword::prompt_password("password: ") else {
             println!("password is required");
             return None;
-        }
-        info!("recieved password {password} from cli");
+        };
+        info!("recieved password {} from cli", "*".repeat(password.len()));
 
-        print!("school_id: ");
+        print!("schoolid: ");
         io::stdout().flush().unwrap();
-        let mut school_id = String::new();
+        let mut schoolid = String::new();
         io::stdin()
-            .read_line(&mut school_id)
-            .expect("couldn't read school_id");
-        let school_id = school_id.trim();
-        if school_id.is_empty() {
-            println!("school_id is required");
+            .read_line(&mut schoolid)
+            .expect("couldn't read schoolid");
+        let schoolid = schoolid.trim();
+        if schoolid.is_empty() {
+            println!("schoolid is required");
             return None;
         }
-        info!("recieved school_id {school_id} from cli");
+        info!("recieved schoolid {schoolid} from cli");
 
-        let user = Self::new(username, &password, school_id);
-        if let Ok(name) = user.name() {
-            println!("Hi {name}, nice to see you!");
-        } else {
-            println!("Sorry, couldn't authenticate, make sure you have internet connection and all your credentials are correct.");
-            return None;
-        }
-        user.save();
+        let user = Self::new(&username, &password, schoolid);
+        user.save(conf);
         Some(user)
     }
 
-    /// Load every saved [`User`] from [`cred_path()`]
-    ///
-    /// # Panics
-    ///
-    /// Panics if cred path does not exist.
-    pub fn load_all() -> Vec<Self> {
-        info!("loading users");
-        let cred_path = cred_path().expect("couldn't find credential path");
-
-        if !cred_path.exists() {
-            warn!("credential path doesn't exist");
-            return vec![];
-        }
-
-        let content = fs::read_to_string(cred_path).expect("couldn't read credentials.toml");
-        // migth not be necessary
-        if content.is_empty() {
-            warn!("ain't no user credentials saved");
-            return vec![];
-        }
-
-        let users: Users =
-            toml::from_str(&content).expect("couldn't read user credentials from file");
-
-        users.into()
-    }
-    /// save [`User`] credentials if not empty
-    fn save(&self) {
-        info!("saving user");
-        if Self::load_all().contains(self) {
-            warn!("{:?} is already saved, not saving", self);
-            return;
-        }
-        let cred_path = paths::cred_path().expect("couldn't find config dir");
-        if !cred_path.exists() {
-            info!("creating credential path");
-            fs::create_dir_all(cred_path.parent().expect("couldn't get credential dir"))
-                .expect("couldn't create credential dir");
-        }
-        let mut cred_file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(cred_path)
-            .expect("couldn't save user credentials");
-
-        // don't save if a value is missing
-        if self.0.username.is_empty() || self.0.password.is_empty() || self.0.schoolid.is_empty() {
-            warn!("user {:?} is missing data, not saving", self);
-            return;
-        }
-        write!(
-            cred_file,
-            "{}",
-            toml::to_string(&Users::from(vec![self.clone()])).expect("couldn't serialize user")
-        )
-        .expect("couldn't save user");
+    /// save [`User`] credentials
+    /// also set as default
+    fn save(&self, conf: &mut Config) {
+        conf.users.insert(self.clone());
+        conf.switch_user_to(self.0.username.clone());
     }
 
-    /// load [`User`] with [`User::username`] or [`User::name()`] from [`cred_path()`] and save it to [`config_path()`]
-    pub fn load(username: &str) -> Option<Self> {
-        info!("loading user with {username}");
-        let mut matching_users = Vec::new();
-        for user in Self::load_all() {
-            if user
-                .0
-                .username
-                .to_lowercase()
-                .contains(&username.to_lowercase())
-                || user
-                    .name()
-                    .is_ok_and(|nm| nm.to_lowercase().contains(&username.to_lowercase()))
-            {
-                matching_users.push(user);
-            }
-        }
-        let user = matching_users.first()?;
-        user.save_to_conf();
-
-        Some(user.clone())
-    }
-    /// save [`User`] as default to config.toml
-    ///
-    /// # Panics
-    ///
-    /// - no config path
-    /// - no parent dir
-    /// - deser
-    /// - writeln
-    fn save_to_conf(&self) {
-        info!("saving preferred user's name to config");
-        let conf_path = paths::config_path().expect("couldn't find config path");
-        if !conf_path.exists() {
-            fs::create_dir_all(conf_path.parent().expect("couldn't get config dir"))
-                .expect("couldn't create config dir");
-        }
-        let mut conf_file = File::create(conf_path).expect("couldn't create config file");
-
-        writeln!(
-            conf_file,
-            "{}",
-            toml::to_string(&Config {
-                default_username: self.0.username.clone()
-            })
-            .expect("couldn't deserialize user")
-        )
-        .expect("couldn't save user");
-    }
-    /// load `] configured in [`config_path()`]
-    ///
-    /// # Panics
-    ///
-    /// - can't read config content
-    /// - invalid config
-    pub fn load_conf() -> Option<Self> {
-        info!("loading config");
-        let conf_path = paths::config_path()?;
-        if !conf_path.exists() {
-            return None;
-        }
-        let config_content = fs::read_to_string(conf_path).expect("couldn't read config file");
-        let config = toml::from_str::<Config>(&config_content).expect("couldn't deser config");
-
-        Self::load(&config.default_username)
+    /// load default [`User`]
+    pub fn load(conf: &Config) -> Option<Self> {
+        conf.users
+            .iter()
+            .find(|u| u.0.username == conf.default_username)
+            .cloned()
     }
 
     /// print all lessons of a day
@@ -324,7 +193,7 @@ impl User {
 }
 
 // interacting with API
-impl User {
+impl Usr {
     /// get headers which are necessary for making certain requests
     pub fn headers(&self) -> Res<HeaderMap> {
         Ok(HeaderMap::from_iter([
@@ -590,7 +459,7 @@ impl User {
 }
 
 /// [`Msg`]s and [`Attachment`]s
-impl User {
+impl Usr {
     /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
     ///
     /// # Errors
@@ -610,17 +479,6 @@ impl User {
             info!("recieved file {}", &am.fajl_nev);
         }
         Ok(())
-    }
-
-    /// get all [`MsgOview`]s of a [`MsgKind`]
-    ///
-    /// # Errors
-    ///
-    /// net
-    pub fn fetch_msg_oviews_of_kind(&self, msg_kind: MsgKind) -> Res<Vec<MsgOview>> {
-        let msgs = self.0.fetch_vec(msg_kind, &self.headers()?)?;
-        info!("recieved message overviews of kind: {:?}", msg_kind);
-        Ok(msgs)
     }
 
     // pub fn fetch_messages(&self) -> Res<Vec<MsgItem>> {
@@ -744,29 +602,3 @@ impl User {
         Ok(note_msgs)
     }
 }
-
-/// Vec of [`User`]s, needed for deser
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
-struct Users {
-    users: Vec<User>,
-}
-impl From<Vec<User>> for Users {
-    fn from(users: Vec<User>) -> Self {
-        Users { users }
-    }
-}
-impl From<Users> for Vec<User> {
-    fn from(val: Users) -> Self {
-        val.users
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-/// [`User`] preferences/config
-struct Config {
-    /// the default [`User`]s name to load
-    default_username: String,
-}
-
-#[cfg(test)]
-mod tests;

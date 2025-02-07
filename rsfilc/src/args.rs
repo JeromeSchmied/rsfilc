@@ -8,25 +8,21 @@ use std::path::PathBuf;
 const NUM: usize = usize::MAX;
 
 #[derive(Parser)]
-#[command(version, about, long_about = None)]
+#[command(version, about)]
 pub struct Args {
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Command,
 }
 
 #[derive(Subcommand, Debug)]
-pub enum Commands {
+pub enum Command {
     /// starts the Text User Interface
     Tui {},
-
-    /// generate shell completions
-    Completions {
-        /// the shell to generate the completions for
-        #[arg(value_enum)]
-        shell: clap_complete::Shell,
-    },
+    /// generate completions for <SHELL>
+    Completions { shell: clap_complete::Shell },
 
     /// information about lessons, today by default
+    #[clap(visible_alias = "tt")]
     Timetable {
         /// which day to show: `name_of_day` or +n/n- (`n` is the number of days added to today) or YYYY/MM/DD
         day: Option<String>,
@@ -41,6 +37,7 @@ pub enum Commands {
     },
 
     /// evaluations/grades the user recieved
+    #[clap(visible_alias = "e")]
     Evals {
         /// filter by `subject`
         #[arg(short, long)]
@@ -62,6 +59,7 @@ pub enum Commands {
     },
 
     /// messages the user either recieved or sent
+    #[clap(visible_alias = "msg")]
     Messages {
         /// number of entries to show
         #[arg(short, long, default_value_t = NUM)]
@@ -75,6 +73,7 @@ pub enum Commands {
     },
 
     /// information about lessons the user missed
+    #[clap(visible_alias = "a")]
     Absences {
         /// filter the subject to show
         #[arg(short, long)]
@@ -91,6 +90,7 @@ pub enum Commands {
     },
 
     /// information about forecoming exams/tests
+    #[clap(visible_alias = "t")]
     Tests {
         /// filter the subject to show
         #[arg(short, long)]
@@ -106,8 +106,11 @@ pub enum Commands {
         past: bool,
     },
 
-    /// managing users of this program
+    /// managing users of this program, listing if nothing specified
+    #[clap(visible_alias = "u")]
     User {
+        /// used for args
+        username: Option<String>,
         /// delete an existing account
         #[arg(short, long, default_value_t = false)]
         delete: bool,
@@ -115,45 +118,32 @@ pub enum Commands {
         #[arg(short, long, default_value_t = false)]
         create: bool,
         /// switch between existing accounts
-        #[arg(short, long, name = "USERNAME")]
-        switch: Option<String>,
-        /// list all users
         #[arg(short, long, default_value_t = false)]
-        list: bool,
+        switch: bool,
     },
 
     /// information about all schools in the `Kréta` database
+    #[clap(visible_alias = "s")]
     Schools {
         /// search for school
         #[arg(short, long, name = "SCHOOL_PROPERTY")]
         search: Option<String>,
     },
 }
-impl Commands {
+impl Command {
     pub fn user_needed(&self) -> bool {
         info!("checking whether user is needed for task");
-        if let Commands::User {
+        if let Command::User {
             delete,
             create,
             switch,
-            list,
+            username: _,
         } = &self
         {
-            if !delete && !create && switch.is_none() && !list {
-                return true;
-            }
+            // we do need one on: nothing, switching, listing
+            let nothing_specified = !delete && !create && !switch;
+            return nothing_specified || *switch;
         }
-        !matches!(
-            self,
-            Commands::Tui {}
-                | Commands::Completions { shell: _ }
-                | Commands::Schools { search: _ }
-                | Commands::User {
-                    delete: _,
-                    create: _,
-                    switch: _,
-                    list: _
-                }
-        )
+        !matches!(self, Command::Tui {} | Command::Schools { search: _ })
     }
 }
