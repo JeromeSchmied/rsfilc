@@ -261,18 +261,21 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             switch,
             username,
         } => {
-            let name = username.ok_or("no user name found, please pass it as an arg")?;
-            if create {
-                Usr::create(name, conf);
-                println!("created");
-            } else if delete {
-                conf.delete(&name);
-                println!("deleted");
-            } else if switch {
-                conf.switch_user_to(name);
-                println!("switched");
+            if let Some(name) = username {
+                if create {
+                    Usr::create(name, conf);
+                    println!("created");
+                } else if delete {
+                    conf.delete(&name);
+                    println!("deleted");
+                } else if switch {
+                    conf.switch_user_to(name);
+                    println!("switched");
+                }
+                conf.save()?;
             } else {
-                println!("\nFelhasználók:\n");
+                println!("nem mondtad meg mit/kivel kell csinálni, felsorolom a");
+                println!("\nFelhasználókat:\n");
                 for current_user in &conf.users {
                     // definitely overkill, but does the job ;)
                     cache::delete_dir()?;
@@ -282,7 +285,6 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                     fill(&as_str, '-', None);
                 }
             }
-            conf.save()?;
         }
 
         Command::Schools { search } => {
