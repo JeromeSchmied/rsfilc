@@ -280,7 +280,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                     // definitely overkill, but does the job ;)
                     cache::delete_dir()?;
                     let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
-                    let as_str = information::disp(&user_info);
+                    let as_str = information::disp(&user_info, &current_user.0.username);
                     println!("\n\n{as_str}");
                     fill(&as_str, '-', None);
                 }
