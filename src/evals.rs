@@ -1,8 +1,53 @@
 //! evaluations/grades the user recieved
 
-use crate::time::MyDate;
-use ekreta::Evaluation;
-use std::fmt::Write;
+use crate::{fill, paths, time::MyDate, user::Usr};
+use ekreta::{Evaluation, Res};
+use log::info;
+use std::{fmt::Write, io::Write as _};
+
+pub fn handle(
+    user: &Usr,
+    filter: Option<String>,
+    subj: Option<String>,
+    ghost: &[u8],
+    avg: bool,
+    rev: bool,
+    num: usize,
+) -> Res<()> {
+    let mut evals = user.get_evals((None, None))?;
+    info!("got evals");
+    if let Some(kind) = filter {
+        filter_by_kind_or_title(&mut evals, &kind);
+    }
+    if let Some(subject) = subj {
+        filter_by_subject(&mut evals, &subject);
+    }
+    let mut logf = paths::log_file("evals_filtered")?;
+    write!(logf, "{evals:?}")?;
+    if !ghost.is_empty() && !avg {
+        return Err("Oyy! Didn't I tell you to use `ghost` with `average`?".into());
+    }
+    if avg {
+        let avg = calc_average(&evals, ghost);
+        println!("Average: {avg:.2}");
+
+        return Ok(());
+    }
+    if rev {
+        for eval in evals.iter().take(num).rev() {
+            let as_str = dips(eval);
+            println!("\n\n{as_str}");
+            fill(&as_str, '-', None);
+        }
+    } else {
+        for eval in evals.iter().take(num) {
+            let as_str = dips(eval);
+            println!("\n\n{as_str}");
+            fill(&as_str, '-', None);
+        }
+    }
+    Ok(())
+}
 
 /// Filter `evals` by `kind`
 pub fn filter_by_kind_or_title(evals: &mut Vec<Evaluation>, filter: &str) {
@@ -38,7 +83,7 @@ pub fn filter_by_subject(evals: &mut Vec<Evaluation>, subj: &str) {
 }
 
 /// Calculate average of `evals` and `ghosts` evals
-pub fn average(evals: &[Evaluation], ghosts: &[u8]) -> f32 {
+pub fn calc_average(evals: &[Evaluation], ghosts: &[u8]) -> f32 {
     log::info!("calculating average for evals");
     let evals = evals
         .iter()

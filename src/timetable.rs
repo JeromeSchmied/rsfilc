@@ -1,10 +1,47 @@
 //! lessons the student has
 
+use crate::user::Usr;
 use chrono::{Datelike, Duration, Local, NaiveDate};
-use ekreta::Lesson;
+use ekreta::{Lesson, Res};
 use log::*;
-use std::fmt::Write;
+use std::{fmt::Write, fs::File, io::Write as _, path::PathBuf};
 
+pub fn handle(day: Option<&String>, user: &Usr, current: bool, out_p: Option<PathBuf>) -> Res<()> {
+    let day = parse_day(day);
+    let all_lessons_till_day = user.get_timetable(day, true)?;
+    let lessons = user.get_timetable(day, false)?;
+    if lessons.is_empty() {
+        println!("{} ({}) nincs rögzített órád, juhé!", day, day.weekday());
+        return Ok(());
+    }
+    if current {
+        let current_lessons = current_lessons(&lessons);
+        if let Some(nxt) = next_lesson(&all_lessons_till_day) {
+            println!(
+                "{}m -> {}",
+                (nxt.kezdet_idopont - Local::now()).num_minutes(), // minutes remaining
+                nxt.tantargy.nev
+            );
+        }
+        for current_lesson in current_lessons {
+            println!(
+                "{}, {}m",
+                current_lesson.tantargy.nev,
+                (current_lesson.veg_idopont - Local::now()).num_minutes() // minutes remaining
+            );
+        }
+
+        return Ok(());
+    }
+    if let Some(export_json_to) = out_p {
+        info!("exported timetable to json");
+        let mut f = File::create(export_json_to)?;
+        let content = serde_json::to_string(&lessons)?;
+        write!(f, "{content}")?;
+    }
+    user.print_day(lessons);
+    Ok(())
+}
 /// Parse the day got as `argument`.
 ///
 /// # Panics
@@ -12,7 +49,7 @@ use std::fmt::Write;
 /// Panics if
 /// - day shifter contains invalid number.
 /// - any datetime is invalid.
-pub fn parse_day(day: &Option<String>) -> NaiveDate {
+pub fn parse_day(day: Option<&String>) -> NaiveDate {
     info!("parsing day");
     if let Some(date) = day {
         let date = date.replace(['/', '.'], "-");
@@ -67,7 +104,7 @@ pub fn current_lessons(lessons: &[Lesson]) -> Vec<&Lesson> {
 /// # Warning
 ///
 /// There might accidentally be more next [`Lesson`]s. In this case only one of them is returned.
-/// Also, if there is any current_lesson, None is returned
+/// Also, if there is any `current_lesson`, None is returned
 pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     if !current_lessons(lessons).is_empty() {
         return None;

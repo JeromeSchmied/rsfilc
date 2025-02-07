@@ -1,6 +1,6 @@
 //! messages from teachers and staff
 
-use crate::{paths::download_dir, time::MyDate};
+use crate::{fill, paths::download_dir, time::MyDate, user::Usr};
 use ekreta::{MsgKind, Res};
 use std::{
     char,
@@ -8,6 +8,42 @@ use std::{
     io::Read,
     process::{Child, Command, Stdio},
 };
+
+pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize) -> Res<()> {
+    if notes {
+        let notes = user.get_note_msgs((None, None))?;
+        if rev {
+            for note in notes.iter().take(num).rev() {
+                let as_str = disp_note_msg(note);
+                println!("\n\n\n\n{as_str}");
+                fill(&as_str, '-', None);
+            }
+        } else {
+            for note in notes.iter().take(num) {
+                let as_str = disp_note_msg(note);
+                println!("\n\n\n\n{as_str}");
+                fill(&as_str, '-', None);
+            }
+        }
+
+        return Ok(());
+    }
+    let msgs = user.msgs((None, None))?;
+    if rev {
+        for msg in msgs.iter().rev().take(num) {
+            let as_str = disp_msg(msg);
+            println!("\n\n\n\n{as_str}");
+            fill(&as_str, '-', None);
+        }
+    } else {
+        for msg in msgs.iter().take(num) {
+            let as_str = disp_msg(msg);
+            println!("\n\n\n\n{as_str}");
+            fill(&as_str, '-', None);
+        }
+    }
+    Ok(())
+}
 
 // impl fmt::Display for MsgOverview {
 //     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

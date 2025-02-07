@@ -16,7 +16,7 @@ pub fn cache_dir() -> Option<PathBuf> {
 }
 
 pub fn cache_path(kind: &str) -> PathBuf {
-    cache_dir().unwrap().join(format!("{}_cache.json", kind))
+    cache_dir().unwrap().join(format!("{kind}_cache.json"))
 }
 
 /// get log file with the help of [`log_path()`]
