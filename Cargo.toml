@@ -1,6 +1,6 @@
 [package]
 name = "rsfilc"
-version = "0.9.4"
+version = "0.9.5"
 description = "An E-Kréta console client: cli and todo!(\"TUI\"), written entirely in Rust from the ground up."
 keywords = ["kreta", "client", "hungarian"]
 categories = ["command-line-interface"]
@@ -12,7 +12,7 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ekreta = { path = "../ekreta" }
+ekreta = { git = "https://codeberg.org/jark/ekreta-rs" }
 base64 = "0.22.0"
 chrono = { version = "0.4.37", features = ["serde"] }
 clap = { version = "4.5.4", features = ["derive"] }

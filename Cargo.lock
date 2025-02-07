@@ -388,6 +388,7 @@ checksum = "b2972feb8dffe7bc8c5463b1dacda1b0dfbed3710e50f977d965429692d74cd8"
 [[package]]
 name = "ekreta"
 version = "0.1.0"
+source = "git+https://codeberg.org/jark/ekreta-rs#7c97695eb030e097a4ed016f797ee3e38bf0ab7e"
 dependencies = [
  "chrono",
  "http",
@@ -1299,7 +1300,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
  "base64",
  "chrono",
