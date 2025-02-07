@@ -1,7 +1,29 @@
 //! every school that uses the `Kréta` system
 
-use crate::{cache, Res};
+use crate::{cache, fill, Res};
+use log::info;
 use std::fmt::Write;
+
+pub fn handle(search: Option<String>) -> Res<()> {
+    let mut schools = fetch()?;
+    if let Some(school_name) = search {
+        // let found = School::search(&schools, &school_name);
+        filter(&mut schools, &school_name);
+        for school in schools {
+            let as_str = disp(&school);
+            println!("\n\n{as_str}");
+            fill(&as_str, '-', None);
+        }
+    } else {
+        info!("listing schools");
+        for school in schools {
+            let as_str = disp(&school);
+            println!("\n\n{as_str}");
+            fill(&as_str, '-', None);
+        }
+    }
+    Ok(())
+}
 
 pub fn fetch() -> Res<Vec<ekreta::School>> {
     let cached = cache::load("schools");

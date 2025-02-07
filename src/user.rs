@@ -12,6 +12,41 @@ use std::{
     io::{self, Write},
 };
 
+pub fn handle(
+    username: Option<String>,
+    create: bool,
+    conf: &mut Config,
+    del: bool,
+    switch: bool,
+) -> Res<()> {
+    if let Some(name) = username {
+        if create {
+            Usr::create(name, conf);
+            println!("created");
+        } else if del {
+            conf.delete(&name);
+            println!("deleted");
+        } else if switch {
+            conf.switch_user_to(name);
+            println!("switched");
+        }
+        conf.save()?;
+    } else {
+        println!("nem mondtad meg mit/kivel kell csinálni, felsorolom a");
+        println!("\nFelhasználókat:\n");
+        for current_user in &conf.users {
+            // definitely overkill, but does the job ;)
+            cache::delete_dir()?;
+            let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
+            let as_str = information::disp(&user_info, &current_user.0.username);
+            println!("\n\n{as_str}");
+            fill(&as_str, '-', None);
+        }
+        cache::delete_dir()?;
+    }
+    Ok(())
+}
+
 /// Kréta, app user
 #[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Deserialize, Serialize, Debug)]
 pub struct Usr(pub ekreta::User);
@@ -27,12 +62,12 @@ impl Usr {
     }
 
     /// create new instance of [`User`]
-    pub fn new(username: impl ToString, password: impl ToString, schoolid: impl ToString) -> Self {
-        let password = STANDARD.encode(password.to_string());
+    pub fn new(username: String, password: String, schoolid: String) -> Self {
+        let password = STANDARD.encode(password);
         Self(ekreta::User {
-            username: username.to_string(),
+            username,
             password,
-            schoolid: schoolid.to_string(),
+            schoolid,
         })
     }
     /// Returns the decoded password of this [`User`].
@@ -47,12 +82,12 @@ impl Usr {
     /// creates dummy [`User`], that won't be saved and shouldn't be used
     pub fn dummy() -> Self {
         info!("created dummy user");
-        Self::new("", "", "")
+        Self::new(String::new(), String::new(), String::new())
     }
 
     /// create a [`User`] from cli and write it to `conf`!
     ///
-    /// # Panics
+    /// # Errors
     ///
     /// `std::io::std(in/out)`
     pub fn create(username: String, conf: &mut Config) -> Option<Self> {
@@ -66,19 +101,17 @@ impl Usr {
         info!("recieved password {} from cli", "*".repeat(password.len()));
 
         print!("schoolid: ");
-        io::stdout().flush().unwrap();
+        io::stdout().flush().ok()?;
         let mut schoolid = String::new();
-        io::stdin()
-            .read_line(&mut schoolid)
-            .expect("couldn't read schoolid");
-        let schoolid = schoolid.trim();
+        io::stdin().read_line(&mut schoolid).ok()?;
+        let schoolid = schoolid.trim().to_string();
         if schoolid.is_empty() {
             println!("schoolid is required");
             return None;
         }
         info!("recieved schoolid {schoolid} from cli");
 
-        let user = Self::new(&username, &password, schoolid);
+        let user = Self::new(username, password, schoolid);
         user.save(conf);
         Some(user)
     }
@@ -151,9 +184,9 @@ impl Usr {
                         "\n| {}{}",
                         test.modja.leiras,
                         if let Some(topic) = test.temaja.as_ref() {
-                            format!(": {}", topic)
+                            format!(": {topic}")
                         } else {
-                            "".into()
+                            String::new()
                         }
                     );
                 }
@@ -443,7 +476,7 @@ impl Usr {
             .fetch_absences(interval, &self.headers()?)
             .inspect_err(|e| {
                 fetch_err = true;
-                warn!("couldn't fetch from E-Kréta server: {e:?}")
+                warn!("couldn't fetch from E-Kréta server: {e:?}");
             });
 
         info!("recieved absences");
@@ -466,7 +499,7 @@ impl Usr {
     /// - net
     pub fn download_attachments(&self, msg: &MsgItem) -> Res<()> {
         for am in &msg.uzenet.csatolmanyok {
-            let download_to = messages::download_attachment_to(&am);
+            let download_to = messages::download_attachment_to(am);
             info!("downloading file://{}", download_to.display());
             // don't download if already exists
             if download_to.exists() {
@@ -548,7 +581,7 @@ impl Usr {
             let xl = std::thread::spawn(move || {
                 s.download_attachments(&msg)
                     .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"))
-                    .unwrap()
+                    .unwrap();
             });
             am_handles.push(xl);
         }

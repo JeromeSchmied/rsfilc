@@ -14,7 +14,7 @@ pub fn store(kind: &str, content: &str) -> Res<()> {
     // let content = serde_json::to_string(content)?;
     writeln!(f, "{}", Local::now().to_rfc3339())?;
     // f.write_all(content.as_bytes())?;
-    writeln!(f, "{}", content)?;
+    writeln!(f, "{content}")?;
 
     Ok(())
 }
@@ -26,11 +26,7 @@ pub fn load(kind: &str) -> Option<(LDateTime, String)> {
         return None;
     }
     log::info!("loading cache from {cp:?}");
-    let content = if let Ok(cont) = fs::read_to_string(cp) {
-        cont
-    } else {
-        String::new()
-    };
+    let content = fs::read_to_string(cp).unwrap_or_default();
     let mut cl = content.lines().collect::<Vec<&str>>();
     let t = cl.remove(0);
     let t = DateTime::parse_from_rfc3339(t).ok()?;
