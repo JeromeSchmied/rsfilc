@@ -268,7 +268,7 @@ impl Usr {
         let mut fetch_err = false;
         let fetched_evals = self
             .0
-            .fetch_vec(interval, &self.headers()?)
+            .fetch_evals(interval, &self.headers()?)
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't fetch from E-Kréta server: {e:?}");
@@ -350,7 +350,7 @@ impl Usr {
     ///
     /// - sorting
     fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<Lesson>> {
-        let mut lessons: Vec<Lesson> = self.0.fetch_vec((from, to), &self.headers()?)?;
+        let mut lessons = self.0.fetch_timetable((from, to), &self.headers()?)?;
         info!("recieved lessons");
         lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
         Ok(lessons)
@@ -386,7 +386,7 @@ impl Usr {
         let mut fetch_err = false;
         let fetched_tests = self
             .0
-            .fetch_vec(interval, &self.headers()?)
+            .fetch_announced_tests(interval, &self.headers()?)
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't reach E-Kréta server: {e:?}");
@@ -440,7 +440,7 @@ impl Usr {
         let mut fetch_err = false;
         let fetched_absences = self
             .0
-            .fetch_vec(interval, &self.headers()?)
+            .fetch_absences(interval, &self.headers()?)
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't fetch from E-Kréta server: {e:?}")
@@ -588,7 +588,7 @@ impl Usr {
         let mut fetch_err = false;
         let fetched_note_msgs = self
             .0
-            .fetch_vec(interval, &self.headers()?)
+            .fetch_note_msgs(interval, &self.headers()?)
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't reach E-Kréta server: {e:?}");
