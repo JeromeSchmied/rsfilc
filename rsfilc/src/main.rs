@@ -284,6 +284,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                     println!("\n\n{as_str}");
                     fill(&as_str, '-', None);
                 }
+                cache::delete_dir()?;
             }
         }
 
