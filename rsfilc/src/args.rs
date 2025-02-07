@@ -106,7 +106,7 @@ pub enum Command {
         past: bool,
     },
 
-    /// managing users of this program
+    /// managing users of this program, listing if nothing specified
     #[clap(visible_alias = "u")]
     User {
         /// used for args
@@ -120,9 +120,6 @@ pub enum Command {
         /// switch between existing accounts
         #[arg(short, long, default_value_t = false)]
         switch: bool,
-        /// list all users
-        #[arg(short, long, default_value_t = true)]
-        list: bool,
     },
 
     /// information about all schools in the `Kréta` database
@@ -140,13 +137,12 @@ impl Command {
             delete,
             create,
             switch,
-            list,
             username: _,
         } = &self
         {
             // we do need one on: nothing, switching, listing
-            let nothing_specified = !delete && !create && !switch && !list;
-            return nothing_specified || *switch || *list;
+            let nothing_specified = !delete && !create && !switch;
+            return nothing_specified || *switch;
         }
         !matches!(self, Command::Tui {} | Command::Schools { search: _ })
     }

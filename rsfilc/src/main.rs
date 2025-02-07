@@ -259,10 +259,19 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             delete,
             create,
             switch,
-            list,
             username,
         } => {
-            if list {
+            let name = username.ok_or("no user name found, please pass it as an arg")?;
+            if create {
+                Usr::create(name, conf);
+                println!("created");
+            } else if delete {
+                conf.delete(&name);
+                println!("deleted");
+            } else if switch {
+                conf.switch_user_to(name);
+                println!("switched");
+            } else {
                 println!("\nFelhasználók:\n");
                 for current_user in &conf.users {
                     // definitely overkill, but does the job ;)
@@ -272,19 +281,6 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                     println!("\n\n{as_str}");
                     fill(&as_str, '-', None);
                 }
-                return Ok(());
-            }
-            let name = username.ok_or("no user name found, please pass it as an arg")?;
-            if create {
-                Usr::create(name, conf);
-                println!("created");
-            } else if delete {
-                conf.delete(&name);
-                println!("deleted");
-            } else if switch {
-                cache::delete_dir()?;
-                conf.switch_user_to(name);
-                println!("switched");
             }
             conf.save()?;
         }
