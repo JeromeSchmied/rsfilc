@@ -115,8 +115,11 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
 }
 
 fn set_up_logger(verbose: bool) -> Res<()> {
+    let path = paths::cache_dir()
+        .ok_or("no cache dir")?
+        .join(config::APP_NAME)
+        .with_extension("log");
     fern::Dispatch::new()
-        // Perform allocation-free log formatting
         .format(|out, message, record| {
             out.finish(format_args!(
                 "{} [{}] {} {message}",
@@ -125,20 +128,12 @@ fn set_up_logger(verbose: bool) -> Res<()> {
                 record.target(),
             ));
         })
-        // Add blanket level filter
         .level(if verbose {
             log::LevelFilter::Debug
         } else {
             log::LevelFilter::Info
         })
-        // Output to stdout, files, and other Dispatch configurations
-        .chain(
-            OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(paths::log_for("rsfilc"))?,
-        )
-        // Apply globally
+        .chain(OpenOptions::new().create(true).append(true).open(path)?)
         .apply()?;
     Ok(())
 }

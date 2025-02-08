@@ -1,38 +1,20 @@
-use super::Res;
-use std::fs::{self, File};
-use std::path::PathBuf;
+use crate::config::APP_NAME;
+use std::{fs, path::PathBuf};
 
-/// get path for cache dir
-///
-/// # Panics
-///
+/// get path for cache dir, create if doesn't exist
+/// # Errors
 /// `cache_dir` creation
 pub fn cache_dir() -> Option<PathBuf> {
-    let cache_path = dirs::cache_dir()?.join("rsfilc");
+    let cache_path = dirs::cache_dir()?.join(APP_NAME);
     if !cache_path.exists() {
-        fs::create_dir_all(cache_path).expect("couldn't create cache dir");
+        fs::create_dir_all(&cache_path).ok()?;
     }
-    Some(dirs::cache_dir()?.join("rsfilc"))
+    Some(cache_path)
 }
 
-pub fn cache_path(kind: &str) -> PathBuf {
-    cache_dir().unwrap().join(format!("{kind}_cache.json"))
-}
-
-/// get log file with the help of [`log_path()`]
-pub fn log_file(kind: &str) -> Res<File> {
-    Ok(File::create(log_for(kind))?)
-}
-
-/// get log path for `kind`: `kind`.log
-///
-/// # Panics
-///
-/// no `cache_path`
-pub fn log_for(kind: &str) -> PathBuf {
-    cache_dir()
-        .expect("couldn't find cache path")
-        .join([kind, ".log"].concat())
+/// get cache path for `kind` of thing
+pub fn cache_path(kind: &str) -> Option<PathBuf> {
+    Some(cache_dir()?.join(format!("{kind}_cache.json")))
 }
 
 /// get path for `Downloads/rsfilc`, and create it if doesn't exist yet
@@ -41,13 +23,9 @@ pub fn log_for(kind: &str) -> PathBuf {
 ///
 /// no `Downloads`
 pub fn download_dir() -> PathBuf {
-    let dl_dir = if let Some(default_dl) = dirs::download_dir() {
-        default_dl.join("rsfilc")
-    } else if let Some(home) = dirs::home_dir() {
-        home.join("Downloads").join("rsfilc")
-    } else {
-        panic!("couldn't find Downloads directory");
-    };
+    let dl_dir = dirs::download_dir()
+        .unwrap_or(dirs::home_dir().expect("no home dir").join("Downloads"))
+        .join(APP_NAME);
     if !dl_dir.exists() {
         fs::create_dir_all(&dl_dir).unwrap();
     }

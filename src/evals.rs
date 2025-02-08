@@ -1,9 +1,9 @@
 //! evaluations/grades the user recieved
 
-use crate::{fill, paths, time::MyDate, user::Usr};
+use crate::{fill, time::MyDate, user::Usr};
 use ekreta::{Evaluation, Res};
 use log::info;
-use std::{fmt::Write, io::Write as _};
+use std::fmt::Write;
 
 pub fn handle(
     user: &Usr,
@@ -22,8 +22,6 @@ pub fn handle(
     if let Some(subject) = subj {
         filter_by_subject(&mut evals, &subject);
     }
-    let mut logf = paths::log_file("evals_filtered")?;
-    write!(logf, "{evals:?}")?;
     if !ghost.is_empty() && !avg {
         return Err("Oyy! Didn't I tell you to use `ghost` with `average`?".into());
     }
