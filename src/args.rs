@@ -39,7 +39,7 @@ pub enum Command {
         export_day: Option<PathBuf>,
     },
 
-    /// evaluations/grades the user recieved
+    /// evaluations/grades the user received
     #[clap(visible_alias = "e")]
     Evals {
         /// filter by `subject`
@@ -61,7 +61,7 @@ pub enum Command {
         ghost: Vec<u8>,
     },
 
-    /// messages the user either recieved or sent
+    /// messages the user either received or sent
     #[clap(visible_alias = "msg")]
     Messages {
         /// number of entries to show
