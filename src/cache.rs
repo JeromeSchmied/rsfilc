@@ -5,9 +5,8 @@ use std::fs::{self, File};
 use std::io::Write;
 
 /// save to disk
-pub fn store(kind: &str, content: &str) -> Res<()> {
-    let cp = cache_path(kind).ok_or("couldn't get cache path")?;
-    // let mut f = OpenOptions::new().create(true).append(true).open(&cp)?;
+pub fn store(userid: &str, kind: &str, content: &str) -> Res<()> {
+    let cp = cache_path(userid, kind).ok_or("couldn't get cache path")?;
     let mut f = File::create(&cp)?;
     log::info!("caching to {cp:?}");
 
@@ -20,8 +19,8 @@ pub fn store(kind: &str, content: &str) -> Res<()> {
 }
 
 /// load from disk
-pub fn load(kind: &str) -> Option<(LDateTime, String)> {
-    let cp = cache_path(kind)?;
+pub fn load(userid: &str, kind: &str) -> Option<(LDateTime, String)> {
+    let cp = cache_path(userid, kind)?;
     if !cp.exists() {
         return None;
     }
@@ -37,8 +36,8 @@ pub fn load(kind: &str) -> Option<(LDateTime, String)> {
     Some((t.into(), c))
 }
 /// delete all cache and logs as well
-pub fn delete_dir() -> Res<()> {
-    if let Some(cd) = crate::paths::cache_dir() {
+pub fn delete_dir(userid: &str) -> Res<()> {
+    if let Some(cd) = crate::paths::cache_dir(userid) {
         if cd.exists() {
             log::warn!("deleting cache dir");
             fs::remove_dir_all(cd)?;

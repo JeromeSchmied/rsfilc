@@ -36,13 +36,11 @@ pub fn handle(
         println!("\nFelhasználókat:\n");
         for current_user in &conf.users {
             // definitely overkill, but does the job ;)
-            cache::delete_dir()?;
             let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
             let as_str = information::disp(&user_info, &current_user.0.username);
             println!("\n\n{as_str}");
             fill(&as_str, '-', None);
         }
-        cache::delete_dir()?;
     }
     Ok(())
 }
@@ -160,11 +158,11 @@ impl Usr {
 
             for (n, lesson) in lessons.iter().enumerate() {
                 // calculate `n`. this lesson is
-                let nth = lesson.oraszam;
+                let nth = lesson.oraszam.unwrap_or(u8::MAX);
                 if n as u8 + 2 == nth
                     && lessons
                         .get(n - 1)
-                        .is_none_or(|prev| prev.oraszam == n as u8)
+                        .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
                 {
                     let no_lesson_buf = format!(
                         "\n\n{}. Lyukas (avagy Lukas) óra\n| Erre az időpontra nincsen tanóra rögzítve.",
@@ -239,7 +237,7 @@ impl Usr {
     }
 
     fn get_token(&self) -> Res<Token> {
-        if let Some((cache_t, cache_content)) = cache::load("token") {
+        if let Some((cache_t, cache_content)) = cache::load(&self.0.username, "token") {
             let cached_token: Token = serde_json::from_str(&cache_content)?;
             if Local::now().signed_duration_since(cache_t)
                 < chrono::Duration::seconds(cached_token.expires_in.into())
@@ -252,7 +250,7 @@ impl Usr {
             let txt = response.text()?;
 
             let token = serde_json::from_str(&txt)?;
-            cache::store("token", &txt)?;
+            cache::store(&self.0.username, "token", &txt)?;
             return Ok(token);
         }
         let decoded_password = self.decode_password();
@@ -264,7 +262,7 @@ impl Usr {
         let text = resp.text()?;
 
         let token = serde_json::from_str(&text)?;
-        cache::store("token", &text)?;
+        cache::store(&self.0.username, "token", &text)?;
         info!("received token");
         Ok(token)
     }
@@ -279,7 +277,7 @@ impl Usr {
     ///
     /// net
     pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
-        let (cache_t, cache_content) = cache::load("evals").unzip();
+        let (cache_t, cache_content) = cache::load(&self.0.username, "evals").unzip();
         let mut evals = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Eval>>(cached)?
         } else {
@@ -311,13 +309,13 @@ impl Usr {
         evals.sort_by(|a, b| b.keszites_datuma.partial_cmp(&a.keszites_datuma).unwrap());
         evals.dedup();
         if interval.0.is_none() && !fetch_err {
-            cache::store("evals", &serde_json::to_string(&evals)?)?;
+            cache::store(&self.0.username, "evals", &serde_json::to_string(&evals)?)?;
         }
         Ok(evals)
     }
 
     pub fn get_timetable(&self, day: NaiveDate, everything_till_day: bool) -> Res<Vec<Lesson>> {
-        let (_, cache_content) = cache::load("timetable").unzip();
+        let (_, cache_content) = cache::load(&self.0.username, "timetable").unzip();
         let mut lessons = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Lesson>>(cached)?
         } else {
@@ -363,7 +361,11 @@ impl Usr {
         lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
         lessons.dedup_by_key(|l| l.kezdet_idopont);
         if !fetch_err {
-            cache::store("timetable", &serde_json::to_string(&lessons)?)?;
+            cache::store(
+                &self.0.username,
+                "timetable",
+                &serde_json::to_string(&lessons)?,
+            )?;
         }
         if !everything_till_day {
             lessons.retain(|lsn| lsn.kezdet_idopont.date_naive() == day);
@@ -397,7 +399,7 @@ impl Usr {
     ///
     /// sorting
     pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
-        let (cache_t, cache_content) = cache::load("announced").unzip();
+        let (cache_t, cache_content) = cache::load(&self.0.username, "announced").unzip();
         let mut tests = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Ancd>>(cached)?
         } else {
@@ -435,7 +437,11 @@ impl Usr {
             tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
         }
         if interval.0.is_none() && !fetch_err {
-            cache::store("announced", &serde_json::to_string(&tests)?)?;
+            cache::store(
+                &self.0.username,
+                "announced",
+                &serde_json::to_string(&tests)?,
+            )?;
         }
 
         Ok(tests)
@@ -451,7 +457,7 @@ impl Usr {
     ///
     /// sorting
     pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
-        let (cache_t, cache_content) = cache::load("absences").unzip();
+        let (cache_t, cache_content) = cache::load(&self.0.username, "absences").unzip();
         let mut absences = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<Absence>>(cached)?
         } else {
@@ -482,7 +488,11 @@ impl Usr {
         absences.sort_by(|a, b| b.ora.kezdo_datum.partial_cmp(&a.ora.kezdo_datum).unwrap());
 
         if interval.0.is_none() && !fetch_err {
-            cache::store("absences", &serde_json::to_string(&absences)?)?;
+            cache::store(
+                &self.0.username,
+                "absences",
+                &serde_json::to_string(&absences)?,
+            )?;
         }
 
         Ok(absences)
@@ -523,7 +533,7 @@ impl Usr {
     ///
     /// - net
     pub fn msgs(&self, interval: OptIrval) -> Res<Vec<MsgItem>> {
-        let (cache_t, cache_content) = cache::load("messages").unzip();
+        let (cache_t, cache_content) = cache::load(&self.0.username, "messages").unzip();
         let mut msgs = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<MsgItem>>(cached)?
         } else {
@@ -586,7 +596,7 @@ impl Usr {
             j.map_err(|e| *e.downcast::<String>().unwrap())?;
         }
         if interval.0.is_none() && !fetch_err {
-            cache::store("messages", &serde_json::to_string(&msgs)?)?;
+            cache::store(&self.0.username, "messages", &serde_json::to_string(&msgs)?)?;
         }
         Ok(msgs)
     }
@@ -597,7 +607,7 @@ impl Usr {
     ///
     /// - net
     pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
-        let (cache_t, cache_content) = cache::load("note_messages").unzip();
+        let (cache_t, cache_content) = cache::load(&self.0.username, "note_messages").unzip();
         let mut note_msgs = if let Some(cached) = &cache_content {
             serde_json::from_str::<Vec<ekreta::NoteMsg>>(cached)?
         } else {
@@ -625,7 +635,11 @@ impl Usr {
 
         note_msgs.extend(fetched_note_msgs.unwrap_or_default());
         if interval.0.is_none() && !fetch_err {
-            cache::store("note_messages", &serde_json::to_string(&note_msgs)?)?;
+            cache::store(
+                &self.0.username,
+                "note_messages",
+                &serde_json::to_string(&note_msgs)?,
+            )?;
         }
 
         Ok(note_msgs)
