@@ -262,8 +262,6 @@ impl Usr {
         };
         let resp = tmp_user.get_token_resp()?;
         let text = resp.text()?;
-        let mut logf = paths::log_file("token")?;
-        write!(logf, "{text}")?;
 
         let token = serde_json::from_str(&text)?;
         cache::store("token", &text)?;
@@ -565,8 +563,6 @@ impl Usr {
             });
             handles.push(h);
         }
-        let mut logf = paths::log_file("messages")?;
-        write!(logf, "{fetched_msgs:?}")?;
 
         let mut am_handles = Vec::new();
 

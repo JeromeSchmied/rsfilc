@@ -6,7 +6,7 @@ use std::io::Write;
 
 /// save to disk
 pub fn store(kind: &str, content: &str) -> Res<()> {
-    let cp = cache_path(kind);
+    let cp = cache_path(kind).ok_or("couldn't get cache path")?;
     // let mut f = OpenOptions::new().create(true).append(true).open(&cp)?;
     let mut f = File::create(&cp)?;
     log::info!("caching to {cp:?}");
@@ -21,10 +21,7 @@ pub fn store(kind: &str, content: &str) -> Res<()> {
 
 /// load from disk
 pub fn load(kind: &str) -> Option<(LDateTime, String)> {
-    let cp = cache_path(kind);
-    if !cp.exists() {
-        return None;
-    }
+    let cp = cache_path(kind)?;
     log::info!("loading cache from {cp:?}");
     let content = fs::read_to_string(cp).unwrap_or_default();
     let mut cl = content.lines().collect::<Vec<&str>>();

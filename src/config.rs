@@ -2,7 +2,7 @@ use crate::{Res, Usr};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
-const APP_NAME: &str = "rsfilc";
+pub const APP_NAME: &str = "rsfilc";
 const CONFIG_NAME: &str = "config";
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
