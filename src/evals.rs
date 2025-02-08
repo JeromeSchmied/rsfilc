@@ -1,4 +1,4 @@
-//! evaluations/grades the user recieved
+//! evaluations/grades the user received
 
 use crate::{fill, time::MyDate, user::Usr};
 use ekreta::{Evaluation, Res};

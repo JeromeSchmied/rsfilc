@@ -92,13 +92,13 @@ impl Usr {
     /// `std::io::std(in/out)`
     pub fn create(username: String, conf: &mut Config) -> Option<Self> {
         info!("creating user from cli");
-        info!("recieved username from cli");
+        info!("received username from cli");
 
         let Ok(password) = rpassword::prompt_password("password: ") else {
             println!("password is required");
             return None;
         };
-        info!("recieved password {} from cli", "*".repeat(password.len()));
+        info!("received password {} from cli", "*".repeat(password.len()));
 
         print!("schoolid: ");
         io::stdout().flush().ok()?;
@@ -109,7 +109,7 @@ impl Usr {
             println!("schoolid is required");
             return None;
         }
-        info!("recieved schoolid {schoolid} from cli");
+        info!("received schoolid {schoolid} from cli");
 
         let user = Self::new(username, password, schoolid);
         user.save(conf);
@@ -305,7 +305,7 @@ impl Usr {
                 warn!("couldn't fetch from E-Kréta server: {e:?}");
             });
 
-        info!("recieved evals");
+        info!("received evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
         evals.sort_by(|a, b| b.keszites_datuma.partial_cmp(&a.keszites_datuma).unwrap());
@@ -382,7 +382,7 @@ impl Usr {
     /// - sorting
     fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<Lesson>> {
         let mut lessons = self.0.fetch_timetable((from, to), &self.headers()?)?;
-        info!("recieved lessons");
+        info!("received lessons");
         lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
         Ok(lessons)
     }
@@ -477,7 +477,7 @@ impl Usr {
                 warn!("couldn't fetch from E-Kréta server: {e:?}");
             });
 
-        info!("recieved absences");
+        info!("received absences");
         absences.extend(fetched_absences.unwrap_or_default());
         absences.sort_by(|a, b| b.ora.kezdo_datum.partial_cmp(&a.ora.kezdo_datum).unwrap());
 
@@ -507,7 +507,7 @@ impl Usr {
             self.0
                 .download_attachment_to(am.azonosito, download_to, &self.headers()?)?;
 
-            info!("recieved file {}", &am.fajl_nev);
+            info!("received file {}", &am.fajl_nev);
         }
         Ok(())
     }
@@ -591,7 +591,7 @@ impl Usr {
         Ok(msgs)
     }
 
-    /// get notes: additional messages the [`User`] recieved.
+    /// get notes: additional messages the [`User`] received.
     ///
     /// # Errors
     ///
