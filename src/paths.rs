@@ -14,7 +14,8 @@ pub fn cache_dir() -> Option<PathBuf> {
 
 /// get cache path for `kind` of thing
 pub fn cache_path(kind: &str) -> Option<PathBuf> {
-    Some(cache_dir()?.join(format!("{kind}_cache.json")))
+    let cache_path = cache_dir()?.join(format!("{kind}_cache.json"));
+    cache_path.exists().then_some(cache_path)
 }
 
 /// get path for `Downloads/rsfilc`, and create it if doesn't exist yet
