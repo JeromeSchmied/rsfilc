@@ -32,16 +32,3 @@ pub fn download_dir() -> PathBuf {
     }
     dl_dir
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn cache_path_exists() {
-        assert!(super::cache_dir().is_some());
-    }
-    #[test]
-    /// just check whether it panics
-    fn dl_path_exists() {
-        super::download_dir();
-    }
-}

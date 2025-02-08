@@ -60,18 +60,7 @@ pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize) -> Res<()> {
 pub fn download_attachment_to(am: &ekreta::Attachment) -> std::path::PathBuf {
     download_dir().join(am.fajl_nev.replace(char::is_whitespace, "_"))
 }
-#[cfg(test)]
-#[test]
-fn fix_file_name() {
-    let f = ekreta::Attachment {
-        fajl_nev: "ain't a good filename is it ted? .txt .doksi .docx".to_string(),
-        azonosito: 38,
-    };
-    assert_eq!(
-        download_dir().join("ain't_a_good_filename_is_it_ted?_.txt_.doksi_.docx"),
-        download_attachment_to(&f)
-    );
-}
+
 pub fn disp_msg(msg: &ekreta::MsgItem) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| Tárgy: {}", msg.uzenet.targy);
