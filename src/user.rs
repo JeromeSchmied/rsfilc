@@ -315,8 +315,8 @@ impl Usr {
         info!("received evals");
 
         evals.extend(fetched_evals.unwrap_or_default());
-        evals.sort_by(|a, b| b.keszites_datuma.partial_cmp(&a.keszites_datuma).unwrap());
-        evals.dedup();
+        evals.sort_unstable_by_key(|e| e.keszites_datuma);
+        evals.dedup_by_key(|e| e.keszites_datuma);
         if interval.0.is_none() && !fetch_err {
             self.store_cache(&evals)?;
         }
@@ -386,7 +386,7 @@ impl Usr {
     fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<Lesson>> {
         let mut lessons = self.0.fetch_timetable((from, to), &self.headers()?)?;
         info!("received lessons");
-        lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
+        lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
         Ok(lessons)
     }
 
@@ -423,8 +423,8 @@ impl Usr {
             });
 
         tests.extend(fetched_tests.unwrap_or_default());
-        tests.sort_by(|a, b| b.datum.partial_cmp(&a.datum).unwrap());
-        tests.dedup();
+        tests.sort_unstable_by_key(|a| a.datum);
+        tests.dedup_by_key(|a| a.datum);
         if let Some(from) = interval.0 {
             info!("filtering, from!");
             tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
@@ -474,7 +474,7 @@ impl Usr {
 
         info!("received absences");
         absences.extend(fetched_absences.unwrap_or_default());
-        absences.sort_by(|a, b| b.ora.kezdo_datum.partial_cmp(&a.ora.kezdo_datum).unwrap());
+        absences.sort_unstable_by_key(|a| a.ora.kezdo_datum);
 
         if interval.0.is_none() && !fetch_err {
             self.store_cache(&absences)?;
@@ -562,6 +562,7 @@ impl Usr {
         }
 
         msgs.extend(fetched_msgs);
+        msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
         msgs.dedup();
         for msg in msgs.clone() {
             let s = self.clone();
