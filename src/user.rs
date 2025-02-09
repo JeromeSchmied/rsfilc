@@ -225,13 +225,27 @@ impl Usr {
 
 // interacting with API
 impl Usr {
+    /// convert type name of `T` to a kind name, used for cache
+    fn type_to_kind_name<T>() -> Res<String> {
+        let type_name = std::any::type_name::<T>();
+        let kind = type_name.split("::").last().ok_or("invalid type_name")?;
+        let kind = kind.trim_matches(['<', '>']).to_ascii_lowercase();
+        Ok(kind)
+    }
     /// helper fn, stores `content` of `kind` to `self.0.username` cache-dir
-    fn store_cache(&self, kind: &str, content: &str) -> Res<()> {
-        cache::store(&self.0.username, kind, content)
+    fn store_cache<S: Serialize>(&self, content: &S) -> Res<()> {
+        let kind = Self::type_to_kind_name::<S>()?;
+
+        let content = serde_json::to_string(content)?;
+        cache::store(&self.0.username, &kind, &content)
     }
     /// helper fn, loads cache of `kind` from `self.0.username` cache-dir
-    fn load_cache(&self, kind: &str) -> Option<(LDateTime, String)> {
-        cache::load(&self.0.username, kind)
+    fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(LDateTime, D)> {
+        let kind = Self::type_to_kind_name::<D>().ok()?;
+
+        let (cache_t, content) = cache::load(&self.0.username, &kind)?;
+        let deserd = serde_json::from_str(&content).ok()?;
+        Some((cache_t, deserd))
     }
     /// get headers which are necessary for making certain requests
     fn headers(&self) -> Res<HeaderMap> {
@@ -245,32 +259,23 @@ impl Usr {
     }
 
     fn get_token(&self) -> Res<Token> {
-        if let Some((cache_t, cache_content)) = self.load_cache("token") {
-            let cached_token: Token = serde_json::from_str(&cache_content)?;
+        if let Some((cache_t, cached_token)) = self.load_cache::<Token>() {
             if Local::now().signed_duration_since(cache_t)
                 < chrono::Duration::seconds(cached_token.expires_in.into())
             {
                 return Ok(cached_token);
             }
             // refresh token
-            let response =
-                ekreta::User::refresh_token_resp(&self.0.schoolid, &cached_token.refresh_token)?;
-            let txt = response.text()?;
-
-            let token = serde_json::from_str(&txt)?;
-            self.store_cache("token", &txt)?;
+            let token = self.0.refresh_token(&cached_token.refresh_token)?;
+            self.store_cache(&token)?;
             return Ok(token);
         }
-        let decoded_password = self.decode_password();
-        let tmp_user = ekreta::User {
-            password: decoded_password,
+        let authed_user = ekreta::User {
+            password: self.decode_password(),
             ..self.clone().0
         };
-        let resp = tmp_user.get_token_resp()?;
-        let text = resp.text()?;
-
-        let token = serde_json::from_str(&text)?;
-        self.store_cache("token", &text)?;
+        let token = authed_user.fetch_token()?;
+        self.store_cache(&token)?;
         info!("received token");
         Ok(token)
     }
@@ -285,12 +290,8 @@ impl Usr {
     ///
     /// net
     pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
-        let (cache_t, cache_content) = self.load_cache("evals").unzip();
-        let mut evals = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Eval>>(cached)?
-        } else {
-            vec![]
-        };
+        let (cache_t, cached_evals) = self.load_cache::<Vec<Eval>>().unzip();
+        let mut evals = cached_evals.unwrap_or_default();
 
         if let Some(ct) = cache_t {
             info!("from cached");
@@ -317,18 +318,14 @@ impl Usr {
         evals.sort_by(|a, b| b.keszites_datuma.partial_cmp(&a.keszites_datuma).unwrap());
         evals.dedup();
         if interval.0.is_none() && !fetch_err {
-            self.store_cache("evals", &serde_json::to_string(&evals)?)?;
+            self.store_cache(&evals)?;
         }
         Ok(evals)
     }
 
     pub fn get_timetable(&self, day: NaiveDate, everything_till_day: bool) -> Res<Vec<Lesson>> {
-        let (_, cache_content) = self.load_cache("timetable").unzip();
-        let mut lessons = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Lesson>>(cached)?
-        } else {
-            vec![]
-        };
+        let (_, cache_tt) = self.load_cache::<Vec<Lesson>>().unzip();
+        let mut lessons = cache_tt.unwrap_or_default();
         let day_from_mon = day
             .and_hms_opt(0, 0, 0)
             .unwrap()
@@ -369,7 +366,7 @@ impl Usr {
         lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
         lessons.dedup_by_key(|l| l.kezdet_idopont);
         if !fetch_err {
-            self.store_cache("timetable", &serde_json::to_string(&lessons)?)?;
+            self.store_cache(&lessons)?;
         }
         if !everything_till_day {
             lessons.retain(|lsn| lsn.kezdet_idopont.date_naive() == day);
@@ -403,12 +400,8 @@ impl Usr {
     ///
     /// sorting
     pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
-        let (cache_t, cache_content) = self.load_cache("announced").unzip();
-        let mut tests = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Ancd>>(cached)?
-        } else {
-            vec![]
-        };
+        let (cache_t, cached_ancd) = self.load_cache::<Vec<Ancd>>().unzip();
+        let mut tests = cached_ancd.unwrap_or_default();
 
         if let Some(ct) = cache_t {
             info!("from cached");
@@ -441,7 +434,7 @@ impl Usr {
             tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
         }
         if interval.0.is_none() && !fetch_err {
-            self.store_cache("announced", &serde_json::to_string(&tests)?)?;
+            self.store_cache(&tests)?;
         }
 
         Ok(tests)
@@ -457,12 +450,8 @@ impl Usr {
     ///
     /// sorting
     pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
-        let (cache_t, cache_content) = self.load_cache("absences").unzip();
-        let mut absences = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Absence>>(cached)?
-        } else {
-            vec![]
-        };
+        let (cache_t, cached_abs) = self.load_cache::<Vec<Absence>>().unzip();
+        let mut absences = cached_abs.unwrap_or_default();
 
         if let Some(ct) = cache_t {
             info!("from cached");
@@ -488,7 +477,7 @@ impl Usr {
         absences.sort_by(|a, b| b.ora.kezdo_datum.partial_cmp(&a.ora.kezdo_datum).unwrap());
 
         if interval.0.is_none() && !fetch_err {
-            self.store_cache("absences", &serde_json::to_string(&absences)?)?;
+            self.store_cache(&absences)?;
         }
 
         Ok(absences)
@@ -529,12 +518,8 @@ impl Usr {
     ///
     /// - net
     pub fn msgs(&self, interval: OptIrval) -> Res<Vec<MsgItem>> {
-        let (cache_t, cache_content) = self.load_cache("messages").unzip();
-        let mut msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<MsgItem>>(cached)?
-        } else {
-            vec![]
-        };
+        let (cache_t, cached_msg) = self.load_cache::<Vec<MsgItem>>().unzip();
+        let mut msgs = cached_msg.unwrap_or_default();
         let from = if let Some(ct) = cache_t {
             Some(ct)
         } else {
@@ -592,7 +577,7 @@ impl Usr {
             j.map_err(|e| *e.downcast::<String>().unwrap())?;
         }
         if interval.0.is_none() && !fetch_err {
-            self.store_cache("messages", &serde_json::to_string(&msgs)?)?;
+            self.store_cache(&msgs)?;
         }
         Ok(msgs)
     }
@@ -603,12 +588,8 @@ impl Usr {
     ///
     /// - net
     pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
-        let (cache_t, cache_content) = self.load_cache("note_messages").unzip();
-        let mut note_msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<ekreta::NoteMsg>>(cached)?
-        } else {
-            vec![]
-        };
+        let (cache_t, cached_notemsgs) = self.load_cache::<Vec<ekreta::NoteMsg>>().unzip();
+        let mut note_msgs = cached_notemsgs.unwrap_or_default();
 
         if let Some(ct) = cache_t {
             info!("from cached");
@@ -631,7 +612,7 @@ impl Usr {
 
         note_msgs.extend(fetched_note_msgs.unwrap_or_default());
         if interval.0.is_none() && !fetch_err {
-            self.store_cache("note_messages", &serde_json::to_string(&note_msgs)?)?;
+            self.store_cache(&note_msgs)?;
         }
 
         Ok(note_msgs)
