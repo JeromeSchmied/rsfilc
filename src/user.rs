@@ -292,19 +292,11 @@ impl Usr {
     /// # Errors
     ///
     /// net
-    pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
+    pub fn get_evals(&self, interval: OptIrval) -> Res<Vec<Eval>> {
         let (cache_t, cached_evals) = self.load_cache::<Vec<Eval>>().unzip();
         let mut evals = cached_evals.unwrap_or_default();
 
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            interval.0 = Some(ct.date_naive());
-        } else if let Some(from) = interval.0 {
-            interval.0 = Some(from);
-        }
-        if let Some(to) = interval.1 {
-            interval.1 = Some(to);
-        }
+        let interval = fix_irval(cache_t, interval);
 
         let mut fetch_err = false;
         let fetched_evals = self.fetch_vec(interval).inspect_err(|e| {
@@ -372,19 +364,11 @@ impl Usr {
     /// # Panics
     ///
     /// sorting
-    pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
+    pub fn get_all_announced(&self, interval: OptIrval) -> Res<Vec<Ancd>> {
         let (cache_t, cached_ancd) = self.load_cache::<Vec<Ancd>>().unzip();
         let mut tests = cached_ancd.unwrap_or_default();
 
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            interval.0 = Some(ct.date_naive());
-        } else if let Some(from) = interval.0 {
-            interval.0 = Some(from);
-        }
-        if let Some(to) = interval.1 {
-            interval.1 = Some(to);
-        }
+        let interval = fix_irval(cache_t, interval);
 
         let mut fetch_err = false;
         let fetched_tests = self.fetch_vec(interval).inspect_err(|e| {
@@ -419,19 +403,11 @@ impl Usr {
     /// # Panics
     ///
     /// sorting
-    pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
+    pub fn get_absences(&self, interval: OptIrval) -> Res<Vec<Absence>> {
         let (cache_t, cached_abs) = self.load_cache::<Vec<Absence>>().unzip();
         let mut absences = cached_abs.unwrap_or_default();
 
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            interval.0 = Some(ct.date_naive());
-        } else if let Some(from) = interval.0 {
-            interval.0 = Some(from);
-        }
-        if let Some(to) = interval.1 {
-            interval.1 = Some(to);
-        }
+        let interval = fix_irval(cache_t, interval);
 
         let mut fetch_err = false;
         let fetched_absences = self.fetch_vec(interval).inspect_err(|e| {
@@ -449,6 +425,15 @@ impl Usr {
 
         Ok(absences)
     }
+}
+
+/// use `cache_t` as `interval.0` (from) if some
+fn fix_irval(cache_t: Option<DateTime<Utc>>, mut interval: OptIrval) -> OptIrval {
+    if let Some(ct) = cache_t {
+        info!("from cached");
+        interval.0 = Some(ct.date_naive());
+    }
+    interval
 }
 
 /// [`Msg`]s and [`Attachment`]s
@@ -483,11 +468,8 @@ impl Usr {
     pub fn msgs(&self, interval: OptIrval) -> Res<Vec<MsgItem>> {
         let (cache_t, cached_msg) = self.load_cache::<Vec<MsgItem>>().unzip();
         let mut msgs = cached_msg.unwrap_or_default();
-        let from = if let Some(ct) = cache_t {
-            Some(ct.date_naive())
-        } else {
-            interval.0
-        };
+
+        let (from, _) = fix_irval(cache_t, interval);
 
         let mut fetched_msgs = Vec::new();
         let mut handles = Vec::new();
@@ -551,19 +533,11 @@ impl Usr {
     /// # Errors
     ///
     /// - net
-    pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
+    pub fn get_note_msgs(&self, interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
         let (cache_t, cached_notemsgs) = self.load_cache::<Vec<ekreta::NoteMsg>>().unzip();
         let mut note_msgs = cached_notemsgs.unwrap_or_default();
 
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            interval.0 = Some(ct.date_naive());
-        } else if let Some(from) = interval.0 {
-            interval.0 = Some(from);
-        }
-        if let Some(to) = interval.1 {
-            interval.1 = Some(to);
-        }
+        let interval = fix_irval(cache_t, interval);
 
         let mut fetch_err = false;
         let fetched_note_msgs = self.fetch_vec(interval).inspect_err(|e| {
