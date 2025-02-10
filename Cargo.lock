@@ -397,8 +397,8 @@ checksum = "b2972feb8dffe7bc8c5463b1dacda1b0dfbed3710e50f977d965429692d74cd8"
 
 [[package]]
 name = "ekreta"
-version = "0.1.1"
-source = "git+https://codeberg.org/jark/ekreta-rs#7966b83fbfa030d6010a8f5c770e66e7990fcec1"
+version = "0.1.4"
+source = "git+https://codeberg.org/jark/ekreta-rs#921518dc36da82a7b52d23e5193838ba6a2c15d9"
 dependencies = [
  "chrono",
  "http",
@@ -1184,7 +1184,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
