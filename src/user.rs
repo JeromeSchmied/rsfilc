@@ -368,10 +368,10 @@ impl Usr {
         let (cache_t, cached_ancd) = self.load_cache::<Vec<Ancd>>().unzip();
         let mut tests = cached_ancd.unwrap_or_default();
 
-        let interval = fix_irval(cache_t, interval);
+        let fetch_interval = fix_irval(cache_t, interval);
 
         let mut fetch_err = false;
-        let fetched_tests = self.fetch_vec(interval).inspect_err(|e| {
+        let fetched_tests = self.fetch_vec(fetch_interval).inspect_err(|e| {
             fetch_err = true;
             warn!("couldn't reach E-Kréta server: {e:?}");
         });
