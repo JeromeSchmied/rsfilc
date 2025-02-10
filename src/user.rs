@@ -244,6 +244,12 @@ impl Usr {
         let deserd = serde_json::from_str(&content).ok()?;
         Some((cache_t, deserd))
     }
+    fn fetch_vec<E>(&self, query: E::Args) -> Res<Vec<E>>
+    where
+        E: ekreta::Endpoint + for<'a> serde::Deserialize<'a>,
+    {
+        self.0.fetch_vec(query, &self.headers()?)
+    }
     /// get headers which are necessary for making certain requests
     fn headers(&self) -> Res<HeaderMap> {
         Ok(HeaderMap::from_iter([
@@ -301,13 +307,10 @@ impl Usr {
         }
 
         let mut fetch_err = false;
-        let fetched_evals = self
-            .0
-            .fetch_evals(interval, &self.headers()?)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't fetch from E-Kréta server: {e:?}");
-            });
+        let fetched_evals = self.fetch_vec(interval).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't fetch from E-Kréta server: {e:?}");
+        });
 
         info!("received evals");
 
@@ -341,8 +344,7 @@ impl Usr {
 
         let mut fetch_err = false;
         let fetched_lessons_week = self
-            .0
-            .fetch_timetable((week_start, week_end), &self.headers()?)
+            .fetch_vec((week_start, week_end))
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't deserialize data: {e:?}");
@@ -385,13 +387,10 @@ impl Usr {
         }
 
         let mut fetch_err = false;
-        let fetched_tests = self
-            .0
-            .fetch_announced_tests(interval, &self.headers()?)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't reach E-Kréta server: {e:?}");
-            });
+        let fetched_tests = self.fetch_vec(interval).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't reach E-Kréta server: {e:?}");
+        });
 
         tests.extend(fetched_tests.unwrap_or_default());
         tests.sort_unstable_by_key(|a| a.datum);
@@ -435,13 +434,10 @@ impl Usr {
         }
 
         let mut fetch_err = false;
-        let fetched_absences = self
-            .0
-            .fetch_absences(interval, &self.headers()?)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't fetch from E-Kréta server: {e:?}");
-            });
+        let fetched_absences = self.fetch_vec(interval).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't fetch from E-Kréta server: {e:?}");
+        });
 
         info!("received absences");
         absences.extend(fetched_absences.unwrap_or_default());
@@ -478,10 +474,6 @@ impl Usr {
         Ok(())
     }
 
-    // pub fn fetch_messages(&self) -> Res<Vec<MsgItem>> {
-    //     let msgs = self.fetch_vec((), "")?;
-    //     Ok(msgs)
-    // }
     /// Fetch max `n` [`Msg`]s between `from` and `to`.
     /// Also download all `[Attachment]`s each [`Msg`] has.
     ///
@@ -574,13 +566,10 @@ impl Usr {
         }
 
         let mut fetch_err = false;
-        let fetched_note_msgs = self
-            .0
-            .fetch_note_msgs(interval, &self.headers()?)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't reach E-Kréta server: {e:?}");
-            });
+        let fetched_note_msgs = self.fetch_vec(interval).inspect_err(|e| {
+            fetch_err = true;
+            warn!("couldn't reach E-Kréta server: {e:?}");
+        });
 
         note_msgs.extend(fetched_note_msgs.unwrap_or_default());
         if interval.0.is_none() && !fetch_err {
