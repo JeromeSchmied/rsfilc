@@ -1,9 +1,9 @@
 use crate::{config::Config, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{Datelike, Days, Local, NaiveDate};
+use chrono::{DateTime, Datelike, Days, Local, NaiveDate, Utc};
 use ekreta::{
-    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
-    Lesson, MsgItem, OptIrval, Token,
+    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
+    OptIrval, Token,
 };
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -237,7 +237,7 @@ impl Usr {
         cache::store(&self.0.username, &kind, &content)
     }
     /// helper fn, loads cache of `kind` from `self.0.username` cache-dir
-    fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(LDateTime, D)> {
+    fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(DateTime<Utc>, D)> {
         let kind = Self::type_to_kind_name::<D>().ok()?;
 
         let (cache_t, content) = cache::load(&self.0.username, &kind)?;
@@ -263,7 +263,7 @@ impl Usr {
 
     fn get_token(&self) -> Res<Token> {
         if let Some((cache_t, cached_token)) = self.load_cache::<Token>() {
-            if Local::now().signed_duration_since(cache_t)
+            if Utc::now().signed_duration_since(cache_t)
                 < chrono::Duration::seconds(cached_token.expires_in.into())
             {
                 return Ok(cached_token);

@@ -1,6 +1,5 @@
 use crate::{paths::cache_path, Res};
-use chrono::{DateTime, Local};
-use ekreta::LDateTime;
+use chrono::{DateTime, Utc};
 use std::fs::{self, File};
 use std::io::Write;
 
@@ -10,28 +9,27 @@ pub fn store(userid: &str, kind: &str, content: &str) -> Res<()> {
     let mut f = File::create(&cp)?;
     log::info!("caching to {cp:?}");
 
-    // let content = serde_json::to_string(content)?;
-    writeln!(f, "{}", Local::now().to_rfc3339())?;
-    // f.write_all(content.as_bytes())?;
+    writeln!(f, "//{}", Utc::now().to_rfc3339())?;
     writeln!(f, "{content}")?;
 
     Ok(())
 }
 
 /// load from disk
-pub fn load(userid: &str, kind: &str) -> Option<(LDateTime, String)> {
+pub fn load(userid: &str, kind: &str) -> Option<(DateTime<Utc>, String)> {
     let cp = cache_path(userid, kind)?;
+    log::info!("loading cache from {cp:?}");
     if !cp.exists() {
+        log::warn!("no saved cache exists");
         return None;
     }
-    log::info!("loading cache from {cp:?}");
-    let content = fs::read_to_string(cp).unwrap_or_default();
-    let mut cl = content.lines().collect::<Vec<&str>>();
-    let t = cl.remove(0);
-    let t = DateTime::parse_from_rfc3339(t).ok()?;
+    let content = fs::read_to_string(cp).ok()?;
+    let mut cl = content.lines();
+    let t = cl.next()?;
+    // removing "//" (comment sequence)
+    let t = DateTime::parse_from_rfc3339(&t[2..]).ok()?;
 
-    let c = cl.iter().fold(String::new(), |all, cur| all + cur);
-    // let x = serde_json::from_str(&c)?;
+    let c = cl.next()?.to_string();
 
     Some((t.into(), c))
 }
