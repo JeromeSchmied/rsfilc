@@ -143,10 +143,7 @@ impl Usr {
                 fill(&as_str, '|', None);
             }
             let todays_tests = self
-                .get_all_announced((
-                    Some(first_lesson.kezdet_idopont),
-                    Some(lessons.last().unwrap().veg_idopont),
-                ))
+                .get_all_announced((Some(first_lesson.kezdet_idopont.date_naive()), None))
                 .expect("couldn't fetch announced tests");
             let all_lessons_till_day = self
                 .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
@@ -295,12 +292,12 @@ impl Usr {
 
         if let Some(ct) = cache_t {
             info!("from cached");
-            interval.0 = Some(ct.to_day_with_hms());
+            interval.0 = Some(ct.date_naive());
         } else if let Some(from) = interval.0 {
-            interval.0 = Some(from.to_day_with_hms());
+            interval.0 = Some(from);
         }
         if let Some(to) = interval.1 {
-            interval.1 = Some(to.to_day_with_hms());
+            interval.1 = Some(to);
         }
 
         let mut fetch_err = false;
@@ -342,20 +339,10 @@ impl Usr {
             .checked_add_days(Days::new(day_till_sun.into()))
             .unwrap();
 
-        let mon_start = week_start
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_local_timezone(Local)
-            .unwrap();
-        let sun_end = week_end
-            .and_hms_opt(23, 59, 59)
-            .unwrap()
-            .and_local_timezone(Local)
-            .unwrap();
-
         let mut fetch_err = false;
         let fetched_lessons_week = self
-            .fetch_timetable(mon_start, sun_end)
+            .0
+            .fetch_timetable((week_start, week_end), &self.headers()?)
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't deserialize data: {e:?}");
@@ -374,22 +361,6 @@ impl Usr {
         Ok(lessons)
     }
 
-    /// get all [`Lesson`]s `from` `to` which makes up a timetable
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// - sorting
-    fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<Lesson>> {
-        let mut lessons = self.0.fetch_timetable((from, to), &self.headers()?)?;
-        info!("received lessons");
-        lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
-        Ok(lessons)
-    }
-
     /// get [`Announced`] tests `from` `to` or all
     ///
     /// # Errors
@@ -405,12 +376,12 @@ impl Usr {
 
         if let Some(ct) = cache_t {
             info!("from cached");
-            interval.0 = Some(ct.to_day_with_hms());
+            interval.0 = Some(ct.date_naive());
         } else if let Some(from) = interval.0 {
-            interval.0 = Some(from.to_day_with_hms());
+            interval.0 = Some(from);
         }
         if let Some(to) = interval.1 {
-            interval.1 = Some(to.to_day_with_hms());
+            interval.1 = Some(to);
         }
 
         let mut fetch_err = false;
@@ -455,12 +426,12 @@ impl Usr {
 
         if let Some(ct) = cache_t {
             info!("from cached");
-            interval.0 = Some(ct.to_day_with_hms());
+            interval.0 = Some(ct.date_naive());
         } else if let Some(from) = interval.0 {
-            interval.0 = Some(from.to_day_with_hms());
+            interval.0 = Some(from);
         }
         if let Some(to) = interval.1 {
-            interval.1 = Some(to.to_day_with_hms());
+            interval.1 = Some(to);
         }
 
         let mut fetch_err = false;
@@ -521,7 +492,7 @@ impl Usr {
         let (cache_t, cached_msg) = self.load_cache::<Vec<MsgItem>>().unzip();
         let mut msgs = cached_msg.unwrap_or_default();
         let from = if let Some(ct) = cache_t {
-            Some(ct)
+            Some(ct.date_naive())
         } else {
             interval.0
         };
@@ -536,10 +507,10 @@ impl Usr {
             .unwrap_or_default()
         {
             // if isn't between `from`-`to`
-            if from.is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.date_naive().into())
+            if from.is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.into())
                 || interval
                     .1
-                    .is_some_and(|to| msg_oview.uzenet_kuldes_datum > to.date_naive().into())
+                    .is_some_and(|to| msg_oview.uzenet_kuldes_datum > to.into())
             {
                 continue;
             }
@@ -594,12 +565,12 @@ impl Usr {
 
         if let Some(ct) = cache_t {
             info!("from cached");
-            interval.0 = Some(ct.to_day_with_hms());
+            interval.0 = Some(ct.date_naive());
         } else if let Some(from) = interval.0 {
-            interval.0 = Some(from.to_day_with_hms());
+            interval.0 = Some(from);
         }
         if let Some(to) = interval.1 {
-            interval.1 = Some(to.to_day_with_hms());
+            interval.1 = Some(to);
         }
 
         let mut fetch_err = false;
