@@ -143,7 +143,10 @@ impl Usr {
                 fill(&as_str, '|', None);
             }
             let todays_tests = self
-                .get_all_announced((Some(first_lesson.kezdet_idopont.date_naive()), None))
+                .get_all_announced((
+                    Some(first_lesson.kezdet_idopont.date_naive()),
+                    Some(lessons.last().unwrap().veg_idopont.date_naive()),
+                ))
                 .expect("couldn't fetch announced tests");
             let all_lessons_till_day = self
                 .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
