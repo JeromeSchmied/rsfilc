@@ -36,8 +36,9 @@ pub fn handle(
         println!("\nFelhasználókat:\n");
         for current_user in &conf.users {
             // definitely overkill, but does the job ;)
-            let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
-            let as_str = information::disp(&user_info, &current_user.0.username);
+            let user_info = current_user.get_userinfo()?;
+            let as_str =
+                information::disp(&user_info, &current_user.0.username, &conf.default_username);
             println!("\n\n{as_str}");
             fill(&as_str, '-', None);
         }
@@ -50,15 +51,6 @@ pub fn handle(
 pub struct Usr(pub ekreta::User);
 // basic stuff
 impl Usr {
-    /// get name of [`User`]
-    ///
-    /// # Errors
-    ///
-    /// net
-    pub fn name(&self) -> Res<String> {
-        Ok(self.0.fetch_info(&self.headers()?)?.nev)
-    }
-
     /// create new instance of [`User`]
     pub fn new(username: String, password: String, schoolid: String) -> Self {
         let password = STANDARD.encode(password);
@@ -284,6 +276,15 @@ impl Usr {
         self.store_cache(&token)?;
         info!("received token");
         Ok(token)
+    }
+    fn get_userinfo(&self) -> Res<ekreta::UserInfo> {
+        if let Some((_, cached_info)) = self.load_cache::<ekreta::UserInfo>() {
+            Ok(cached_info)
+        } else {
+            let fetched_info = self.0.fetch_info(&self.headers()?)?;
+            self.store_cache(&fetched_info)?;
+            Ok(fetched_info)
+        }
     }
 
     /// get all [`Eval`]s with `from` `to` or all
