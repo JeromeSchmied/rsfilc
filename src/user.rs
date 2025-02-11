@@ -413,8 +413,10 @@ impl Usr {
 /// use `cache_t` as `interval.0` (from) if some
 fn fix_irval(cache_t: Option<DateTime<Utc>>, mut interval: OptIrval) -> OptIrval {
     if let Some(ct) = cache_t {
-        info!("from cached");
-        interval.0 = Some(ct.date_naive());
+        if interval.0.is_none_or(|from| from < ct.date_naive()) {
+            info!("from cached");
+            interval.0 = Some(ct.date_naive());
+        }
     }
     interval
 }
