@@ -236,7 +236,9 @@ impl Usr {
         let kind = Self::type_to_kind_name::<D>().ok()?;
 
         let (cache_t, content) = cache::load(&self.0.username, &kind)?;
-        let deserd = serde_json::from_str(&content).ok()?;
+        let deserd = serde_json::from_str(&content)
+            .inspect_err(|e| error!("error {e:?} - couldn't deserialize {kind}: {content}"))
+            .ok()?;
         Some((cache_t, deserd))
     }
     fn fetch_vec<E>(&self, query: E::Args) -> Res<Vec<E>>
@@ -296,27 +298,18 @@ impl Usr {
     /// # Errors
     ///
     /// net
-    pub fn get_evals(&self, interval: OptIrval) -> Res<Vec<Eval>> {
-        let (cache_t, cached_evals) = self.load_cache::<Vec<Eval>>().unzip();
-        let mut evals = cached_evals.unwrap_or_default();
-
-        let interval = fix_irval(cache_t, interval);
-
-        let mut fetch_err = false;
-        let fetched_evals = self.fetch_vec(interval).inspect_err(|e| {
-            fetch_err = true;
-            warn!("couldn't fetch from E-Kréta server: {e:?}");
-        });
-
-        info!("received evals");
-
-        evals.extend(fetched_evals.unwrap_or_default());
-        evals.sort_unstable_by_key(|e| e.keszites_datuma);
-        evals.dedup_by_key(|e| e.keszites_datuma);
-        if interval.0.is_none() && !fetch_err {
-            self.store_cache(&evals)?;
+    pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
+        match self.load_n_fetch::<Eval>(&mut interval) {
+            Ok(mut evals) => {
+                evals.sort_unstable_by_key(|e| e.keszites_datuma);
+                evals.dedup_by_key(|e| e.keszites_datuma);
+                if interval.0.is_none() {
+                    self.store_cache(&evals)?;
+                }
+                Ok(evals)
+            }
+            Err(e) => Err(e),
         }
-        Ok(evals)
     }
 
     pub fn get_timetable(&self, day: NaiveDate, everything_till_day: bool) -> Res<Vec<Lesson>> {
@@ -368,34 +361,28 @@ impl Usr {
     /// # Panics
     ///
     /// sorting
-    pub fn get_all_announced(&self, interval: OptIrval) -> Res<Vec<Ancd>> {
-        let (cache_t, cached_ancd) = self.load_cache::<Vec<Ancd>>().unzip();
-        let mut tests = cached_ancd.unwrap_or_default();
+    pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
+        let orig_irval = interval.clone();
+        match self.load_n_fetch::<Ancd>(&mut interval) {
+            Ok(mut tests) => {
+                tests.sort_unstable_by_key(|a| a.datum);
+                tests.dedup_by_key(|a| a.datum);
+                if let Some(from) = orig_irval.0 {
+                    info!("filtering, from!");
+                    tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
+                }
+                if let Some(to) = orig_irval.1 {
+                    info!("filtering, to!");
+                    tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
+                }
+                if orig_irval.0.is_none() {
+                    self.store_cache(&tests)?;
+                }
 
-        let fetch_interval = fix_irval(cache_t, interval);
-
-        let mut fetch_err = false;
-        let fetched_tests = self.fetch_vec(fetch_interval).inspect_err(|e| {
-            fetch_err = true;
-            warn!("couldn't reach E-Kréta server: {e:?}");
-        });
-
-        tests.extend(fetched_tests.unwrap_or_default());
-        tests.sort_unstable_by_key(|a| a.datum);
-        tests.dedup_by_key(|a| a.datum);
-        if let Some(from) = interval.0 {
-            info!("filtering, from!");
-            tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
+                Ok(tests)
+            }
+            Err(e) => Err(e),
         }
-        if let Some(to) = interval.1 {
-            info!("filtering, to!");
-            tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
-        }
-        if interval.0.is_none() && !fetch_err {
-            self.store_cache(&tests)?;
-        }
-
-        Ok(tests)
     }
 
     /// get information about being [`Abs`]ent `from` `to` or all
@@ -407,27 +394,19 @@ impl Usr {
     /// # Panics
     ///
     /// sorting
-    pub fn get_absences(&self, interval: OptIrval) -> Res<Vec<Absence>> {
-        let (cache_t, cached_abs) = self.load_cache::<Vec<Absence>>().unzip();
-        let mut absences = cached_abs.unwrap_or_default();
+    pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
+        match self.load_n_fetch::<Absence>(&mut interval) {
+            Ok(mut absences) => {
+                absences.sort_unstable_by_key(|a| a.ora.kezdo_datum);
 
-        let interval = fix_irval(cache_t, interval);
+                if interval.0.is_none() {
+                    self.store_cache(&absences)?;
+                }
 
-        let mut fetch_err = false;
-        let fetched_absences = self.fetch_vec(interval).inspect_err(|e| {
-            fetch_err = true;
-            warn!("couldn't fetch from E-Kréta server: {e:?}");
-        });
-
-        info!("received absences");
-        absences.extend(fetched_absences.unwrap_or_default());
-        absences.sort_unstable_by_key(|a| a.ora.kezdo_datum);
-
-        if interval.0.is_none() && !fetch_err {
-            self.store_cache(&absences)?;
+                Ok(absences)
+            }
+            Err(e) => Err(e),
         }
-
-        Ok(absences)
     }
 }
 
@@ -537,23 +516,40 @@ impl Usr {
     /// # Errors
     ///
     /// - net
-    pub fn get_note_msgs(&self, interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
-        let (cache_t, cached_notemsgs) = self.load_cache::<Vec<ekreta::NoteMsg>>().unzip();
-        let mut note_msgs = cached_notemsgs.unwrap_or_default();
-
-        let interval = fix_irval(cache_t, interval);
-
-        let mut fetch_err = false;
-        let fetched_note_msgs = self.fetch_vec(interval).inspect_err(|e| {
-            fetch_err = true;
-            warn!("couldn't reach E-Kréta server: {e:?}");
-        });
-
-        note_msgs.extend(fetched_note_msgs.unwrap_or_default());
-        if interval.0.is_none() && !fetch_err {
-            self.store_cache(&note_msgs)?;
+    pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
+        match self.load_n_fetch(&mut interval) {
+            Ok(note_msgs) => {
+                if interval.0.is_none() {
+                    self.store_cache(&note_msgs)?;
+                }
+                Ok(note_msgs)
+            }
+            Err(e) => Err(e),
         }
+    }
 
-        Ok(note_msgs)
+    /// load data from cache, fetch remaining of interval, merge these two sources
+    /// # NOTE
+    /// if any of the two fails, it will be logged, but ignored and the other source will be used instead
+    fn load_n_fetch<Ep>(&self, irval: &mut OptIrval) -> Res<Vec<Ep>>
+    where
+        Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> serde::Deserialize<'a> + Clone,
+    {
+        let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
+
+        *irval = fix_irval(cache_t, *irval);
+
+        let fetched = self.fetch_vec::<Ep>(*irval);
+
+        match fetched {
+            Ok(fetched_items) => Ok([cached.unwrap_or_default(), fetched_items].concat()),
+            Err(e) => {
+                log::error!("couldn't reach E-Kréta server: {e:?}");
+                eprintln!("couldn't reach E-Kréta server: {e:?}");
+                log::warn!("request error, only loading cached data");
+                eprintln!("request error, only loading cached data");
+                cached.ok_or("nothing cached".into())
+            }
+        }
     }
 }
