@@ -431,7 +431,7 @@ impl Usr {
             info!("downloading file://{}", download_to.display());
             // don't download if already exists
             if download_to.exists() {
-                info!("not downloading, already done");
+                debug!("not downloading, already done");
                 continue;
             }
             self.0
@@ -454,10 +454,48 @@ impl Usr {
 
         let (from, _) = fix_irval(cache_t, interval);
 
+        match self.fetch_msgs(from, interval) {
+            Ok(fetched_msgs) => {
+                msgs.extend(fetched_msgs);
+                if interval.0.is_none() {
+                    self.store_cache(&msgs)?;
+                }
+            }
+            Err(e) => {
+                error!("{e:?} while fetching messages, using only cached ones instead");
+                eprintln!("{e:?} while fetching messages, using only cached ones instead");
+            }
+        }
+
+        msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
+        msgs.dedup();
+
+        self.download_all_attachments(&msgs)?;
+
+        Ok(msgs)
+    }
+
+    fn download_all_attachments(&self, msgs: &Vec<MsgItem>) -> Res<()> {
+        let mut am_handles = Vec::new();
+        for msg in msgs.clone() {
+            let usr = self.clone();
+            let xl = std::thread::spawn(move || {
+                usr.download_attachments(&msg)
+                    .inspect_err(|e| error!("couldn't fetch from E-Kréta server: {e:?}"))
+                    .unwrap();
+            });
+            am_handles.push(xl);
+        }
+        for h in am_handles {
+            let j = h.join();
+            j.map_err(|e| *e.downcast::<String>().unwrap())?;
+        }
+        Ok(())
+    }
+
+    fn fetch_msgs(&self, from: Option<NaiveDate>, interval: OptIrval) -> Res<Vec<MsgItem>> {
         let mut fetched_msgs = Vec::new();
         let mut handles = Vec::new();
-
-        let mut fetch_err = false;
         for msg_oview in self
             .0
             .fetch_msg_oviews(&self.headers()?)
@@ -475,40 +513,16 @@ impl Usr {
             let h = std::thread::spawn(move || {
                 s.0.fetch_full_msg(Some(&msg_oview), &s.headers().unwrap())
                     .inspect_err(|e| {
-                        fetch_err = true;
                         warn!("couldn't fetch from E-Kréta server: {e:?}");
                     })
                     .unwrap()
             });
             handles.push(h);
         }
-
-        let mut am_handles = Vec::new();
-
         for h in handles {
-            fetched_msgs.push(h.join().unwrap());
+            fetched_msgs.push(h.join().map_err(|e| *e.downcast::<String>().unwrap())?);
         }
-
-        msgs.extend(fetched_msgs);
-        msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
-        msgs.dedup();
-        for msg in msgs.clone() {
-            let s = self.clone();
-            let xl = std::thread::spawn(move || {
-                s.download_attachments(&msg)
-                    .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"))
-                    .unwrap();
-            });
-            am_handles.push(xl);
-        }
-        for h in am_handles {
-            let j = h.join();
-            j.map_err(|e| *e.downcast::<String>().unwrap())?;
-        }
-        if interval.0.is_none() && !fetch_err {
-            self.store_cache(&msgs)?;
-        }
-        Ok(msgs)
+        Ok(fetched_msgs)
     }
 
     /// get notes: additional messages the [`User`] received.
@@ -544,9 +558,9 @@ impl Usr {
         match fetched {
             Ok(fetched_items) => Ok([cached.unwrap_or_default(), fetched_items].concat()),
             Err(e) => {
-                log::error!("couldn't reach E-Kréta server: {e:?}");
+                error!("couldn't reach E-Kréta server: {e:?}");
                 eprintln!("couldn't reach E-Kréta server: {e:?}");
-                log::warn!("request error, only loading cached data");
+                warn!("request error, only loading cached data");
                 eprintln!("request error, only loading cached data");
                 cached.ok_or("nothing cached".into())
             }
