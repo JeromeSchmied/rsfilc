@@ -362,7 +362,7 @@ impl Usr {
     ///
     /// sorting
     pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
-        let orig_irval = interval.clone();
+        let orig_irval = interval;
         match self.load_n_fetch::<Ancd>(&mut interval) {
             Ok(mut tests) => {
                 tests.sort_unstable_by_key(|a| a.datum);
@@ -475,9 +475,9 @@ impl Usr {
         Ok(msgs)
     }
 
-    fn download_all_attachments(&self, msgs: &Vec<MsgItem>) -> Res<()> {
+    fn download_all_attachments(&self, msgs: &[MsgItem]) -> Res<()> {
         let mut am_handles = Vec::new();
-        for msg in msgs.clone() {
+        for msg in msgs.to_owned() {
             let usr = self.clone();
             let xl = std::thread::spawn(move || {
                 usr.download_attachments(&msg)
