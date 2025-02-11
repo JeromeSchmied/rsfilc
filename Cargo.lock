@@ -1330,7 +1330,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.9.19"
+version = "0.9.20"
 dependencies = [
  "base64",
  "chrono",
