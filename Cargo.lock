@@ -398,6 +398,8 @@ checksum = "b2972feb8dffe7bc8c5463b1dacda1b0dfbed3710e50f977d965429692d74cd8"
 [[package]]
 name = "ekreta"
 version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3feec95e6bfdf3d32c374199a069b9e47075a793ade1e99ecead61f934b600b8"
 dependencies = [
  "chrono",
  "http",
@@ -1330,7 +1332,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.9.20"
+version = "0.9.21"
 dependencies = [
  "base64",
  "chrono",
@@ -2328,3 +2330,7 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[patch.unused]]
+name = "ekreta"
+version = "0.2.1"
