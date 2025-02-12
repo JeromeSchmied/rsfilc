@@ -35,7 +35,7 @@ pub fn fetch() -> Res<Vec<ekreta::School>> {
     let resp = ekreta::School::fetch_schools_resp()?;
 
     log::info!("received schools from refilc api");
-    let json = &resp.text()?;
+    let json = &resp.into_body().read_to_string()?;
     let vec = serde_json::from_str(json)?;
     cache::store("", "schools", json)?;
     Ok(vec)
