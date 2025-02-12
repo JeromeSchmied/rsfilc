@@ -1,5 +1,5 @@
 use crate::{paths::cache_path, Res};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local};
 use std::fs::{self, File};
 use std::io::Write;
 
@@ -9,14 +9,14 @@ pub fn store(userid: &str, kind: &str, content: &str) -> Res<()> {
     let mut f = File::create(&cp)?;
     log::info!("caching to {cp:?}");
 
-    writeln!(f, "//{}", Utc::now().to_rfc3339())?;
+    writeln!(f, "//{}", Local::now().to_rfc3339())?;
     writeln!(f, "{content}")?;
 
     Ok(())
 }
 
 /// load from disk
-pub fn load(userid: &str, kind: &str) -> Option<(DateTime<Utc>, String)> {
+pub fn load(userid: &str, kind: &str) -> Option<(DateTime<Local>, String)> {
     let cp = cache_path(userid, kind)?;
     log::info!("loading cache from {cp:?}");
     if !cp.exists() {
