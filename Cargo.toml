@@ -12,7 +12,7 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ekreta = "0.1.4"
+ekreta = "0.1.5"
 base64 = "0.22.1"
 chrono = { version = "0.4.39", default-features = false }
 clap = { version = "4.5.28", features = ["derive"] }
