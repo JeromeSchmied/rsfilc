@@ -411,14 +411,18 @@ impl Usr {
 }
 
 /// use `cache_t` as `interval.0` (from) if some
-fn fix_irval(cache_t: Option<ekreta::LDateTime>, mut interval: OptIrval) -> OptIrval {
-    if let Some(ct) = cache_t {
-        if interval.0.is_none_or(|from| from < ct.date_naive()) {
-            info!("from cached");
-            interval.0 = Some(ct.date_naive());
+fn fix_irval(cache_t: Option<ekreta::LDateTime>, mut irval: OptIrval) -> OptIrval {
+    debug!("got interval: {irval:?}");
+    if let Some(ct) = cache_t.map(|ct| ct.date_naive()) {
+        if irval
+            .0
+            .is_none_or(|from| from < ct && irval.1.is_none_or(|to| to > ct))
+        {
+            info!("from cached, replacing {:?} to {ct:?}", irval.0);
+            irval.0 = Some(ct);
         }
     }
-    interval
+    irval
 }
 
 /// [`Msg`]s and [`Attachment`]s
