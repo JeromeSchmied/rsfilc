@@ -6,9 +6,13 @@
 
 ## Letöltés
 
+-   egyszerűen: szerezz egy előre megépített futtatható programot [innétről](https://codeberg.org/jark/rsfilc/releases/latest)
+
+ha esetleg nem elérhető a platformodra([tudasd ezt velünk](https://codeberg.org/jark/rsfilc/issues/new)), nem tetszik az ötlet, vagy nem elég új:
+
 -   [Rust](https://rustup.rs)
 -   `cargo install --locked rsfilc`
-    > legújabb, béta: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
+>   legújabb, kevésbé tesztelt: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
 
 ### autókitöltés:
 

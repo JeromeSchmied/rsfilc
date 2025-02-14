@@ -8,10 +8,13 @@
 
 ## Installation
 
+-   EZ mode: grab a prebuilt binary from [releases](https://codeberg.org/jark/rsfilc/releases/latest)
+
+if not available for your platform ([file an issue](https://codeberg.org/jark/rsfilc/issues/new)), not a preferred method or feels a bit outdated:
+
 -   [Rust](https://rustup.rs)
 -   `cargo install --locked rsfilc`
-
-    > for latest, beta builds: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
+>   for latest, beta builds: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
 
 ### Shell completions:
 
@@ -80,6 +83,7 @@
 ## Usage
 
 `rsfilc --help`
+`rsfilc user --create <USER_ID>`
 
 ![demo](./rsfilc_demo.gif "using rsfilc")
 
