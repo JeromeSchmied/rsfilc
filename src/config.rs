@@ -1,4 +1,4 @@
-use crate::{Res, Usr};
+use crate::{Rendr, Res, Usr};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -8,6 +8,7 @@ const CONFIG_NAME: &str = "config";
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct Config {
     pub default_username: String,
+    pub renderer: Rendr,
     pub users: BTreeSet<Usr>,
 }
 impl Config {
