@@ -6,9 +6,13 @@
 
 ## Letöltés
 
+-   egyszerűen: szerezz egy előre megépített futtatható programot [innétről](https://codeberg.org/jark/rsfilc/releases/latest)
+
+ha esetleg nem elérhető a platformodra([tudasd ezt velünk](https://codeberg.org/jark/rsfilc/issues/new)), nem tetszik az ötlet, vagy nem elég új:
+
 -   [Rust](https://rustup.rs)
 -   `cargo install --locked rsfilc`
-    > legújabb, béta: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
+>   legújabb, kevésbé tesztelt: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
 
 ### autókitöltés:
 
@@ -69,7 +73,8 @@
 
 ## Használat
 
-`rsfilc --help`
+kedves kis használati utasítás: `rsfilc --help`  
+új felhasználó létrehozása: `rsfilc user --create <OM_AZON>`
 
 ![demo](./rsfilc_demo.gif "using rsfilc")
 
@@ -123,6 +128,6 @@
 
 ## Elismerések
 
-Minden használatba vett `crate`-nek köszönet, [itt](./Cargo.toml) találtatnak.
-Tessék egy pillantást vetni az [ekreta-rs](https://codeberg.org/jark/ekreta-rs)-re, mely a használt API kliens az E-Krétahoz
+Minden használatba vett `crate`-nek köszönet, [itt](./Cargo.toml) találtatnak.  
+Tessék egy pillantást vetni az [ekreta-rs](https://codeberg.org/jark/ekreta-rs)-re, mely a használt API kliens az E-Krétahoz  
 Autókitöltés leírás innen: [zoxide](https://github.com/ajeetdsouza/zoxide)
