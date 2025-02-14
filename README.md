@@ -133,6 +133,6 @@
 
 ## Acknowledgements
 
--   to all [dependencies used](./Cargo.toml) (although many of them wouldn't be necessary with a proper API, this is **not** the case with e-kréta.)
+-   [dependencies used](./Cargo.toml) (although many of them wouldn't be necessary with a proper API, this is **not** the case with e-kréta.)
 -   See [ekreta-rs](https://codeberg.org/jark/ekreta-rs), which provides the API client for E-Kréta
 -   Shell completions section got from [zoxide](https://github.com/ajeetdsouza/zoxide)
