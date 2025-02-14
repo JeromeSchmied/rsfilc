@@ -6,30 +6,12 @@
 
 [![dependency status](https://deps.rs/repo/codeberg/jark/rsfilc/status.svg)](https://deps.rs/repo/codeberg/jark/rsfilc)
 
-> # IMPORTANT!
->
-> When upgrading from `v0.5.21`, credentials have to be recreated.
-> It's necessary, as from `v0.5.22`, encoding is used for storing passwords.
->
-> 1. You have to manually find and delete them. A user called Alice would find `credentials` under:
->     - linux: `/home/alice/.config/rsfilc/credentials.toml`
->     - windows: `C:\Users\Alice\AppData\Roaming\rsfilc\credentials.toml`
->     - mac: `/Users/Alice/Library/Application Support/rsfilc/credentials.toml`
-> 2. recreate all users with `rsfilc user --create`
-
 ## Installation
 
 -   [Rust](https://rustup.rs)
 -   `cargo install --locked rsfilc`
 
     > for latest, beta builds: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
-
-### Dependencies
-
-#### optional, recommended
-
--   [lynx](https://lynx.browser.org/): for enjoyable (html) message previews
--   [w3m](https://w3m.sourceforge.net/): for enjoyable (html) message previews
 
 ### Shell completions:
 
@@ -121,11 +103,11 @@
 -   [x] shell completions: [bash, zsh, fish, elvish, powershell]
 -   [x] logger: `fern` maybe
 -   [ ] helpful crashes
--   [ ] caching everything so that life remains enjoyable
+-   [x] caching everything so that life remains enjoyable
     -   [x] token
     -   [x] timetable
     -   [x] evals
-    -   [ ] user info
+    -   [x] user info
     -   [x] absences
     -   [x] announced tests
     -   [x] messages
@@ -151,5 +133,6 @@
 
 ## Acknowledgements
 
+-   [dependencies used](./Cargo.toml) (although many of them wouldn't be necessary with a proper API, this is **not** the case with e-kréta.)
 -   See [ekreta-rs](https://codeberg.org/jark/ekreta-rs), which provides the API client for E-Kréta
 -   Shell completions section got from [zoxide](https://github.com/ajeetdsouza/zoxide)
