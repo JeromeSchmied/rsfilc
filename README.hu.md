@@ -4,29 +4,11 @@
 
 [![dependency status](https://deps.rs/repo/codeberg/jark/rsfilc/status.svg)](https://deps.rs/repo/codeberg/jark/rsfilc)
 
-> # FONTOS!
->
-> Ha `v0.5.21`-ről frissítéshez újra kell csinálni a bejelentkezéseket.
-> Ez azért szükséges, mivel a `v0.5.22`-től kezdve titkosítással vannak tárolva a kódok.
->
-> 1. Ki kell törölni a régi bejelentkezéseket. Alice ezeket erre találná meg:
->     - linux: `/home/alice/.config/rsfilc/credentials.toml`
->     - windows: `C:\Users\Alice\AppData\Roaming\rsfilc\credentials.toml`
->     - mac: `/Users/Alice/Library/Application Support/rsfilc/credentials.toml`
-> 2. Hozd létre újból a bejelentkezéseket a `rsfilc user --create` használatával.
-
 ## Letöltés
 
 -   [Rust](https://rustup.rs)
 -   `cargo install --locked rsfilc`
     > legújabb, béta: `cargo install --locked --git "https://codeberg.org/jark/rsfilc"`
-
-### segédprogramok
-
-#### opcionális, ajánlott
-
--   [lynx](https://lynx.browser.org/): az élvezhetőbb üzenet-megjelenítés érdekében
--   [w3m](https://w3m.sourceforge.net/): az élvezhetőbb üzenet-megjelenítés érdekében
 
 ### autókitöltés:
 
@@ -111,11 +93,11 @@
 -   [x] shell autókitöltések: [bash, zsh, fish, elvish, powershell]
 -   [x] hibajelentések: esetleg `fern`
 -   [ ] segítőkész hibaüüzenetek
--   [ ] kb minden cache-elése a valódi élmény érdekében
-    -   [ ] token
+-   [x] kb minden cache-elése a valódi élmény érdekében
+    -   [x] token
     -   [x] órarend
     -   [x] jegyek
-    -   [ ] felhasználó adatai
+    -   [x] felhasználó adatai
     -   [x] hiányzások
     -   [x] bejelentett számonkérések
     -   [x] üzenetek
@@ -141,5 +123,6 @@
 
 ## Elismerések
 
+Minden használatba vett `crate`-nek köszönet, [itt](./Cargo.toml) találtatnak.
 Tessék egy pillantást vetni az [ekreta-rs](https://codeberg.org/jark/ekreta-rs)-re, mely a használt API kliens az E-Krétahoz
 Autókitöltés leírás innen: [zoxide](https://github.com/ajeetdsouza/zoxide)
