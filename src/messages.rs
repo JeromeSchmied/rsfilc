@@ -1,23 +1,21 @@
 //! messages from teachers and staff
 
-use crate::config::Config;
-use crate::Rendr;
 use crate::{fill, paths::download_dir, time::MyDate, user::Usr};
 use ekreta::Res;
 use std::{char, fmt::Write};
 
-pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize, conf: &Config) -> Res<()> {
+pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize) -> Res<()> {
     if notes {
         let notes = user.get_note_msgs((None, None))?;
         if rev {
             for note in notes.iter().take(num).rev() {
-                let as_str = disp_note_msg(note, conf.renderer);
+                let as_str = disp_note_msg(note);
                 println!("\n\n\n\n{as_str}");
                 fill(&as_str, '-', None);
             }
         } else {
             for note in notes.iter().take(num) {
-                let as_str = disp_note_msg(note, conf.renderer);
+                let as_str = disp_note_msg(note);
                 println!("\n\n\n\n{as_str}");
                 fill(&as_str, '-', None);
             }
@@ -28,13 +26,13 @@ pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize, conf: &Config) -> 
     let msgs = user.msgs((None, None))?;
     if rev {
         for msg in msgs.iter().rev().take(num) {
-            let as_str = disp_msg(msg, conf.renderer);
+            let as_str = disp_msg(msg);
             println!("\n\n\n\n{as_str}");
             fill(&as_str, '-', None);
         }
     } else {
         for msg in msgs.iter().take(num) {
-            let as_str = disp_msg(msg, conf.renderer);
+            let as_str = disp_msg(msg);
             println!("\n\n\n\n{as_str}");
             fill(&as_str, '-', None);
         }
@@ -58,7 +56,7 @@ pub fn download_attachment_to(am: &ekreta::Attachment) -> std::path::PathBuf {
     download_dir().join(am.fajl_nev.replace(char::is_whitespace, "_"))
 }
 
-pub fn disp_msg(msg: &ekreta::MsgItem, renderer: Rendr) -> String {
+pub fn disp_msg(msg: &ekreta::MsgItem) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| Tárgy: {}", msg.uzenet.targy);
     for am in &msg.uzenet.csatolmanyok {
@@ -84,26 +82,20 @@ pub fn disp_msg(msg: &ekreta::MsgItem, renderer: Rendr) -> String {
         "| Feladó: {} {}",
         msg.uzenet.felado_nev, msg.uzenet.felado_titulus
     );
-    _ = write!(
-        &mut f,
-        "\n{}",
-        Rendr::render_html(&msg.uzenet.szoveg, Some(renderer)).trim()
-    );
+    let rendered = nanohtml2text::html2text(&msg.uzenet.szoveg);
+    _ = write!(&mut f, "\n{rendered}");
     // if !msg.is_elolvasva {
     //  writeln!(f, "Olvasatlan")?;
     // }
     f
 }
 
-pub fn disp_note_msg(note_msg: &ekreta::NoteMsg, renderer: Rendr) -> String {
+pub fn disp_note_msg(note_msg: &ekreta::NoteMsg) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| {}", note_msg.cim);
     _ = writeln!(&mut f, "| Időpont: {}", note_msg.datum.pretty());
     _ = writeln!(&mut f, "| {}", note_msg.keszito_tanar_neve);
-    _ = write!(
-        &mut f,
-        "\n{}",
-        Rendr::render_html(&note_msg.tartalom_formazott, Some(renderer)).trim()
-    );
+    let rendered = nanohtml2text::html2text(&note_msg.tartalom_formazott);
+    _ = write!(&mut f, "\n{rendered}",);
     f
 }

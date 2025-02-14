@@ -3,7 +3,6 @@ use chrono::Local;
 use clap::{CommandFactory, Parser};
 use config::Config;
 use ekreta::Res;
-use html_renderer::Rendr;
 use log::*;
 use std::fs::OpenOptions;
 use user::Usr;
@@ -14,7 +13,6 @@ mod args;
 mod cache;
 mod config;
 mod evals;
-mod html_renderer;
 mod information;
 mod messages;
 mod paths;
@@ -79,7 +77,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             reverse,
             notes,
         } => {
-            messages::handle(notes, &user, reverse, number, &conf)?;
+            messages::handle(notes, &user, reverse, number)?;
         }
 
         Command::Absences {
