@@ -18,12 +18,12 @@ impl Config {
         Ok(confy::store(APP_NAME, CONFIG_NAME, self)?)
     }
     pub fn switch_user_to(&mut self, name: String) {
-        let _ = crate::cache::delete_dir();
         self.default_username = name;
     }
     pub fn delete(&mut self, name: &str) {
         self.users.retain(|usr| usr.0.username != name);
         if self.default_username == name {
+            let _ = crate::cache::delete_dir(name);
             // set default to the first element, not to die
             if let Some(first) = self.users.first().cloned() {
                 self.switch_user_to(first.0.username);

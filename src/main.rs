@@ -115,7 +115,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
 }
 
 fn set_up_logger(verbose: bool) -> Res<()> {
-    let path = paths::cache_dir()
+    let path = paths::cache_dir("")
         .ok_or("no cache dir")?
         .join(config::APP_NAME)
         .with_extension("log");

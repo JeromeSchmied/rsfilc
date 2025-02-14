@@ -4,8 +4,8 @@ use std::{fs, path::PathBuf};
 /// get path for cache dir, create if doesn't exist
 /// # Errors
 /// `cache_dir` creation
-pub fn cache_dir() -> Option<PathBuf> {
-    let cache_path = dirs::cache_dir()?.join(APP_NAME);
+pub fn cache_dir(userid: &str) -> Option<PathBuf> {
+    let cache_path = dirs::cache_dir()?.join(APP_NAME).join(userid);
     if !cache_path.exists() {
         fs::create_dir_all(&cache_path).ok()?;
     }
@@ -13,8 +13,9 @@ pub fn cache_dir() -> Option<PathBuf> {
 }
 
 /// get cache path for `kind` of thing
-pub fn cache_path(kind: &str) -> Option<PathBuf> {
-    Some(cache_dir()?.join(format!("{kind}_cache.json")))
+pub fn cache_path(userid: &str, kind: &str) -> Option<PathBuf> {
+    let cache_dir = cache_dir(userid)?;
+    Some(cache_dir.join(format!("{kind}_cache.jsonc")))
 }
 
 /// get path for `Downloads/rsfilc`, and create it if doesn't exist yet

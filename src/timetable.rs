@@ -20,13 +20,13 @@ pub fn handle(day: Option<&String>, user: &Usr, current: bool, out_p: Option<Pat
             println!(
                 "{}m -> {}",
                 (nxt.kezdet_idopont - Local::now()).num_minutes(), // minutes remaining
-                nxt.tantargy.nev
+                nxt.nev
             );
         }
         for current_lesson in current_lessons {
             println!(
                 "{}, {}m",
-                current_lesson.tantargy.nev,
+                current_lesson.nev,
                 (current_lesson.veg_idopont - Local::now()).num_minutes() // minutes remaining
             );
         }
@@ -119,7 +119,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 
 pub fn disp(lsn: &Lesson) -> String {
     let mut f = String::new();
-    _ = write!(&mut f, "{}", lsn.tantargy.nev);
+    _ = write!(&mut f, "{}", lsn.nev);
     if let Some(room) = &lsn.terem_neve {
         _ = writeln!(&mut f, ", {}", room.replace("terem", "").trim());
     }

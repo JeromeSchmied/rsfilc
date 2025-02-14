@@ -6,7 +6,7 @@ use ekreta::{AnnouncedTest, Res};
 use std::fmt::Write;
 
 pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usize) -> Res<()> {
-    let from = if past { None } else { Some(Local::now()) };
+    let from = if past { None } else { Some(Local::now()) }.map(|ln| ln.date_naive());
     let mut all_announced = user.get_all_announced((from, None))?;
     if let Some(subject) = subj {
         filter_by_subject(&mut all_announced, &subject);

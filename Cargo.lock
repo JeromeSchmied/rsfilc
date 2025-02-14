@@ -135,9 +135,9 @@ checksum = "f61dac84819c6588b558454b194026eb1f09c293b9036ae9b159e74e73ab6cf9"
 
 [[package]]
 name = "cc"
-version = "1.2.12"
+version = "1.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "755717a7de9ec452bf7f3f1a3099085deabd7f2962b861dae91ecd7a365903d2"
+checksum = "c7777341816418c02e033934a09f20dc0ccaf65a5201ef8a450ae0105a573fda"
 dependencies = [
  "shlex",
 ]
@@ -397,8 +397,9 @@ checksum = "b2972feb8dffe7bc8c5463b1dacda1b0dfbed3710e50f977d965429692d74cd8"
 
 [[package]]
 name = "ekreta"
-version = "0.1.1"
-source = "git+https://codeberg.org/jark/ekreta-rs#7966b83fbfa030d6010a8f5c770e66e7990fcec1"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3feec95e6bfdf3d32c374199a069b9e47075a793ade1e99ecead61f934b600b8"
 dependencies = [
  "chrono",
  "http",
@@ -1184,7 +1185,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1331,7 +1332,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.9.9"
+version = "0.9.21"
 dependencies = [
  "base64",
  "chrono",
@@ -2329,3 +2330,7 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[patch.unused]]
+name = "ekreta"
+version = "0.2.1"

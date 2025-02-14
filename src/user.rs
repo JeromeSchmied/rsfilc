@@ -2,8 +2,8 @@ use crate::{config::Config, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
-    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
-    Lesson, MsgItem, OptIrval, Token,
+    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
+    OptIrval, Token,
 };
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -36,13 +36,12 @@ pub fn handle(
         println!("\nFelhasználókat:\n");
         for current_user in &conf.users {
             // definitely overkill, but does the job ;)
-            cache::delete_dir()?;
-            let user_info = current_user.0.fetch_info(&current_user.headers()?)?;
-            let as_str = information::disp(&user_info, &current_user.0.username);
+            let user_info = current_user.get_userinfo()?;
+            let as_str =
+                information::disp(&user_info, &current_user.0.username, &conf.default_username);
             println!("\n\n{as_str}");
             fill(&as_str, '-', None);
         }
-        cache::delete_dir()?;
     }
     Ok(())
 }
@@ -52,15 +51,6 @@ pub fn handle(
 pub struct Usr(pub ekreta::User);
 // basic stuff
 impl Usr {
-    /// get name of [`User`]
-    ///
-    /// # Errors
-    ///
-    /// net
-    pub fn name(&self) -> Res<String> {
-        Ok(self.0.fetch_info(&self.headers()?)?.nev)
-    }
-
     /// create new instance of [`User`]
     pub fn new(username: String, password: String, schoolid: String) -> Self {
         let password = STANDARD.encode(password);
@@ -146,8 +136,8 @@ impl Usr {
             }
             let todays_tests = self
                 .get_all_announced((
-                    Some(first_lesson.kezdet_idopont),
-                    Some(lessons.last().unwrap().veg_idopont),
+                    Some(first_lesson.kezdet_idopont.date_naive()),
+                    Some(lessons.last().unwrap().veg_idopont.date_naive()),
                 ))
                 .expect("couldn't fetch announced tests");
             let all_lessons_till_day = self
@@ -160,11 +150,11 @@ impl Usr {
 
             for (n, lesson) in lessons.iter().enumerate() {
                 // calculate `n`. this lesson is
-                let nth = lesson.oraszam;
+                let nth = lesson.oraszam.unwrap_or(u8::MAX);
                 if n as u8 + 2 == nth
                     && lessons
                         .get(n - 1)
-                        .is_none_or(|prev| prev.oraszam == n as u8)
+                        .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
                 {
                     let no_lesson_buf = format!(
                         "\n\n{}. Lyukas (avagy Lukas) óra\n| Erre az időpontra nincsen tanóra rögzítve.",
@@ -227,8 +217,38 @@ impl Usr {
 
 // interacting with API
 impl Usr {
+    /// convert type name of `T` to a kind name, used for cache
+    fn type_to_kind_name<T>() -> Res<String> {
+        let type_name = std::any::type_name::<T>();
+        let kind = type_name.split("::").last().ok_or("invalid type_name")?;
+        let kind = kind.trim_matches(['<', '>']).to_ascii_lowercase();
+        Ok(kind)
+    }
+    /// helper fn, stores `content` of `kind` to `self.0.username` cache-dir
+    fn store_cache<S: Serialize>(&self, content: &S) -> Res<()> {
+        let kind = Self::type_to_kind_name::<S>()?;
+
+        let content = serde_json::to_string(content)?;
+        cache::store(&self.0.username, &kind, &content)
+    }
+    /// helper fn, loads cache of `kind` from `self.0.username` cache-dir
+    fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(ekreta::LDateTime, D)> {
+        let kind = Self::type_to_kind_name::<D>().ok()?;
+
+        let (cache_t, content) = cache::load(&self.0.username, &kind)?;
+        let deserd = serde_json::from_str(&content)
+            .inspect_err(|e| error!("error {e:?} - couldn't deserialize {kind}: {content}"))
+            .ok()?;
+        Some((cache_t, deserd))
+    }
+    fn fetch_vec<E>(&self, query: E::Args) -> Res<Vec<E>>
+    where
+        E: ekreta::Endpoint + for<'a> serde::Deserialize<'a>,
+    {
+        self.0.fetch_vec(query, &self.headers()?)
+    }
     /// get headers which are necessary for making certain requests
-    pub fn headers(&self) -> Res<HeaderMap> {
+    fn headers(&self) -> Res<HeaderMap> {
         Ok(HeaderMap::from_iter([
             (
                 header::AUTHORIZATION,
@@ -239,34 +259,34 @@ impl Usr {
     }
 
     fn get_token(&self) -> Res<Token> {
-        if let Some((cache_t, cache_content)) = cache::load("token") {
-            let cached_token: Token = serde_json::from_str(&cache_content)?;
+        if let Some((cache_t, cached_token)) = self.load_cache::<Token>() {
             if Local::now().signed_duration_since(cache_t)
                 < chrono::Duration::seconds(cached_token.expires_in.into())
             {
                 return Ok(cached_token);
             }
             // refresh token
-            let response =
-                ekreta::User::refresh_token_resp(&self.0.schoolid, &cached_token.refresh_token)?;
-            let txt = response.text()?;
-
-            let token = serde_json::from_str(&txt)?;
-            cache::store("token", &txt)?;
+            let token = self.0.refresh_token(&cached_token.refresh_token)?;
+            self.store_cache(&token)?;
             return Ok(token);
         }
-        let decoded_password = self.decode_password();
-        let tmp_user = ekreta::User {
-            password: decoded_password,
+        let authed_user = ekreta::User {
+            password: self.decode_password(),
             ..self.clone().0
         };
-        let resp = tmp_user.get_token_resp()?;
-        let text = resp.text()?;
-
-        let token = serde_json::from_str(&text)?;
-        cache::store("token", &text)?;
+        let token = authed_user.fetch_token()?;
+        self.store_cache(&token)?;
         info!("received token");
         Ok(token)
+    }
+    fn get_userinfo(&self) -> Res<ekreta::UserInfo> {
+        if let Some((_, cached_info)) = self.load_cache::<ekreta::UserInfo>() {
+            Ok(cached_info)
+        } else {
+            let fetched_info = self.0.fetch_info(&self.headers()?)?;
+            self.store_cache(&fetched_info)?;
+            Ok(fetched_info)
+        }
     }
 
     /// get all [`Eval`]s with `from` `to` or all
@@ -279,50 +299,22 @@ impl Usr {
     ///
     /// net
     pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
-        let (cache_t, cache_content) = cache::load("evals").unzip();
-        let mut evals = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Eval>>(cached)?
-        } else {
-            vec![]
-        };
-
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            interval.0 = Some(ct.to_day_with_hms());
-        } else if let Some(from) = interval.0 {
-            interval.0 = Some(from.to_day_with_hms());
+        match self.load_n_fetch::<Eval>(&mut interval) {
+            Ok(mut evals) => {
+                evals.sort_unstable_by_key(|e| e.keszites_datuma);
+                evals.dedup_by_key(|e| e.keszites_datuma);
+                if interval.0.is_none() {
+                    self.store_cache(&evals)?;
+                }
+                Ok(evals)
+            }
+            Err(e) => Err(e),
         }
-        if let Some(to) = interval.1 {
-            interval.1 = Some(to.to_day_with_hms());
-        }
-
-        let mut fetch_err = false;
-        let fetched_evals = self
-            .0
-            .fetch_evals(interval, &self.headers()?)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't fetch from E-Kréta server: {e:?}");
-            });
-
-        info!("received evals");
-
-        evals.extend(fetched_evals.unwrap_or_default());
-        evals.sort_by(|a, b| b.keszites_datuma.partial_cmp(&a.keszites_datuma).unwrap());
-        evals.dedup();
-        if interval.0.is_none() && !fetch_err {
-            cache::store("evals", &serde_json::to_string(&evals)?)?;
-        }
-        Ok(evals)
     }
 
     pub fn get_timetable(&self, day: NaiveDate, everything_till_day: bool) -> Res<Vec<Lesson>> {
-        let (_, cache_content) = cache::load("timetable").unzip();
-        let mut lessons = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Lesson>>(cached)?
-        } else {
-            vec![]
-        };
+        let (_, cache_tt) = self.load_cache::<Vec<Lesson>>().unzip();
+        let mut lessons = cache_tt.unwrap_or_default();
         let day_from_mon = day
             .and_hms_opt(0, 0, 0)
             .unwrap()
@@ -339,20 +331,9 @@ impl Usr {
             .checked_add_days(Days::new(day_till_sun.into()))
             .unwrap();
 
-        let mon_start = week_start
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_local_timezone(Local)
-            .unwrap();
-        let sun_end = week_end
-            .and_hms_opt(23, 59, 59)
-            .unwrap()
-            .and_local_timezone(Local)
-            .unwrap();
-
         let mut fetch_err = false;
         let fetched_lessons_week = self
-            .fetch_timetable(mon_start, sun_end)
+            .fetch_vec((week_start, week_end))
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't deserialize data: {e:?}");
@@ -363,27 +344,11 @@ impl Usr {
         lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
         lessons.dedup_by_key(|l| l.kezdet_idopont);
         if !fetch_err {
-            cache::store("timetable", &serde_json::to_string(&lessons)?)?;
+            self.store_cache(&lessons)?;
         }
         if !everything_till_day {
             lessons.retain(|lsn| lsn.kezdet_idopont.date_naive() == day);
         }
-        Ok(lessons)
-    }
-
-    /// get all [`Lesson`]s `from` `to` which makes up a timetable
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// - sorting
-    fn fetch_timetable(&self, from: LDateTime, to: LDateTime) -> Res<Vec<Lesson>> {
-        let mut lessons = self.0.fetch_timetable((from, to), &self.headers()?)?;
-        info!("received lessons");
-        lessons.sort_by(|a, b| a.kezdet_idopont.partial_cmp(&b.kezdet_idopont).unwrap());
         Ok(lessons)
     }
 
@@ -397,48 +362,27 @@ impl Usr {
     ///
     /// sorting
     pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
-        let (cache_t, cache_content) = cache::load("announced").unzip();
-        let mut tests = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Ancd>>(cached)?
-        } else {
-            vec![]
-        };
+        let orig_irval = interval;
+        match self.load_n_fetch::<Ancd>(&mut interval) {
+            Ok(mut tests) => {
+                tests.sort_unstable_by_key(|a| a.datum);
+                tests.dedup_by_key(|a| a.datum);
+                if let Some(from) = orig_irval.0 {
+                    info!("filtering, from!");
+                    tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
+                }
+                if let Some(to) = orig_irval.1 {
+                    info!("filtering, to!");
+                    tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
+                }
+                if orig_irval.0.is_none() {
+                    self.store_cache(&tests)?;
+                }
 
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            interval.0 = Some(ct.to_day_with_hms());
-        } else if let Some(from) = interval.0 {
-            interval.0 = Some(from.to_day_with_hms());
+                Ok(tests)
+            }
+            Err(e) => Err(e),
         }
-        if let Some(to) = interval.1 {
-            interval.1 = Some(to.to_day_with_hms());
-        }
-
-        let mut fetch_err = false;
-        let fetched_tests = self
-            .0
-            .fetch_announced_tests(interval, &self.headers()?)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't reach E-Kréta server: {e:?}");
-            });
-
-        tests.extend(fetched_tests.unwrap_or_default());
-        tests.sort_by(|a, b| b.datum.partial_cmp(&a.datum).unwrap());
-        tests.dedup();
-        if let Some(from) = interval.0 {
-            info!("filtering, from!");
-            tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
-        }
-        if let Some(to) = interval.1 {
-            info!("filtering, to!");
-            tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
-        }
-        if interval.0.is_none() && !fetch_err {
-            cache::store("announced", &serde_json::to_string(&tests)?)?;
-        }
-
-        Ok(tests)
     }
 
     /// get information about being [`Abs`]ent `from` `to` or all
@@ -451,42 +395,34 @@ impl Usr {
     ///
     /// sorting
     pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
-        let (cache_t, cache_content) = cache::load("absences").unzip();
-        let mut absences = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<Absence>>(cached)?
-        } else {
-            vec![]
-        };
+        match self.load_n_fetch::<Absence>(&mut interval) {
+            Ok(mut absences) => {
+                absences.sort_unstable_by_key(|a| a.ora.kezdo_datum);
 
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            interval.0 = Some(ct.to_day_with_hms());
-        } else if let Some(from) = interval.0 {
-            interval.0 = Some(from.to_day_with_hms());
+                if interval.0.is_none() {
+                    self.store_cache(&absences)?;
+                }
+
+                Ok(absences)
+            }
+            Err(e) => Err(e),
         }
-        if let Some(to) = interval.1 {
-            interval.1 = Some(to.to_day_with_hms());
-        }
-
-        let mut fetch_err = false;
-        let fetched_absences = self
-            .0
-            .fetch_absences(interval, &self.headers()?)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't fetch from E-Kréta server: {e:?}");
-            });
-
-        info!("received absences");
-        absences.extend(fetched_absences.unwrap_or_default());
-        absences.sort_by(|a, b| b.ora.kezdo_datum.partial_cmp(&a.ora.kezdo_datum).unwrap());
-
-        if interval.0.is_none() && !fetch_err {
-            cache::store("absences", &serde_json::to_string(&absences)?)?;
-        }
-
-        Ok(absences)
     }
+}
+
+/// use `cache_t` as `interval.0` (from) if some
+fn fix_irval(cache_t: Option<ekreta::LDateTime>, mut irval: OptIrval) -> OptIrval {
+    debug!("got interval: {irval:?}");
+    if let Some(ct) = cache_t.map(|ct| ct.date_naive()) {
+        if irval
+            .0
+            .is_none_or(|from| from < ct && irval.1.is_none_or(|to| to > ct))
+        {
+            info!("from cached, replacing {:?} to {ct:?}", irval.0);
+            irval.0 = Some(ct);
+        }
+    }
+    irval
 }
 
 /// [`Msg`]s and [`Attachment`]s
@@ -501,7 +437,7 @@ impl Usr {
             info!("downloading file://{}", download_to.display());
             // don't download if already exists
             if download_to.exists() {
-                info!("not downloading, already done");
+                debug!("not downloading, already done");
                 continue;
             }
             self.0
@@ -512,10 +448,6 @@ impl Usr {
         Ok(())
     }
 
-    // pub fn fetch_messages(&self) -> Res<Vec<MsgItem>> {
-    //     let msgs = self.fetch_vec((), "")?;
-    //     Ok(msgs)
-    // }
     /// Fetch max `n` [`Msg`]s between `from` and `to`.
     /// Also download all `[Attachment]`s each [`Msg`] has.
     ///
@@ -523,60 +455,39 @@ impl Usr {
     ///
     /// - net
     pub fn msgs(&self, interval: OptIrval) -> Res<Vec<MsgItem>> {
-        let (cache_t, cache_content) = cache::load("messages").unzip();
-        let mut msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<MsgItem>>(cached)?
-        } else {
-            vec![]
-        };
-        let from = if let Some(ct) = cache_t {
-            Some(ct)
-        } else {
-            interval.0
-        };
+        let (cache_t, cached_msg) = self.load_cache::<Vec<MsgItem>>().unzip();
+        let mut msgs = cached_msg.unwrap_or_default();
 
-        let mut fetched_msgs = Vec::new();
-        let mut handles = Vec::new();
+        let (from, _) = fix_irval(cache_t, interval);
 
-        let mut fetch_err = false;
-        for msg_oview in self
-            .0
-            .fetch_msg_oviews(&self.headers()?)
-            .unwrap_or_default()
-        {
-            // if isn't between `from`-`to`
-            if from.is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.date_naive().into())
-                || interval
-                    .1
-                    .is_some_and(|to| msg_oview.uzenet_kuldes_datum > to.date_naive().into())
-            {
-                continue;
+        match self.fetch_msgs(from, interval) {
+            Ok(fetched_msgs) => {
+                msgs.extend(fetched_msgs);
+                if interval.0.is_none() {
+                    self.store_cache(&msgs)?;
+                }
             }
-            let s = self.clone();
-            let h = std::thread::spawn(move || {
-                s.0.fetch_full_msg(Some(&msg_oview), &s.headers().unwrap())
-                    .inspect_err(|e| {
-                        fetch_err = true;
-                        warn!("couldn't fetch from E-Kréta server: {e:?}");
-                    })
-                    .unwrap()
-            });
-            handles.push(h);
+            Err(e) => {
+                error!("{e:?} while fetching messages, using only cached ones instead");
+                eprintln!("{e:?} while fetching messages, using only cached ones instead");
+            }
         }
 
-        let mut am_handles = Vec::new();
-
-        for h in handles {
-            fetched_msgs.push(h.join().unwrap());
-        }
-
-        msgs.extend(fetched_msgs);
+        msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
         msgs.dedup();
-        for msg in msgs.clone() {
-            let s = self.clone();
+
+        self.download_all_attachments(&msgs)?;
+
+        Ok(msgs)
+    }
+
+    fn download_all_attachments(&self, msgs: &[MsgItem]) -> Res<()> {
+        let mut am_handles = Vec::new();
+        for msg in msgs.to_owned() {
+            let usr = self.clone();
             let xl = std::thread::spawn(move || {
-                s.download_attachments(&msg)
-                    .inspect_err(|e| warn!("couldn't fetch from E-Kréta server: {e:?}"))
+                usr.download_attachments(&msg)
+                    .inspect_err(|e| error!("couldn't fetch from E-Kréta server: {e:?}"))
                     .unwrap();
             });
             am_handles.push(xl);
@@ -585,10 +496,39 @@ impl Usr {
             let j = h.join();
             j.map_err(|e| *e.downcast::<String>().unwrap())?;
         }
-        if interval.0.is_none() && !fetch_err {
-            cache::store("messages", &serde_json::to_string(&msgs)?)?;
+        Ok(())
+    }
+
+    fn fetch_msgs(&self, from: Option<NaiveDate>, interval: OptIrval) -> Res<Vec<MsgItem>> {
+        let mut fetched_msgs = Vec::new();
+        let mut handles = Vec::new();
+        for msg_oview in self
+            .0
+            .fetch_msg_oviews(&self.headers()?)
+            .unwrap_or_default()
+        {
+            // if isn't between `from`-`to`
+            if from.is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.into())
+                || interval
+                    .1
+                    .is_some_and(|to| msg_oview.uzenet_kuldes_datum > to.into())
+            {
+                continue;
+            }
+            let s = self.clone();
+            let h = std::thread::spawn(move || {
+                s.0.fetch_full_msg(Some(&msg_oview), &s.headers().unwrap())
+                    .inspect_err(|e| {
+                        warn!("couldn't fetch from E-Kréta server: {e:?}");
+                    })
+                    .unwrap()
+            });
+            handles.push(h);
         }
-        Ok(msgs)
+        for h in handles {
+            fetched_msgs.push(h.join().map_err(|e| *e.downcast::<String>().unwrap())?);
+        }
+        Ok(fetched_msgs)
     }
 
     /// get notes: additional messages the [`User`] received.
@@ -597,37 +537,39 @@ impl Usr {
     ///
     /// - net
     pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
-        let (cache_t, cache_content) = cache::load("note_messages").unzip();
-        let mut note_msgs = if let Some(cached) = &cache_content {
-            serde_json::from_str::<Vec<ekreta::NoteMsg>>(cached)?
-        } else {
-            vec![]
-        };
-
-        if let Some(ct) = cache_t {
-            info!("from cached");
-            interval.0 = Some(ct.to_day_with_hms());
-        } else if let Some(from) = interval.0 {
-            interval.0 = Some(from.to_day_with_hms());
+        match self.load_n_fetch(&mut interval) {
+            Ok(note_msgs) => {
+                if interval.0.is_none() {
+                    self.store_cache(&note_msgs)?;
+                }
+                Ok(note_msgs)
+            }
+            Err(e) => Err(e),
         }
-        if let Some(to) = interval.1 {
-            interval.1 = Some(to.to_day_with_hms());
+    }
+
+    /// load data from cache, fetch remaining of interval, merge these two sources
+    /// # NOTE
+    /// if any of the two fails, it will be logged, but ignored and the other source will be used instead
+    fn load_n_fetch<Ep>(&self, irval: &mut OptIrval) -> Res<Vec<Ep>>
+    where
+        Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> serde::Deserialize<'a> + Clone,
+    {
+        let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
+
+        *irval = fix_irval(cache_t, *irval);
+
+        let fetched = self.fetch_vec::<Ep>(*irval);
+
+        match fetched {
+            Ok(fetched_items) => Ok([cached.unwrap_or_default(), fetched_items].concat()),
+            Err(e) => {
+                error!("couldn't reach E-Kréta server: {e:?}");
+                eprintln!("couldn't reach E-Kréta server: {e:?}");
+                warn!("request error, only loading cached data");
+                eprintln!("request error, only loading cached data");
+                cached.ok_or("nothing cached".into())
+            }
         }
-
-        let mut fetch_err = false;
-        let fetched_note_msgs = self
-            .0
-            .fetch_note_msgs(interval, &self.headers()?)
-            .inspect_err(|e| {
-                fetch_err = true;
-                warn!("couldn't reach E-Kréta server: {e:?}");
-            });
-
-        note_msgs.extend(fetched_note_msgs.unwrap_or_default());
-        if interval.0.is_none() && !fetch_err {
-            cache::store("note_messages", &serde_json::to_string(&note_msgs)?)?;
-        }
-
-        Ok(note_msgs)
     }
 }
