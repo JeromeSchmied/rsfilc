@@ -147,6 +147,9 @@ impl Command {
             let nothing_specified = !delete && !create && !switch;
             return nothing_specified || *switch;
         }
-        !matches!(self, Command::Tui {} | Command::Schools { search: _ })
+        !matches!(
+            self,
+            Command::Schools { search: _ } | Command::Completions { shell: _ }
+        )
     }
 }
