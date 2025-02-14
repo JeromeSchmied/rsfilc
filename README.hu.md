@@ -73,7 +73,8 @@ ha esetleg nem elérhető a platformodra([tudasd ezt velünk](https://codeberg.o
 
 ## Használat
 
-`rsfilc --help`
+kedves kis használati utasítás: `rsfilc --help`  
+új felhasználó létrehozása: `rsfilc user --create <OM_AZON>`
 
 ![demo](./rsfilc_demo.gif "using rsfilc")
 
@@ -127,6 +128,6 @@ ha esetleg nem elérhető a platformodra([tudasd ezt velünk](https://codeberg.o
 
 ## Elismerések
 
-Minden használatba vett `crate`-nek köszönet, [itt](./Cargo.toml) találtatnak.
-Tessék egy pillantást vetni az [ekreta-rs](https://codeberg.org/jark/ekreta-rs)-re, mely a használt API kliens az E-Krétahoz
+Minden használatba vett `crate`-nek köszönet, [itt](./Cargo.toml) találtatnak.  
+Tessék egy pillantást vetni az [ekreta-rs](https://codeberg.org/jark/ekreta-rs)-re, mely a használt API kliens az E-Krétahoz  
 Autókitöltés leírás innen: [zoxide](https://github.com/ajeetdsouza/zoxide)

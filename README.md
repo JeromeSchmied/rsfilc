@@ -82,8 +82,8 @@ if not available for your platform ([file an issue](https://codeberg.org/jark/rs
 
 ## Usage
 
-`rsfilc --help`
-`rsfilc user --create <USER_ID>`
+general help: `rsfilc --help`  
+createing a new user: `rsfilc user --create <USER_ID>`
 
 ![demo](./rsfilc_demo.gif "using rsfilc")
 
