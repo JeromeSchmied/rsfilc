@@ -13,13 +13,13 @@ use std::{
 };
 
 pub fn handle(
-    username: Option<String>,
+    userid: Option<String>,
     create: bool,
     conf: &mut Config,
     del: bool,
     switch: bool,
 ) -> Res<()> {
-    if let Some(name) = username {
+    if let Some(name) = userid {
         if create {
             Usr::create(name, conf);
             println!("created");
