@@ -115,13 +115,13 @@ pub enum Command {
         /// used for args
         userid: Option<String>,
         /// delete an existing account
-        #[arg(short, long, default_value_t = false, requires = "username")]
+        #[arg(short, long, default_value_t = false, requires = "userid")]
         delete: bool,
         /// create an existing account
-        #[arg(short, long, default_value_t = false, requires = "username")]
+        #[arg(short, long, default_value_t = false, requires = "userid")]
         create: bool,
         /// switch between existing accounts
-        #[arg(short, long, default_value_t = false, requires = "username")]
+        #[arg(short, long, default_value_t = false, requires = "userid")]
         switch: bool,
     },
 
