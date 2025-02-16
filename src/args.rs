@@ -113,15 +113,15 @@ pub enum Command {
     #[clap(visible_alias = "u")]
     User {
         /// used for args
-        username: Option<String>,
+        userid: Option<String>,
         /// delete an existing account
-        #[arg(short, long, default_value_t = false)]
+        #[arg(short, long, default_value_t = false, requires = "userid")]
         delete: bool,
         /// create an existing account
-        #[arg(short, long, default_value_t = false)]
+        #[arg(short, long, default_value_t = false, requires = "userid")]
         create: bool,
         /// switch between existing accounts
-        #[arg(short, long, default_value_t = false)]
+        #[arg(short, long, default_value_t = false, requires = "userid")]
         switch: bool,
     },
 
@@ -140,7 +140,7 @@ impl Command {
             delete,
             create,
             switch,
-            username: _,
+            userid: _,
         } = &self
         {
             // we do need one on: nothing, switching, listing

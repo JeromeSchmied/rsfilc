@@ -102,9 +102,9 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             delete,
             create,
             switch,
-            username,
+            userid,
         } => {
-            user::handle(username, create, conf, delete, switch)?;
+            user::handle(userid, create, conf, delete, switch)?;
         }
 
         Command::Schools { search } => {
