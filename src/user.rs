@@ -32,8 +32,7 @@ pub fn handle(
         }
         conf.save()?;
     } else {
-        println!("nem mondtad meg mit/kivel kell csinálni, felsorolom a");
-        println!("\nFelhasználókat:\n");
+        println!("Felhasználók:");
         for current_user in &conf.users {
             // definitely overkill, but does the job ;)
             let user_info = current_user.get_userinfo()?;
