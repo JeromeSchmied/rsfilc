@@ -321,7 +321,7 @@ impl Usr {
     pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
         self.load_n_fetch::<Eval>(&mut interval).map(|mut evals| {
             evals.sort_unstable_by_key(|e| e.keszites_datuma);
-            evals.dedup_by_key(|e| e.keszites_datuma);
+            evals.dedup_by_key(|e| e.uid.clone());
             if interval.0.is_none() {
                 self.store_cache(&evals)?;
             }
@@ -382,7 +382,7 @@ impl Usr {
         let orig_irval = interval;
         self.load_n_fetch::<Ancd>(&mut interval).map(|mut tests| {
             tests.sort_unstable_by_key(|a| a.datum);
-            tests.dedup_by_key(|a| a.datum);
+            tests.dedup_by_key(|a| a.uid.clone());
             if let Some(from) = orig_irval.0 {
                 info!("filtering, from!");
                 tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
@@ -412,6 +412,7 @@ impl Usr {
         self.load_n_fetch::<Absence>(&mut interval)
             .map(|mut absences| {
                 absences.sort_unstable_by_key(|a| a.ora.kezdo_datum);
+                absences.dedup_by_key(|a| a.uid.clone());
 
                 if interval.0.is_none() {
                     self.store_cache(&absences)?;
@@ -475,6 +476,9 @@ impl Usr {
         match self.fetch_msgs(from, interval) {
             Ok(fetched_msgs) => {
                 msgs.extend(fetched_msgs);
+                msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
+                msgs.dedup_by_key(|m| m.azonosito);
+
                 if interval.0.is_none() {
                     self.store_cache(&msgs)?;
                 }
@@ -484,9 +488,6 @@ impl Usr {
                 eprintln!("{e:?} while fetching messages, using only cached ones instead");
             }
         }
-
-        msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
-        msgs.dedup();
 
         self.download_all_attachments(&msgs)?;
 
@@ -566,9 +567,6 @@ impl Usr {
         Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> Deserialize<'a> + Clone,
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
-        if let None = cached {
-            warn!("couldn't load cache")
-        }
 
         *irval = fix_irval(cache_t, *irval);
 
