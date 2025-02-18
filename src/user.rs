@@ -298,17 +298,14 @@ impl Usr {
     ///
     /// net
     pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
-        match self.load_n_fetch::<Eval>(&mut interval) {
-            Ok(mut evals) => {
-                evals.sort_unstable_by_key(|e| e.keszites_datuma);
-                evals.dedup_by_key(|e| e.keszites_datuma);
-                if interval.0.is_none() {
-                    self.store_cache(&evals)?;
-                }
-                Ok(evals)
+        self.load_n_fetch::<Eval>(&mut interval).map(|mut evals| {
+            evals.sort_unstable_by_key(|e| e.keszites_datuma);
+            evals.dedup_by_key(|e| e.keszites_datuma);
+            if interval.0.is_none() {
+                self.store_cache(&evals)?;
             }
-            Err(e) => Err(e),
-        }
+            Ok(evals)
+        })?
     }
 
     pub fn get_timetable(&self, day: NaiveDate, everything_till_day: bool) -> Res<Vec<Lesson>> {
@@ -362,26 +359,23 @@ impl Usr {
     /// sorting
     pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
         let orig_irval = interval;
-        match self.load_n_fetch::<Ancd>(&mut interval) {
-            Ok(mut tests) => {
-                tests.sort_unstable_by_key(|a| a.datum);
-                tests.dedup_by_key(|a| a.datum);
-                if let Some(from) = orig_irval.0 {
-                    info!("filtering, from!");
-                    tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
-                }
-                if let Some(to) = orig_irval.1 {
-                    info!("filtering, to!");
-                    tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
-                }
-                if orig_irval.0.is_none() {
-                    self.store_cache(&tests)?;
-                }
-
-                Ok(tests)
+        self.load_n_fetch::<Ancd>(&mut interval).map(|mut tests| {
+            tests.sort_unstable_by_key(|a| a.datum);
+            tests.dedup_by_key(|a| a.datum);
+            if let Some(from) = orig_irval.0 {
+                info!("filtering, from!");
+                tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
             }
-            Err(e) => Err(e),
-        }
+            if let Some(to) = orig_irval.1 {
+                info!("filtering, to!");
+                tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
+            }
+            if orig_irval.0.is_none() {
+                self.store_cache(&tests)?;
+            }
+
+            Ok(tests)
+        })?
     }
 
     /// get information about being [`Abs`]ent `from` `to` or all
@@ -394,8 +388,8 @@ impl Usr {
     ///
     /// sorting
     pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
-        match self.load_n_fetch::<Absence>(&mut interval) {
-            Ok(mut absences) => {
+        self.load_n_fetch::<Absence>(&mut interval)
+            .map(|mut absences| {
                 absences.sort_unstable_by_key(|a| a.ora.kezdo_datum);
 
                 if interval.0.is_none() {
@@ -403,9 +397,7 @@ impl Usr {
                 }
 
                 Ok(absences)
-            }
-            Err(e) => Err(e),
-        }
+            })?
     }
 }
 
@@ -536,15 +528,12 @@ impl Usr {
     ///
     /// - net
     pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
-        match self.load_n_fetch(&mut interval) {
-            Ok(note_msgs) => {
-                if interval.0.is_none() {
-                    self.store_cache(&note_msgs)?;
-                }
-                Ok(note_msgs)
+        self.load_n_fetch(&mut interval).map(|note_msgs| {
+            if interval.0.is_none() {
+                self.store_cache(&note_msgs)?;
             }
-            Err(e) => Err(e),
-        }
+            Ok(note_msgs)
+        })?
     }
 
     /// load data from cache, fetch remaining of interval, merge these two sources
@@ -555,6 +544,9 @@ impl Usr {
         Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> serde::Deserialize<'a> + Clone,
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
+        if let None = cached {
+            warn!("couldn't load cache")
+        }
 
         *irval = fix_irval(cache_t, *irval);
 
