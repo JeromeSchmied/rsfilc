@@ -27,7 +27,7 @@ pub fn handle(
             conf.delete(&name);
             println!("deleted");
         } else if switch {
-            conf.switch_user_to(name);
+            conf.switch_user_to(name)?;
             println!("switched");
         }
         conf.save()?;
@@ -109,7 +109,7 @@ impl Usr {
     /// also set as default
     fn save(&self, conf: &mut Config) {
         conf.users.insert(self.clone());
-        conf.switch_user_to(self.0.username.clone());
+        _ = conf.switch_user_to(self.0.username.clone());
     }
 
     /// load default [`User`]

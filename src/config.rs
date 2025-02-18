@@ -17,8 +17,13 @@ impl Config {
     pub fn save(&self) -> Res<()> {
         Ok(confy::store(APP_NAME, CONFIG_NAME, self)?)
     }
-    pub fn switch_user_to(&mut self, name: String) {
-        self.default_username = name;
+    pub fn switch_user_to(&mut self, name: String) -> Res<()> {
+        if self.users.iter().any(|u| u.0.username == name) {
+            self.default_username = name;
+            Ok(())
+        } else {
+            Err(format!("'{name}' doesn't exist, check out `rsfilc user`").into())
+        }
     }
     pub fn delete(&mut self, name: &str) {
         self.users.retain(|usr| usr.0.username != name);
@@ -26,9 +31,9 @@ impl Config {
             let _ = crate::cache::delete_dir(name);
             // set default to the first element, not to die
             if let Some(first) = self.users.first().cloned() {
-                self.switch_user_to(first.0.username);
+                _ = self.switch_user_to(first.0.username);
             } else {
-                self.switch_user_to(String::new());
+                _ = self.switch_user_to(String::new());
             }
         }
     }
