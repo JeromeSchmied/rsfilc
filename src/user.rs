@@ -263,7 +263,7 @@ impl Usr {
     }
     fn fetch_vec<E>(&self, query: E::Args) -> Res<Vec<E>>
     where
-        E: ekreta::Endpoint + for<'a> serde::Deserialize<'a>,
+        E: ekreta::Endpoint + for<'a> Deserialize<'a>,
     {
         self.0.fetch_vec(query, &self.headers()?)
     }
@@ -559,10 +559,11 @@ impl Usr {
 
     /// load data from cache, fetch remaining of interval, merge these two sources
     /// # NOTE
-    /// if any of the two fails, it will be logged, but ignored and the other source will be used instead
+    /// - if any of the two fails, it will be logged, but ignored and the other source will be used instead
+    /// - don't forget to deduplicate the returned Vec **properly**
     fn load_n_fetch<Ep>(&self, irval: &mut OptIrval) -> Res<Vec<Ep>>
     where
-        Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> serde::Deserialize<'a> + Clone,
+        Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> Deserialize<'a> + Clone,
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
         if let None = cached {
