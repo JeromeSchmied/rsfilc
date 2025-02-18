@@ -102,9 +102,10 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             delete,
             create,
             switch,
+            cachedir,
             userid,
         } => {
-            user::handle(userid, create, conf, delete, switch)?;
+            user::handle(userid, create, conf, delete, switch, cachedir)?;
         }
 
         Command::Schools { search } => {

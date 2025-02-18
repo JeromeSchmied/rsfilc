@@ -2,8 +2,10 @@ use crate::{config::Config, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
-    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
-    OptIrval, Token,
+    consts,
+    header::{self},
+    Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem, OptIrval,
+    Token,
 };
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
@@ -18,18 +20,30 @@ pub fn handle(
     conf: &mut Config,
     del: bool,
     switch: bool,
+    cachedir: bool,
 ) -> Res<()> {
     if let Some(name) = userid {
         if create {
             Usr::create(name, conf);
             println!("created");
         } else if del {
-            conf.delete(&name);
-            println!("deleted");
+            if conf.users.iter().any(|user| user.0.username == name) {
+                conf.delete(&name);
+                println!("deleted");
+            } else {
+                println!("Can't delete, no user named: {}", name);
+            }
         } else if switch {
-            conf.switch_user_to(name);
-            println!("switched");
+            if conf.users.iter().any(|user| user.0.username == name) {
+                conf.switch_user_to(name);
+                println!("switched");
+            } else {
+                println!("Can't switch, no user named: {}", name);
+            }
         }
+        // else if cachedir {
+        // if conf.default_username.is_empty() {}
+        // }
         conf.save()?;
     } else {
         println!("Felhasználók:");

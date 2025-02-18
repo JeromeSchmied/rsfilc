@@ -123,6 +123,9 @@ pub enum Command {
         /// switch between existing accounts
         #[arg(short, long, default_value_t = false, requires = "userid")]
         switch: bool,
+        /// print the cache directory for a user
+        #[arg(long, default_value_t = false, requires = "userid")]
+        cachedir: bool,
     },
 
     /// information about all schools in the `Kréta` database
@@ -140,11 +143,14 @@ impl Command {
             delete,
             create,
             switch,
+            cachedir,
             userid: _,
         } = &self
         {
+            // if  {
+            // }
             // we do need one on: nothing, switching, listing
-            let nothing_specified = !delete && !create && !switch;
+            let nothing_specified = !delete && !create && !switch && !cachedir;
             return nothing_specified || *switch;
         }
         !matches!(
