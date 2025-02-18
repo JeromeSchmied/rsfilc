@@ -337,8 +337,8 @@ impl Usr {
             .unwrap_or_default();
 
         lessons.extend(fetched_lessons_week);
-        lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
-        lessons.dedup_by_key(|l| l.kezdet_idopont);
+        lessons.sort_unstable_by_key(|l| (l.kezdet_idopont, l.allapot.clone()));
+        lessons.dedup_by_key(|l| (l.oraszam, l.nev.clone()));
         if !fetch_err {
             self.store_cache(&lessons)?;
         }
