@@ -22,7 +22,9 @@ pub enum Command {
     /// starts the Text User Interface
     Tui {},
     /// generate completions for <SHELL>
-    Completions { shell: clap_complete::Shell },
+    Completions {
+        shell: clap_complete::Shell,
+    },
 
     /// information about lessons, today by default
     #[clap(visible_alias = "tt")]
@@ -124,7 +126,7 @@ pub enum Command {
         #[arg(short, long, default_value_t = false, requires = "userid")]
         switch: bool,
         /// print the cache directory for a user
-        #[arg(long, default_value_t = false, requires = "userid")]
+        #[arg(long, default_value_t = false)]
         cachedir: bool,
     },
 
@@ -135,6 +137,7 @@ pub enum Command {
         #[arg(short, long, name = "SCHOOL_PROPERTY")]
         search: Option<String>,
     },
+    Cachedir {},
 }
 impl Command {
     pub fn user_needed(&self) -> bool {

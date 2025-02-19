@@ -4,6 +4,7 @@ use clap::{CommandFactory, Parser};
 use config::Config;
 use ekreta::Res;
 use log::*;
+use paths::cache_dir;
 use std::fs::OpenOptions;
 use user::Usr;
 
@@ -110,6 +111,13 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
 
         Command::Schools { search } => {
             schools::handle(search)?;
+        }
+        Command::Cachedir { .. } => {
+            println!(
+                "The cache directory for rsfilc can be found at: {:?}",
+                cache_dir("")
+            );
+            return Ok(());
         }
     };
     Ok(())

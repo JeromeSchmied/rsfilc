@@ -35,14 +35,21 @@ pub fn handle(
                 println!("switched");
             } else if cachedir {
                 println!(
-                    "The caches for user: {}, can be found at {:?}",
-                    name,
+                    "The caches for user: {name}, can be found at {:?}",
                     cache_dir(&name)
                 );
             }
         }
         conf.save()?;
     } else {
+        if cachedir {
+            println!(
+                "Cachedir for {} is {:?}",
+                &conf.default_username,
+                cache_dir(&conf.default_username)
+            );
+            return Ok(());
+        }
         println!("Felhasználók:");
         for current_user in &conf.users {
             // definitely overkill, but does the job ;)
