@@ -9,10 +9,7 @@ use ekreta::{
 };
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::Debug,
-    io::{self, Write},
-};
+use std::io::{self, Write};
 
 pub fn handle(
     userid: Option<String>,
@@ -27,18 +24,34 @@ pub fn handle(
             Usr::create(name, conf);
             println!("created");
         } else if del {
-            if conf.users.iter().any(|user| user.0.username == name) {
+            if conf.users.iter().any(|user| {
+                user.0.username == name
+                    || user
+                        .get_userinfo()
+                        .unwrap()
+                        .nev
+                        .to_lowercase()
+                        .contains(&name.to_lowercase())
+            }) {
                 conf.delete(&name);
                 println!("deleted");
             } else {
-                println!("Can't delete, no user named: {}", name);
+                println!("Can't delete, no user with id or name: {}", name);
             }
         } else if switch {
-            if conf.users.iter().any(|user| user.0.username == name) {
+            if conf.users.iter().any(|user| {
+                user.0.username == name
+                    || user
+                        .get_userinfo()
+                        .unwrap()
+                        .nev
+                        .to_lowercase()
+                        .contains(&name.to_lowercase())
+            }) {
                 conf.switch_user_to(name);
                 println!("switched");
             } else {
-                println!("Can't switch, no user named: {}", name);
+                println!("Can't switch, no user with id or name: {}", name);
             }
         }
         // else if cachedir {
