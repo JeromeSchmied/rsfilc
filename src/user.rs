@@ -216,23 +216,16 @@ impl Usr {
 
 // interacting with API
 impl Usr {
-    /// convert type name of `T` to a kind name, used for cache
-    fn type_to_kind_name<T>() -> Res<String> {
-        let type_name = std::any::type_name::<T>();
-        let kind = type_name.split("::").last().ok_or("invalid type_name")?;
-        let kind = kind.trim_matches(['<', '>']).to_ascii_lowercase();
-        Ok(kind)
-    }
     /// helper fn, stores `content` of `kind` to `self.0.username` cache-dir
     fn store_cache<S: Serialize>(&self, content: &S) -> Res<()> {
-        let kind = Self::type_to_kind_name::<S>()?;
+        let kind = utils::type_to_kind_name::<S>()?;
 
         let content = serde_json::to_string(content)?;
         cache::store(&self.0.username, &kind, &content)
     }
     /// helper fn, loads cache of `kind` from `self.0.username` cache-dir
     fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(ekreta::LDateTime, D)> {
-        let kind = Self::type_to_kind_name::<D>().ok()?;
+        let kind = utils::type_to_kind_name::<D>().ok()?;
 
         let (cache_t, content) = cache::load(&self.0.username, &kind)?;
         let deserd = serde_json::from_str(&content)
@@ -402,19 +395,30 @@ impl Usr {
     }
 }
 
-/// use `cache_t` as `interval.0` (from) if some
-fn fix_irval(cache_t: Option<ekreta::LDateTime>, mut irval: OptIrval) -> OptIrval {
-    debug!("got interval: {irval:?}");
-    if let Some(ct) = cache_t.map(|ct| ct.date_naive()) {
-        if irval
-            .0
-            .is_none_or(|from| from < ct && irval.1.is_none_or(|to| to > ct))
-        {
-            info!("from cached, replacing {:?} to {ct:?}", irval.0);
-            irval.0 = Some(ct);
+mod utils {
+    use super::*;
+
+    /// use `cache_t` as `interval.0` (from) if some
+    pub fn fix_irval(cache_t: Option<ekreta::LDateTime>, mut irval: OptIrval) -> OptIrval {
+        debug!("got interval: {irval:?}");
+        if let Some(ct) = cache_t.map(|ct| ct.date_naive()) {
+            if irval
+                .0
+                .is_none_or(|from| from < ct && irval.1.is_none_or(|to| to > ct))
+            {
+                info!("from cached, replacing {:?} to {ct:?}", irval.0);
+                irval.0 = Some(ct);
+            }
         }
+        irval
     }
-    irval
+    /// convert type name of `T` to a kind name, used for cache
+    pub fn type_to_kind_name<T>() -> Res<String> {
+        let type_name = std::any::type_name::<T>();
+        let kind = type_name.split("::").last().ok_or("invalid type_name")?;
+        let kind = kind.trim_matches(['<', '>']).to_ascii_lowercase();
+        Ok(kind)
+    }
 }
 
 /// [`Msg`]s and [`Attachment`]s
@@ -450,7 +454,7 @@ impl Usr {
         let (cache_t, cached_msg) = self.load_cache::<Vec<MsgItem>>().unzip();
         let mut msgs = cached_msg.unwrap_or_default();
 
-        let (from, _) = fix_irval(cache_t, interval);
+        let (from, _) = utils::fix_irval(cache_t, interval);
 
         match self.fetch_msgs(from, interval) {
             Ok(fetched_msgs) => {
@@ -547,7 +551,7 @@ impl Usr {
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
 
-        *irval = fix_irval(cache_t, *irval);
+        *irval = utils::fix_irval(cache_t, *irval);
 
         let fetched = self.fetch_vec::<Ep>(*irval);
 
@@ -556,7 +560,7 @@ impl Usr {
             Err(e) => {
                 error!("couldn't reach E-Kréta server: {e:?}");
                 eprintln!("couldn't reach E-Kréta server: {e:?}");
-                let kind_name = Self::type_to_kind_name::<Ep>().unwrap_or_default();
+                let kind_name = utils::type_to_kind_name::<Ep>().unwrap_or_default();
                 warn!("request error, only loading cached {kind_name}");
                 eprintln!("request error, only loading cached {kind_name}");
                 cached.ok_or("nothing cached".into())
