@@ -21,7 +21,7 @@ pub fn handle(
 ) -> Res<()> {
     if let Some(name) = userid {
         if create {
-            Usr::create(name, conf);
+            Usr::create(name, conf).ok_or("couldn't create user, no such user found in Kréta")?;
             println!("created");
         } else {
             let name = conf
@@ -112,6 +112,7 @@ impl Usr {
         info!("received schoolid {schoolid} from cli");
 
         let user = Self::new(username, password, schoolid);
+        user.get_userinfo().ok()?;
         user.save(conf);
         Some(user)
     }
