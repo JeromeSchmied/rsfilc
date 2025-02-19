@@ -1,4 +1,4 @@
-use crate::{config::Config, time::MyDate, timetable::next_lesson, *};
+use crate::{config::Config, paths::cache_dir, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
@@ -23,40 +23,24 @@ pub fn handle(
         if create {
             Usr::create(name, conf);
             println!("created");
-        } else if del {
-            if conf.users.iter().any(|user| {
-                user.0.username == name
-                    || user
-                        .get_userinfo()
-                        .unwrap()
-                        .nev
-                        .to_lowercase()
-                        .contains(&name.to_lowercase())
-            }) {
-                conf.delete(&name);
+        } else {
+            let name = conf
+                .get_userid(name)
+                .ok_or("the given userid/name isn't saved")?;
+            if del {
+                conf.delete(name);
                 println!("deleted");
-            } else {
-                println!("Can't delete, no user with id or name: {}", name);
-            }
-        } else if switch {
-            if conf.users.iter().any(|user| {
-                user.0.username == name
-                    || user
-                        .get_userinfo()
-                        .unwrap()
-                        .nev
-                        .to_lowercase()
-                        .contains(&name.to_lowercase())
-            }) {
+            } else if switch {
                 conf.switch_user_to(name);
                 println!("switched");
-            } else {
-                println!("Can't switch, no user with id or name: {}", name);
+            } else if cachedir {
+                println!(
+                    "The caches for user: {}, can be found at {:?}",
+                    name,
+                    cache_dir(&name)
+                );
             }
         }
-        // else if cachedir {
-        // if conf.default_username.is_empty() {}
-        // }
         conf.save()?;
     } else {
         println!("Felhasználók:");
@@ -305,7 +289,7 @@ impl Usr {
         info!("received token");
         Ok(token)
     }
-    fn get_userinfo(&self) -> Res<ekreta::UserInfo> {
+    pub fn get_userinfo(&self) -> Res<ekreta::UserInfo> {
         if let Some((_, cached_info)) = self.load_cache::<ekreta::UserInfo>() {
             Ok(cached_info)
         } else {

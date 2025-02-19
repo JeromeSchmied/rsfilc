@@ -17,13 +17,13 @@ impl Config {
     pub fn save(&self) -> Res<()> {
         Ok(confy::store(APP_NAME, CONFIG_NAME, self)?)
     }
-    pub fn switch_user_to(&mut self, name: String) {
-        self.default_username = name;
+    pub fn switch_user_to(&mut self, name: impl ToString) {
+        self.default_username = name.to_string();
     }
-    pub fn delete(&mut self, name: &str) {
-        self.users.retain(|usr| usr.0.username != name);
-        if self.default_username == name {
-            let _ = crate::cache::delete_dir(name);
+    pub fn delete(&mut self, name: impl AsRef<str>) {
+        self.users.retain(|usr| usr.0.username != name.as_ref());
+        if self.default_username == name.as_ref() {
+            let _ = crate::cache::delete_dir(name.as_ref());
             // set default to the first element, not to die
             if let Some(first) = self.users.first().cloned() {
                 self.switch_user_to(first.0.username);
@@ -31,5 +31,19 @@ impl Config {
                 self.switch_user_to(String::new());
             }
         }
+    }
+    /// checks if the given `name` (either userid or username) is saved in conf and returns the userid
+    pub fn get_userid(&self, name: impl AsRef<str>) -> Option<String> {
+        self.users
+            .iter()
+            .find(|user| {
+                user.0.username == name.as_ref()
+                    || user.get_userinfo().is_ok_and(|ui| {
+                        ui.nev
+                            .to_lowercase()
+                            .contains(&name.as_ref().to_lowercase())
+                    })
+            })
+            .map(|u| u.0.username.clone())
     }
 }
