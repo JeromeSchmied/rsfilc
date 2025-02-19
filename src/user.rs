@@ -138,7 +138,7 @@ impl Usr {
                     Some(first_lesson.kezdet_idopont.date_naive()),
                     Some(lessons.last().unwrap().veg_idopont.date_naive()),
                 ))
-                .expect("couldn't fetch announced tests");
+                .unwrap_or_default();
             let all_lessons_till_day = self
                 .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
                 .unwrap_or_default();
