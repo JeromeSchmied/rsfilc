@@ -353,7 +353,7 @@ impl Usr {
             .fetch_vec((week_start, week_end))
             .inspect_err(|e| {
                 fetch_err = true;
-                warn!("couldn't deserialize data: {e:?}");
+                warn!("couldn't fetch or deserialize data: {e:?}");
             })
             .unwrap_or_default();
 

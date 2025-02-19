@@ -11,7 +11,7 @@ pub fn handle(day: Option<&String>, user: &Usr, current: bool, out_p: Option<Pat
     let all_lessons_till_day = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
-        println!("{} ({}) nincs rögzített órád, juhé!", day, day.weekday());
+        println!("{day} ({}) nincs rögzített órád, juhé!", day.weekday());
         return Ok(());
     }
     if current {
