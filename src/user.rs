@@ -577,8 +577,9 @@ impl Usr {
             Err(e) => {
                 error!("couldn't reach E-Kréta server: {e:?}");
                 eprintln!("couldn't reach E-Kréta server: {e:?}");
-                warn!("request error, only loading cached data");
-                eprintln!("request error, only loading cached data");
+                let kind_name = Self::type_to_kind_name::<Ep>().unwrap_or_default();
+                warn!("request error, only loading cached {kind_name}");
+                eprintln!("request error, only loading cached {kind_name}");
                 cached.ok_or("nothing cached".into())
             }
         }
