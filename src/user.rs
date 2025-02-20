@@ -154,12 +154,7 @@ impl Usr {
                 println!("{as_str}");
                 fill(&as_str, '|', None);
             }
-            let todays_tests = self
-                .get_all_announced((
-                    Some(first_lesson.kezdet_idopont.date_naive()),
-                    Some(lessons.last().unwrap().veg_idopont.date_naive()),
-                ))
-                .unwrap_or_default();
+            let todays_tests = self.get_all_announced((None, None)).unwrap_or_default();
             let all_lessons_till_day = self
                 .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
                 .unwrap_or_default();
@@ -186,10 +181,12 @@ impl Usr {
                 // so fill_under() works fine
                 let mut printer = format!("\n\n{nth}. {}", timetable::disp(lesson));
 
-                if let Some(test) = todays_tests
-                    .iter()
-                    .find(|ancd| ancd.orarendi_ora_oraszama.is_some_and(|x| x == nth))
-                {
+                if let Some(test) = todays_tests.iter().find(|ancd| {
+                    lesson
+                        .bejelentett_szamonkeres_uid
+                        .as_ref()
+                        .is_some_and(|uid| *uid == ancd.uid)
+                }) {
                     printer += &format!(
                         "\n| {}{}",
                         test.modja.leiras,
@@ -376,14 +373,7 @@ impl Usr {
         self.load_n_fetch::<Ancd>(&mut interval).map(|mut tests| {
             tests.sort_unstable_by_key(|a| a.datum);
             tests.dedup_by_key(|a| a.uid.clone());
-            if let Some(from) = orig_irval.0 {
-                info!("filtering, from!");
-                tests.retain(|ancd| ancd.datum.num_days_from_ce() >= from.num_days_from_ce());
-            }
-            if let Some(to) = orig_irval.1 {
-                info!("filtering, to!");
-                tests.retain(|ancd| ancd.datum.num_days_from_ce() <= to.num_days_from_ce());
-            }
+
             if orig_irval.0.is_none() {
                 self.store_cache(&tests)?;
             }
