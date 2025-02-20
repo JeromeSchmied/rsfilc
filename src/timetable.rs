@@ -177,7 +177,7 @@ impl Usr {
                 println!("{as_str}");
                 fill(&as_str, '|', None);
             }
-            let todays_tests = self.get_all_announced((None, None)).unwrap_or_default();
+            let tests = self.get_all_announced((None, None)).unwrap_or_default();
             let all_lessons_till_day = self
                 .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
                 .unwrap_or_default();
@@ -204,12 +204,11 @@ impl Usr {
                 // so fill_under() works fine
                 let mut printer = format!("\n\n{nth}. {}", disp(lesson));
 
-                if let Some(test) = todays_tests.iter().find(|ancd| {
-                    lesson
-                        .bejelentett_szamonkeres_uid
-                        .as_ref()
-                        .is_some_and(|uid| *uid == ancd.uid)
-                }) {
+                if let Some(Some(test)) = lesson
+                    .bejelentett_szamonkeres_uid
+                    .as_ref()
+                    .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
+                {
                     printer += &format!(
                         "\n| {}{}",
                         test.modja.leiras,
