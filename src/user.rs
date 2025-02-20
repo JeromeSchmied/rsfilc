@@ -299,24 +299,11 @@ impl Usr {
         }
     }
 
-    /// get all [`Eval`]s with `from` `to` or all
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    ///
-    /// # Errors
-    ///
-    /// net
-    pub fn get_evals(&self, mut interval: OptIrval) -> Res<Vec<Eval>> {
-        self.load_n_fetch::<Eval>(&mut interval).map(|mut evals| {
+    gen_get_for! { get_evals, Eval,
+        (|evals: &mut Vec<Eval>| {
             evals.sort_unstable_by_key(|e| e.keszites_datuma);
             evals.dedup_by_key(|e| e.uid.clone());
-            if interval.0.is_none() {
-                self.store_cache(&evals)?;
-            }
-            Ok(evals)
-        })?
+        })
     }
 
     pub fn get_timetable(&self, day: NaiveDate, everything_till_day: bool) -> Res<Vec<Lesson>> {
@@ -359,50 +346,18 @@ impl Usr {
         Ok(lessons)
     }
 
-    /// get [`Announced`] tests `from` `to` or all
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    pub fn get_all_announced(&self, mut interval: OptIrval) -> Res<Vec<Ancd>> {
-        let orig_irval = interval;
-        self.load_n_fetch::<Ancd>(&mut interval).map(|mut tests| {
+    gen_get_for! { get_all_announced, Ancd,
+        (|tests: &mut Vec<Ancd>| {
             tests.sort_unstable_by_key(|a| a.datum);
             tests.dedup_by_key(|a| a.uid.clone());
-
-            if orig_irval.0.is_none() {
-                self.store_cache(&tests)?;
-            }
-
-            Ok(tests)
-        })?
+        })
     }
 
-    /// get information about being [`Abs`]ent `from` `to` or all
-    ///
-    /// # Errors
-    ///
-    /// net
-    ///
-    /// # Panics
-    ///
-    /// sorting
-    pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
-        self.load_n_fetch::<Absence>(&mut interval)
-            .map(|mut absences| {
+    gen_get_for! { get_absences, Absence,
+        (|absences: &mut Vec<Absence>| {
                 absences.sort_unstable_by_key(|a| (a.ora.kezdo_datum, !a.igazolt()));
                 absences.dedup_by_key(|a| a.ora.clone());
-
-                if interval.0.is_none() {
-                    self.store_cache(&absences)?;
-                }
-
-                Ok(absences)
-            })?
+        })
     }
 }
 
@@ -429,6 +384,25 @@ mod utils {
         let kind = type_name.split("::").last().ok_or("invalid type_name")?;
         let kind = kind.trim_matches(['<', '>']).to_ascii_lowercase();
         Ok(kind)
+    }
+
+    #[macro_export]
+    /// generate get fn named `fn_name` for type `ep` and sort with `sorting`
+    macro_rules! gen_get_for {
+        ($fn_name:ident, $ep:ty, $sorting:expr) => {
+            /// get all items between `from` and `to`
+            /// # Errors
+            /// net
+            pub fn $fn_name(&self, mut interval: OptIrval) -> Res<Vec<$ep>> {
+                self.load_n_fetch::<$ep>(&mut interval).map(|mut items| {
+                    $sorting(&mut items);
+                    if interval.0.is_none() {
+                        self.store_cache(&items)?;
+                    }
+                    Ok(items)
+                })?
+            }
+        };
     }
 }
 
@@ -538,19 +512,7 @@ impl Usr {
         Ok(fetched_msgs)
     }
 
-    /// get notes: additional messages the [`User`] received.
-    ///
-    /// # Errors
-    ///
-    /// - net
-    pub fn get_note_msgs(&self, mut interval: OptIrval) -> Res<Vec<ekreta::NoteMsg>> {
-        self.load_n_fetch(&mut interval).map(|note_msgs| {
-            if interval.0.is_none() {
-                self.store_cache(&note_msgs)?;
-            }
-            Ok(note_msgs)
-        })?
-    }
+    gen_get_for! { get_note_msgs, ekreta::NoteMsg, (|_| {}) }
 
     /// load data from cache, fetch remaining of interval, merge these two sources
     /// # NOTE
