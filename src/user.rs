@@ -404,7 +404,7 @@ impl Usr {
     pub fn get_absences(&self, mut interval: OptIrval) -> Res<Vec<Absence>> {
         self.load_n_fetch::<Absence>(&mut interval)
             .map(|mut absences| {
-                absences.sort_unstable_by_key(|a| (a.ora.kezdo_datum, a.igazolt()));
+                absences.sort_unstable_by_key(|a| (a.ora.kezdo_datum, !a.igazolt()));
                 absences.dedup_by_key(|a| a.ora.clone());
 
                 if interval.0.is_none() {
