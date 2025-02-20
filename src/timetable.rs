@@ -191,7 +191,7 @@ impl Usr {
                 let nth = lesson.oraszam.unwrap_or(u8::MAX);
                 if n as u8 + 2 == nth
                     && lessons
-                        .get(n - 1)
+                        .get(n.overflowing_sub(1).0)
                         .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
                 {
                     let no_lesson_buf = format!(
