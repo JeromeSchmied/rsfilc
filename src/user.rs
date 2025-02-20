@@ -235,17 +235,21 @@ impl Usr {
             .unwrap();
 
         let mut fetch_err = false;
-        let fetched_lessons_week = self
+        let mut fetched_lessons_week: Vec<Lesson> = self
             .fetch_vec((week_start, week_end))
             .inspect_err(|e| {
                 fetch_err = true;
                 warn!("couldn't fetch or deserialize data: {e:?}");
             })
             .unwrap_or_default();
+        lessons.retain(|l| {
+            !fetched_lessons_week
+                .iter()
+                .any(|fl| l.kezdet_idopont == fl.kezdet_idopont && l.nev == fl.nev)
+        });
 
-        lessons.extend(fetched_lessons_week);
-        lessons.sort_unstable_by_key(|l| (l.kezdet_idopont, l.allapot.clone()));
-        lessons.dedup_by_key(|l| (l.oraszam, l.nev.clone()));
+        lessons.append(&mut fetched_lessons_week);
+        lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
         if !fetch_err {
             self.store_cache(&lessons)?;
         }
