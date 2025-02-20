@@ -1,6 +1,6 @@
 //! lessons the student has
 
-use crate::user::Usr;
+use crate::{fill, time::MyDate, user::Usr};
 use chrono::{Datelike, Duration, Local, NaiveDate};
 use ekreta::{Lesson, Res};
 use log::*;
@@ -112,9 +112,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     lessons
         .iter()
         .filter(|lsn| lsn.forecoming() && !lsn.kamu_smafu() && !lsn.cancelled())
-        .collect::<Vec<_>>()
-        .first()
-        .copied()
+        .next()
 }
 
 pub fn disp(lsn: &Lesson) -> String {
@@ -165,6 +163,97 @@ pub fn disp(lsn: &Lesson) -> String {
     f
 }
 
+impl Usr {
+    /// print all lessons of a day
+    pub fn print_day(&self, mut lessons: Vec<Lesson>) {
+        if let Some(first_lesson) = lessons.first() {
+            println!(
+                "    {} ({})",
+                &first_lesson.kezdet_idopont.pretty(),
+                first_lesson.kezdet_idopont.hun_day_of_week()
+            );
+            if first_lesson.kamu_smafu() {
+                let as_str = disp(first_lesson);
+                println!("{as_str}");
+                fill(&as_str, '|', None);
+            }
+            let todays_tests = self.get_all_announced((None, None)).unwrap_or_default();
+            let all_lessons_till_day = self
+                .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
+                .unwrap_or_default();
+            // info!("all announced: {todays_tests:?}");
+
+            // number of lessons at the same time
+            lessons.retain(|l| !l.kamu_smafu());
+
+            for (n, lesson) in lessons.iter().enumerate() {
+                // calculate `n`. this lesson is
+                let nth = lesson.oraszam.unwrap_or(u8::MAX);
+                if n as u8 + 2 == nth
+                    && lessons
+                        .get(n - 1)
+                        .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
+                {
+                    let no_lesson_buf = format!(
+                        "\n\n{}. Lyukas (avagy Lukas) óra\n| Erre az időpontra nincsen tanóra rögzítve.",
+                        n + 1
+                    );
+                    println!("{no_lesson_buf}");
+                    fill(&no_lesson_buf, '^', Some("Juhé"));
+                }
+                // so fill_under() works fine
+                let mut printer = format!("\n\n{nth}. {}", disp(lesson));
+
+                if let Some(test) = todays_tests.iter().find(|ancd| {
+                    lesson
+                        .bejelentett_szamonkeres_uid
+                        .as_ref()
+                        .is_some_and(|uid| *uid == ancd.uid)
+                }) {
+                    printer += &format!(
+                        "\n| {}{}",
+                        test.modja.leiras,
+                        if let Some(topic) = test.temaja.as_ref() {
+                            format!(": {topic}")
+                        } else {
+                            String::new()
+                        }
+                    );
+                }
+                println!("{printer}");
+
+                let (with, inlay_hint) = if lesson.happening() {
+                    (
+                        '$',
+                        Some(format!(
+                            "{} perc",
+                            (lesson.veg_idopont - Local::now()).num_minutes()
+                        )),
+                    )
+                } else if next_lesson(&all_lessons_till_day).is_some_and(|nxt| nxt == lesson) {
+                    (
+                        '>',
+                        Some(format!(
+                            "{} perc",
+                            (lesson.kezdet_idopont - Local::now()).num_minutes()
+                        )),
+                    )
+                } else if lesson.cancelled() {
+                    (
+                        'X',
+                        Some(format!(
+                            "elmarad{}",
+                            if lesson.forecoming() { "" } else { "t" }
+                        )),
+                    )
+                } else {
+                    ('-', None)
+                };
+                fill(&printer, with, inlay_hint.as_deref());
+            }
+        }
+    }
+}
 /// get the number of days difference from today to `value`
 /// if `value` is invalid, return `None`
 fn day_diff(value: &str) -> Option<i8> {
