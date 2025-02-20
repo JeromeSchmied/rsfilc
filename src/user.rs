@@ -410,7 +410,7 @@ mod utils {
     use super::*;
 
     /// use `cache_t` as `interval.0` (from) if some
-    pub fn fix_irval(cache_t: Option<ekreta::LDateTime>, mut irval: OptIrval) -> OptIrval {
+    pub fn fix_from(cache_t: Option<ekreta::LDateTime>, mut irval: OptIrval) -> OptIrval {
         debug!("got interval: {irval:?}");
         if let Some(ct) = cache_t.map(|ct| ct.date_naive()) {
             if irval
@@ -465,7 +465,7 @@ impl Usr {
         let (cache_t, cached_msg) = self.load_cache::<Vec<MsgItem>>().unzip();
         let mut msgs = cached_msg.unwrap_or_default();
 
-        let (from, _) = utils::fix_irval(cache_t, interval);
+        let (from, _) = utils::fix_from(cache_t, interval);
 
         match self.fetch_msgs(from, interval) {
             Ok(fetched_msgs) => {
@@ -556,13 +556,15 @@ impl Usr {
     /// # NOTE
     /// - if any of the two fails, it will be logged, but ignored and the other source will be used instead
     /// - don't forget to deduplicate the returned Vec **properly**
+    /// # WARN
+    /// `irval.1` so the end of the interval, 'to' will be ignored in terms of cached data
     fn load_n_fetch<Ep>(&self, irval: &mut OptIrval) -> Res<Vec<Ep>>
     where
         Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> Deserialize<'a> + Clone,
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
 
-        *irval = utils::fix_irval(cache_t, *irval);
+        *irval = utils::fix_from(cache_t, *irval);
 
         let fetched = self.fetch_vec::<Ep>(*irval);
 
