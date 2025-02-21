@@ -18,6 +18,9 @@ pub struct Args {
     /// show cache dir
     #[arg(long, default_value_t = false)]
     pub cache_dir: bool,
+    /// show config dir
+    #[arg(long, default_value_t = false)]
+    pub config_dir: bool,
 }
 
 #[derive(Subcommand, Debug, Clone)]

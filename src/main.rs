@@ -37,6 +37,16 @@ fn main() -> Res<()> {
 }
 
 fn run(args: Args, conf: &mut Config) -> Res<()> {
+    if args.command.is_none() {
+        if args.cache_dir {
+            println!("{}", cache_dir("").ok_or("no cache dir found")?.display());
+            return Ok(());
+        }
+        if args.config_dir {
+            println!("{}", Config::path().ok_or("no config dir found")?.display());
+            return Ok(());
+        }
+    }
     let command = args.command.unwrap_or(args::Command::Timetable {
         day: None,
         current: false,
