@@ -15,6 +15,9 @@ pub struct Args {
     /// enable verbose logging into the log file
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
+    /// show cache dir
+    #[arg(long, default_value_t = false)]
+    pub cache_dir: bool,
 }
 
 #[derive(Subcommand, Debug, Clone)]
@@ -147,8 +150,6 @@ impl Command {
             userid: _,
         } = &self
         {
-            // if  {
-            // }
             // we do need one on: nothing, switching, listing
             let nothing_specified = !delete && !create && !switch && !cachedir;
             return nothing_specified || *switch;
