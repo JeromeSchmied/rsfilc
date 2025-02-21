@@ -11,20 +11,18 @@ const NUM: usize = usize::MAX;
 #[command(version, about)]
 pub struct Args {
     #[command(subcommand)]
-    pub command: Command,
+    pub command: Option<Command>,
     /// enable verbose logging into the log file
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum Command {
     /// starts the Text User Interface
     Tui {},
     /// generate completions for <SHELL>
-    Completions {
-        shell: clap_complete::Shell,
-    },
+    Completions { shell: clap_complete::Shell },
 
     /// information about lessons, today by default
     #[clap(visible_alias = "tt")]

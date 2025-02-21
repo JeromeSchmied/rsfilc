@@ -37,14 +37,19 @@ fn main() -> Res<()> {
 }
 
 fn run(args: Args, conf: &mut Config) -> Res<()> {
+    let command = args.command.unwrap_or(args::Command::Timetable {
+        day: None,
+        current: false,
+        export_day: None,
+    });
     // have a valid user
-    let user = if args.command.user_needed() {
+    let user = if command.user_needed() {
         Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
     } else {
         Usr::dummy()
     };
 
-    match args.command {
+    match command {
         Command::Completions { shell: sh } => {
             info!("creating shell completions for {sh}");
             clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
