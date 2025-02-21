@@ -135,7 +135,6 @@ pub enum Command {
         #[arg(short, long, name = "SCHOOL_PROPERTY")]
         search: Option<String>,
     },
-    Cachedir {},
 }
 impl Command {
     pub fn user_needed(&self) -> bool {

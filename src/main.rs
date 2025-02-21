@@ -117,14 +117,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         Command::Schools { search } => {
             schools::handle(search)?;
         }
-        Command::Cachedir { .. } => {
-            println!(
-                "The cache directory for rsfilc can be found at: {:?}",
-                cache_dir("")
-            );
-            return Ok(());
-        }
-    };
+    }
     Ok(())
 }
 
