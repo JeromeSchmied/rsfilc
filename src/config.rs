@@ -1,6 +1,6 @@
 use crate::{Res, Usr};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, path::PathBuf};
 
 pub const APP_NAME: &str = "rsfilc";
 const CONFIG_NAME: &str = "config";
@@ -45,5 +45,8 @@ impl Config {
                     })
             })
             .map(|u| u.0.username.clone())
+    }
+    pub fn path() -> Option<PathBuf> {
+        Some(dirs::config_dir()?.join(APP_NAME).join(CONFIG_NAME))
     }
 }
