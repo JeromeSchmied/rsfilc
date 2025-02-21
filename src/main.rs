@@ -118,10 +118,10 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             delete,
             create,
             switch,
-            cachedir,
+            cache_dir,
             userid,
         } => {
-            user::handle(userid, create, conf, delete, switch, cachedir)?;
+            user::handle(userid, create, conf, delete, switch, cache_dir)?;
         }
 
         Command::Schools { search } => {

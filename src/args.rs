@@ -131,7 +131,7 @@ pub enum Command {
         switch: bool,
         /// print the cache directory for a user
         #[arg(long, default_value_t = false)]
-        cachedir: bool,
+        cache_dir: bool,
     },
 
     /// information about all schools in the `Kréta` database
@@ -149,12 +149,12 @@ impl Command {
             delete,
             create,
             switch,
-            cachedir,
+            cache_dir,
             userid: _,
         } = &self
         {
             // we do need one on: nothing, switching, listing
-            let nothing_specified = !delete && !create && !switch && !cachedir;
+            let nothing_specified = !delete && !create && !switch && !cache_dir;
             return nothing_specified || *switch;
         }
         !matches!(
