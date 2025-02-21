@@ -35,8 +35,10 @@ pub fn handle(
                 println!("switched");
             } else if cachedir {
                 println!(
-                    "The caches for user: {name}, can be found at {:?}",
+                    "{}",
                     cache_dir(&name)
+                        .ok_or("no cache dir found for user")?
+                        .display()
                 );
             }
         }
@@ -44,9 +46,10 @@ pub fn handle(
     } else {
         if cachedir {
             println!(
-                "Cachedir for {} is {:?}",
-                &conf.default_username,
+                "{}",
                 cache_dir(&conf.default_username)
+                    .ok_or("no cachedir found of for user")?
+                    .display()
             );
             return Ok(());
         }
