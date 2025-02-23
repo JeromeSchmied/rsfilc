@@ -14,7 +14,7 @@ pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usiz
     if let Some(subject) = subj {
         filter_by_subject(&mut all_announced, &subject);
     }
-    utils::print_to_and_rev(&all_announced, num, rev, disp);
+    utils::print_to_or_rev(&all_announced, num, rev, disp);
     Ok(())
 }
 

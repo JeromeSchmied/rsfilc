@@ -7,11 +7,11 @@ use std::{char, fmt::Write};
 pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize) -> Res<()> {
     if notes {
         let notes = user.get_note_msgs((None, None))?;
-        utils::print_to_and_rev(&notes, num, rev, disp_note_msg);
+        utils::print_to_or_rev(&notes, num, rev, disp_note_msg);
         return Ok(());
     }
     let msgs = user.msgs((None, None))?;
-    utils::print_to_and_rev(&msgs, num, rev, disp_msg);
+    utils::print_to_or_rev(&msgs, num, rev, disp_msg);
     Ok(())
 }
 

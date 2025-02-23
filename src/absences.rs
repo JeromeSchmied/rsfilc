@@ -17,7 +17,7 @@ pub fn handle(user: &Usr, subj: Option<String>, count: bool, rev: bool, num: usi
         );
         return Ok(());
     }
-    utils::print_to_and_rev(&absences, num, rev, disp);
+    utils::print_to_or_rev(&absences, num, rev, disp);
     Ok(())
 }
 

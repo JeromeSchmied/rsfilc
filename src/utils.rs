@@ -69,6 +69,7 @@ pub fn fill(this: &str, with: char, hint: Option<&str>) {
     );
 }
 
+/// print `items` using `to_str`
 pub fn print_them_basic<T>(items: impl Iterator<Item = T>, to_str: impl Fn(T) -> String) {
     for item in items {
         let as_str = to_str(item);
@@ -77,7 +78,8 @@ pub fn print_them_basic<T>(items: impl Iterator<Item = T>, to_str: impl Fn(T) ->
     }
 }
 
-pub fn print_to_and_rev<T>(items: &[T], num: usize, rev: bool, to_str: impl Fn(&T) -> String) {
+/// print `num` `items` using `to_str`, reversed if `rev` otherwise not
+pub fn print_to_or_rev<T>(items: &[T], num: usize, rev: bool, to_str: impl Fn(&T) -> String) {
     if rev {
         print_them_basic(items.iter().rev().take(num), to_str);
     } else {

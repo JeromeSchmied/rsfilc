@@ -28,7 +28,7 @@ pub fn handle(
 
         return Ok(());
     }
-    utils::print_to_and_rev(&evals, num, rev, disp);
+    utils::print_to_or_rev(&evals, num, rev, disp);
     Ok(())
 }
 
