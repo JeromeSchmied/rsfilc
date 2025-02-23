@@ -426,7 +426,12 @@ impl Usr {
         Ok(fetched_msgs)
     }
 
-    gen_get_for! { get_note_msgs, ekreta::NoteMsg, (|_| {}) }
+    gen_get_for! { get_note_msgs, ekreta::NoteMsg,
+        (|nmsgs: &mut Vec<ekreta::NoteMsg>| {
+            nmsgs.sort_unstable_by_key(|nmsg| nmsg.datum);
+            nmsgs.dedup();
+        })
+    }
 
     /// load data from cache, fetch remaining of interval, merge these two sources
     /// # NOTE
