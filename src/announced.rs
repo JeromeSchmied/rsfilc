@@ -1,6 +1,6 @@
 //! Announced tests
 
-use crate::{fill, time::MyDate, user::Usr};
+use crate::{time::MyDate, user::Usr, utils};
 use chrono::{Datelike, Local};
 use ekreta::{AnnouncedTest, Res};
 use std::fmt::Write;
@@ -14,19 +14,7 @@ pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usiz
     if let Some(subject) = subj {
         filter_by_subject(&mut all_announced, &subject);
     }
-    if rev {
-        for announced in all_announced.iter().take(num).rev() {
-            let as_str = disp(announced);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    } else {
-        for announced in all_announced.iter().take(num) {
-            let as_str = disp(announced);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    }
+    utils::print_to_and_rev(&all_announced, num, rev, disp);
     Ok(())
 }
 

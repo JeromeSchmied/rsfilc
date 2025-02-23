@@ -42,3 +42,45 @@ macro_rules! gen_get_for {
         }
     };
 }
+
+/// Fill under `this` with many `with` [`char`]s, inlaying `hint` if any.
+///
+/// this:   "123456789" <- len: 9
+/// with:   '#'
+/// hint:   "bab" <- len: 3
+///
+/// so:     "123456789" <- len: 9
+/// result: "12 bab 89" <- len: 9
+pub fn fill(this: &str, with: char, hint: Option<&str>) {
+    let longest = this.lines().map(|l| l.chars().count()).max().unwrap_or(0);
+    let inlay_hint = if let Some(il_hint) = hint {
+        [" ", il_hint, " "].concat()
+    } else {
+        String::new()
+    };
+
+    let left = (longest - inlay_hint.chars().count()) / 2;
+    println!(
+        "{}{}{}",
+        with.to_string().repeat(left),
+        inlay_hint,
+        with.to_string()
+            .repeat(longest - left - inlay_hint.chars().count())
+    );
+}
+
+pub fn print_them_basic<T>(items: impl Iterator<Item = T>, to_str: impl Fn(T) -> String) {
+    for item in items {
+        let as_str = to_str(item);
+        println!("\n\n{as_str}");
+        fill(&as_str, '-', None);
+    }
+}
+
+pub fn print_to_and_rev<T>(items: &[T], num: usize, rev: bool, to_str: impl Fn(&T) -> String) {
+    if rev {
+        print_them_basic(items.iter().rev().take(num), to_str);
+    } else {
+        print_them_basic(items.iter().take(num), to_str);
+    }
+}

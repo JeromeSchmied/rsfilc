@@ -7,6 +7,7 @@ use log::*;
 use paths::cache_dir;
 use std::fs::OpenOptions;
 use user::Usr;
+use utils::fill;
 
 mod absences;
 mod announced;
@@ -154,29 +155,4 @@ fn set_up_logger(verbose: bool) -> Res<()> {
         .chain(OpenOptions::new().create(true).append(true).open(path)?)
         .apply()?;
     Ok(())
-}
-/// Fill under `this` with many `with` [`char`]s, inlaying `hint` if any.
-///
-/// this:   "123456789" <- len: 9
-/// with:   '#'
-/// hint:   "bab" <- len: 3
-///
-/// so:     "123456789" <- len: 9
-/// result: "12 bab 89" <- len: 9
-pub fn fill(this: &str, with: char, hint: Option<&str>) {
-    let longest = this.lines().map(|l| l.chars().count()).max().unwrap_or(0);
-    let inlay_hint = if let Some(il_hint) = hint {
-        [" ", il_hint, " "].concat()
-    } else {
-        String::new()
-    };
-
-    let left = (longest - inlay_hint.chars().count()) / 2;
-    println!(
-        "{}{}{}",
-        with.to_string().repeat(left),
-        inlay_hint,
-        with.to_string()
-            .repeat(longest - left - inlay_hint.chars().count())
-    );
 }

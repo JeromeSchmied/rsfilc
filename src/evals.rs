@@ -1,6 +1,6 @@
 //! evaluations/grades the user received
 
-use crate::{fill, time::MyDate, user::Usr};
+use crate::{time::MyDate, user::Usr, utils};
 use ekreta::{Evaluation, Res};
 use log::info;
 use std::fmt::Write;
@@ -28,19 +28,7 @@ pub fn handle(
 
         return Ok(());
     }
-    if rev {
-        for eval in evals.iter().take(num).rev() {
-            let as_str = dips(eval);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    } else {
-        for eval in evals.iter().take(num) {
-            let as_str = dips(eval);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    }
+    utils::print_to_and_rev(&evals, num, rev, disp);
     Ok(())
 }
 
@@ -90,7 +78,7 @@ pub fn calc_average(evals: &[Evaluation], ghosts: &[u8]) -> f32 {
     sum / count
 }
 
-pub fn dips(eval: &Evaluation) -> String {
+pub fn disp(eval: &Evaluation) -> String {
     let mut f = String::new();
     _ = write!(&mut f, "| ");
     if let Some(desc) = &eval.tema {
