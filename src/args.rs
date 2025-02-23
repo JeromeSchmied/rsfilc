@@ -118,7 +118,7 @@ pub enum Command {
     /// managing users of this program, listing if nothing specified
     #[clap(visible_alias = "u")]
     User {
-        /// used for args
+        /// the id or name of the user used for args
         userid: Option<String>,
         /// delete an existing account
         #[arg(short, long, default_value_t = false, requires = "userid")]
