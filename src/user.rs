@@ -259,7 +259,7 @@ impl Usr {
         Ok(lessons)
     }
 
-    gen_get_for! { get_all_announced, Ancd,
+    gen_get_for! { get_tests, Ancd,
         (|tests: &mut Vec<Ancd>| {
             tests.sort_unstable_by_key(|a| a.datum);
             tests.dedup_by_key(|a| a.uid.clone());

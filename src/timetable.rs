@@ -177,7 +177,7 @@ impl Usr {
                 println!("{as_str}");
                 fill(&as_str, '|', None);
             }
-            let tests = self.get_all_announced((None, None)).unwrap_or_default();
+            let tests = self.get_tests((None, None)).unwrap_or_default();
             let all_lessons_till_day = self
                 .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
                 .unwrap_or_default();

@@ -6,7 +6,7 @@ use ekreta::{AnnouncedTest, Res};
 use std::fmt::Write;
 
 pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usize) -> Res<()> {
-    let mut all_announced = user.get_all_announced((None, None))?;
+    let mut all_announced = user.get_tests((None, None))?;
     if !past {
         let today = Local::now().num_days_from_ce();
         all_announced.retain(|ancd| ancd.datum.num_days_from_ce() >= today);
