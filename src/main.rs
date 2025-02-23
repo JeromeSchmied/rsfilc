@@ -21,6 +21,7 @@ mod schools;
 mod time;
 mod timetable;
 mod user;
+mod utils;
 
 fn main() -> Res<()> {
     // parse args
