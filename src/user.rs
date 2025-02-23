@@ -307,9 +307,10 @@ mod utils {
             /// # Errors
             /// net
             pub fn $fn_name(&self, mut interval: OptIrval) -> Res<Vec<$ep>> {
+                let orig_irval = interval;
                 self.load_n_fetch::<$ep>(&mut interval).map(|mut items| {
                     $sorting(&mut items);
-                    if interval.0.is_none() {
+                    if orig_irval.0.is_none() {
                         self.store_cache(&items)?;
                     }
                     Ok(items)
