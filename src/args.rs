@@ -63,7 +63,8 @@ pub enum Command {
         /// number of entries to show
         #[arg(short, long, default_value_t = NUM)]
         number: usize,
-        /// ghost evals, requires `--average`
+        /// ghost evals
+        #[arg(requires = "average")]
         ghost: Vec<u8>,
     },
 

@@ -22,9 +22,6 @@ pub fn handle(
     if let Some(subject) = subj {
         filter_by_subject(&mut evals, &subject);
     }
-    if !ghost.is_empty() && !avg {
-        return Err("Oyy! Didn't I tell you to use `ghost` with `average`?".into());
-    }
     if avg {
         let avg = calc_average(&evals, ghost);
         println!("Average: {avg:.2}");
