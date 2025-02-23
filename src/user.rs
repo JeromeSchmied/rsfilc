@@ -21,7 +21,8 @@ pub fn handle(
 ) -> Res<()> {
     if let Some(name) = userid {
         if create {
-            Usr::create(name, conf).ok_or("couldn't create user, no such user found in Kréta")?;
+            Usr::create(name, conf)
+                .ok_or("couldn't create user, check your credentials and network connection")?;
             println!("created");
         } else {
             let name = conf
@@ -34,23 +35,16 @@ pub fn handle(
                 conf.switch_user_to(name);
                 println!("switched");
             } else if cachedir {
-                println!(
-                    "{}",
-                    cache_dir(&name)
-                        .ok_or("no cache dir found for user")?
-                        .display()
-                );
+                let cache_dir = cache_dir(&name).ok_or("no cache dir found for user")?;
+                println!("{}", cache_dir.display());
             }
         }
         conf.save()?;
     } else {
         if cachedir {
-            println!(
-                "{}",
-                cache_dir(&conf.default_username)
-                    .ok_or("no cachedir found of for user")?
-                    .display()
-            );
+            let cache_dir =
+                cache_dir(&conf.default_username).ok_or("no cachedir found of for user")?;
+            println!("{}", cache_dir.display());
             return Ok(());
         }
         println!("Felhasználók:");

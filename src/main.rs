@@ -42,8 +42,8 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             println!("{}", cache_dir("").ok_or("no cache dir found")?.display());
             return Ok(());
         }
-        if args.config_dir {
-            println!("{}", Config::path().ok_or("no config dir found")?.display());
+        if args.config_path {
+            println!("{}", Config::path().ok_or("no conf path found")?.display());
             return Ok(());
         }
     }
