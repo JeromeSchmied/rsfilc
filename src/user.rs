@@ -2,10 +2,8 @@ use crate::{config::Config, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, NaiveDate};
 use ekreta::{
-    consts,
-    header::{self},
-    Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem, OptIrval,
-    Token,
+    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
+    OptIrval, Token,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
