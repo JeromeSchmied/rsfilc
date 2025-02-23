@@ -11,13 +11,19 @@ const NUM: usize = usize::MAX;
 #[command(version, about)]
 pub struct Args {
     #[command(subcommand)]
-    pub command: Command,
+    pub command: Option<Command>,
     /// enable verbose logging into the log file
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
+    /// show cache dir
+    #[arg(long, default_value_t = false)]
+    pub cache_dir: bool,
+    /// show config path
+    #[arg(long, default_value_t = false)]
+    pub config_path: bool,
 }
 
-#[derive(Subcommand, Debug)]
+#[derive(Subcommand, Debug, Clone)]
 pub enum Command {
     /// starts the Text User Interface
     Tui {},
@@ -112,7 +118,7 @@ pub enum Command {
     /// managing users of this program, listing if nothing specified
     #[clap(visible_alias = "u")]
     User {
-        /// used for args
+        /// the id or name of the user used for args
         userid: Option<String>,
         /// delete an existing account
         #[arg(short, long, default_value_t = false, requires = "userid")]
@@ -123,6 +129,9 @@ pub enum Command {
         /// switch between existing accounts
         #[arg(short, long, default_value_t = false, requires = "userid")]
         switch: bool,
+        /// print the cache directory for a user
+        #[arg(long, default_value_t = false)]
+        cache_dir: bool,
     },
 
     /// information about all schools in the `Kréta` database
@@ -140,11 +149,12 @@ impl Command {
             delete,
             create,
             switch,
+            cache_dir,
             userid: _,
         } = &self
         {
             // we do need one on: nothing, switching, listing
-            let nothing_specified = !delete && !create && !switch;
+            let nothing_specified = !delete && !create && !switch && !cache_dir;
             return nothing_specified || *switch;
         }
         !matches!(

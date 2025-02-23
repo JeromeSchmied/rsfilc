@@ -1,16 +1,15 @@
-use crate::{config::Config, time::MyDate, timetable::next_lesson, *};
+use crate::{config::Config, paths::cache_dir, time::MyDate, timetable::next_lesson, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
-    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
-    OptIrval, Token,
+    consts,
+    header::{self},
+    Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem, OptIrval,
+    Token,
 };
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::Debug,
-    io::{self, Write},
-};
+use std::io::{self, Write};
 
 pub fn handle(
     userid: Option<String>,
@@ -18,20 +17,36 @@ pub fn handle(
     conf: &mut Config,
     del: bool,
     switch: bool,
+    cachedir: bool,
 ) -> Res<()> {
     if let Some(name) = userid {
         if create {
-            Usr::create(name, conf);
+            Usr::create(name, conf)
+                .ok_or("couldn't create user, check your credentials and network connection")?;
             println!("created");
-        } else if del {
-            conf.delete(&name);
-            println!("deleted");
-        } else if switch {
-            conf.switch_user_to(name);
-            println!("switched");
+        } else {
+            let name = conf
+                .get_userid(name)
+                .ok_or("the given userid/name isn't saved")?;
+            if del {
+                conf.delete(name);
+                println!("deleted");
+            } else if switch {
+                conf.switch_user_to(name);
+                println!("switched");
+            } else if cachedir {
+                let cache_dir = cache_dir(&name).ok_or("no cache dir found for user")?;
+                println!("{}", cache_dir.display());
+            }
         }
         conf.save()?;
     } else {
+        if cachedir {
+            let cache_dir =
+                cache_dir(&conf.default_username).ok_or("no cachedir found of for user")?;
+            println!("{}", cache_dir.display());
+            return Ok(());
+        }
         println!("Felhasználók:");
         for current_user in &conf.users {
             // definitely overkill, but does the job ;)
@@ -101,6 +116,7 @@ impl Usr {
         info!("received schoolid {schoolid} from cli");
 
         let user = Self::new(username, password, schoolid);
+        user.get_userinfo().ok()?;
         user.save(conf);
         Some(user)
     }
@@ -278,7 +294,7 @@ impl Usr {
         info!("received token");
         Ok(token)
     }
-    fn get_userinfo(&self) -> Res<ekreta::UserInfo> {
+    pub fn get_userinfo(&self) -> Res<ekreta::UserInfo> {
         if let Some((_, cached_info)) = self.load_cache::<ekreta::UserInfo>() {
             Ok(cached_info)
         } else {

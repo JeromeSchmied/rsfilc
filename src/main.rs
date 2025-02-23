@@ -4,6 +4,7 @@ use clap::{CommandFactory, Parser};
 use config::Config;
 use ekreta::Res;
 use log::*;
+use paths::cache_dir;
 use std::fs::OpenOptions;
 use user::Usr;
 
@@ -36,14 +37,29 @@ fn main() -> Res<()> {
 }
 
 fn run(args: Args, conf: &mut Config) -> Res<()> {
+    if args.command.is_none() {
+        if args.cache_dir {
+            println!("{}", cache_dir("").ok_or("no cache dir found")?.display());
+            return Ok(());
+        }
+        if args.config_path {
+            println!("{}", Config::path()?.display());
+            return Ok(());
+        }
+    }
+    let command = args.command.unwrap_or(args::Command::Timetable {
+        day: None,
+        current: false,
+        export_day: None,
+    });
     // have a valid user
-    let user = if args.command.user_needed() {
+    let user = if command.user_needed() {
         Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
     } else {
         Usr::dummy()
     };
 
-    match args.command {
+    match command {
         Command::Completions { shell: sh } => {
             info!("creating shell completions for {sh}");
             clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
@@ -102,15 +118,16 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             delete,
             create,
             switch,
+            cache_dir,
             userid,
         } => {
-            user::handle(userid, create, conf, delete, switch)?;
+            user::handle(userid, create, conf, delete, switch, cache_dir)?;
         }
 
         Command::Schools { search } => {
             schools::handle(search)?;
         }
-    };
+    }
     Ok(())
 }
 
