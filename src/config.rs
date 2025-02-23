@@ -46,7 +46,7 @@ impl Config {
             })
             .map(|u| u.0.username.clone())
     }
-    pub fn path() -> Option<PathBuf> {
-        Some(dirs::config_dir()?.join(APP_NAME).join(CONFIG_NAME))
+    pub fn path() -> Res<PathBuf> {
+        Ok(confy::get_configuration_file_path(APP_NAME, CONFIG_NAME)?)
     }
 }

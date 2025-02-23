@@ -43,7 +43,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             return Ok(());
         }
         if args.config_path {
-            println!("{}", Config::path().ok_or("no conf path found")?.display());
+            println!("{}", Config::path()?.display());
             return Ok(());
         }
     }
