@@ -59,6 +59,7 @@ pub fn filter_by_kind_or_title(evals: &mut Vec<Evaluation>, filter: &str) {
                 .tema
                 .as_ref()
                 .is_some_and(|t| t.to_lowercase().contains(&filter))
+            || eval.tipus.leiras.to_lowercase().contains(&filter)
     });
 }
 
@@ -67,16 +68,9 @@ pub fn filter_by_subject(evals: &mut Vec<Evaluation>, subj: &str) {
     log::info!("filtering evals by subject: {}", subj);
     evals.retain(|eval| {
         eval.tantargy
-            .kategoria
             .nev
             .to_lowercase()
             .contains(&subj.to_lowercase())
-            || eval
-                .tantargy
-                .kategoria
-                .nev
-                .to_lowercase()
-                .contains(&subj.to_lowercase())
     });
 }
 
@@ -106,17 +100,12 @@ pub fn dips(eval: &Evaluation) -> String {
         _ = write!(&mut f, "{desc}: ");
     }
     _ = writeln!(&mut f, "{}", eval.szoveges_ertek);
-    _ = writeln!(&mut f, "| {}", eval.tantargy.kategoria.leiras);
+    _ = writeln!(&mut f, "| {}", eval.tantargy.nev);
     if let Some(m) = &eval.r#mod {
         _ = writeln!(&mut f, "| {}", m.leiras);
     }
 
-    if eval.felevi() {
-        _ = writeln!(&mut f, "| Félévi értékelés");
-    }
-    if eval.evvegi() {
-        _ = writeln!(&mut f, "| Év végi értékelés");
-    }
+    _ = writeln!(&mut f, "| {}", eval.tipus.leiras);
     if let Some(teacher) = &eval.ertekelo_tanar_neve {
         _ = writeln!(&mut f, "| {teacher}");
     }
