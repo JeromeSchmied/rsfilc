@@ -2,7 +2,6 @@
 
 use clap::{Parser, Subcommand};
 use log::info;
-use std::path::PathBuf;
 
 /// default number of entries to show
 const NUM: usize = usize::MAX;
@@ -40,10 +39,6 @@ pub enum Command {
         /// show current lesson if any
         #[arg(short, long, default_value_t = false)]
         current: bool,
-
-        /// export as json
-        #[arg(short, long, name = "FILENAME.json")]
-        export_day: Option<PathBuf>,
     },
 
     /// evaluations/grades the user received

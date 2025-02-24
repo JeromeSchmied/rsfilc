@@ -4,14 +4,9 @@ use crate::user::Usr;
 use chrono::{Datelike, Duration, Local, NaiveDate};
 use ekreta::{Lesson, Res};
 use log::*;
-use std::{fmt::Write, fs::File, io::Write as _, path::PathBuf};
+use std::fmt::Write;
 
-pub fn handle(
-    day: Option<NaiveDate>,
-    user: &Usr,
-    current: bool,
-    out_p: Option<PathBuf>,
-) -> Res<()> {
+pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool) -> Res<()> {
     let day = day.unwrap_or(Local::now().date_naive());
     let all_lessons_till_day = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
@@ -37,12 +32,6 @@ pub fn handle(
         }
 
         return Ok(());
-    }
-    if let Some(export_json_to) = out_p {
-        info!("exported timetable to json");
-        let mut f = File::create(export_json_to)?;
-        let content = serde_json::to_string(&lessons)?;
-        write!(f, "{content}")?;
     }
     user.print_day(lessons);
     Ok(())
