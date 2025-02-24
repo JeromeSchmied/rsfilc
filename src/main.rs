@@ -48,7 +48,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         }
     }
     let command = args.command.unwrap_or(Command::Timetable {
-        day: None,
+        day: timetable::default_day(),
         current: false,
     });
     // have a valid user

@@ -1,13 +1,12 @@
 //! lessons the student has
 
 use crate::user::Usr;
-use chrono::{Datelike, Duration, Local, NaiveDate};
+use chrono::{Datelike, Duration, Local, NaiveDate, NaiveTime, TimeDelta};
 use ekreta::{Lesson, Res};
 use log::*;
 use std::fmt::Write;
 
-pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool) -> Res<()> {
-    let day = day.unwrap_or(Local::now().date_naive());
+pub fn handle(day: NaiveDate, user: &Usr, current: bool) -> Res<()> {
     let all_lessons_till_day = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
@@ -149,4 +148,16 @@ pub fn disp(lsn: &Lesson) -> String {
     }
 
     f
+}
+
+pub fn default_day() -> NaiveDate {
+    const END_OF_DAY: NaiveTime = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
+    let now = Local::now();
+    if now.naive_local().time() < END_OF_DAY {
+        now.date_naive()
+    } else {
+        now.date_naive()
+            .checked_add_signed(TimeDelta::days(1))
+            .unwrap()
+    }
 }

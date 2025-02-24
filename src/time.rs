@@ -14,7 +14,7 @@ pub trait MyDate {
 
 impl MyDate for LDateTime {
     fn pretty(&self) -> String {
-        if !(self.year() == Local::now().year()) {
+        if self.year() != Local::now().year() {
             format!("{}", self.format("%Y.%m.%d"))
         } else if let Some(day_diff) = self.day_diff(&Local::now()) {
             format!(
