@@ -14,14 +14,11 @@ pub trait MyDate {
 
 impl MyDate for LDateTime {
     fn pretty(&self) -> String {
-        let this_year = self.year() == Local::now().year();
-
-        if !this_year {
+        if !(self.year() == Local::now().year()) {
             format!("{}", self.format("%Y.%m.%d"))
         } else if let Some(day_diff) = self.day_diff(&Local::now()) {
             format!(
-                "{} {}",
-                day_diff,
+                "{day_diff} {}",
                 self.format(if self.hour() == 0 && self.minute() == 0 {
                     "%d."
                 } else {
@@ -60,15 +57,14 @@ impl MyDate for LDateTime {
     }
 
     fn hun_day_of_week<'a>(&self) -> &'a str {
-        match self.weekday().number_from_monday() {
-            1 => "hétfő",
-            2 => "kedd",
-            3 => "szerda",
-            4 => "csütörtök",
-            5 => "péntek",
-            6 => "szombat",
-            7 => "vasárnap",
-            _ => unreachable!("invalid day of week"),
+        match self.weekday() {
+            chrono::Weekday::Mon => "hétfő",
+            chrono::Weekday::Tue => "kedd",
+            chrono::Weekday::Wed => "szerda",
+            chrono::Weekday::Thu => "csütörtök",
+            chrono::Weekday::Fri => "péntek",
+            chrono::Weekday::Sat => "szombat",
+            chrono::Weekday::Sun => "vasárnap",
         }
     }
 
