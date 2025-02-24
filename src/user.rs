@@ -21,8 +21,13 @@ pub fn handle(
 ) -> Res<()> {
     if let Some(name) = userid {
         if create {
-            Usr::create(name, conf)
-                .ok_or("couldn't create user, check your credentials and network connection")?;
+            let res = Usr::create(name.clone(), conf)
+                .ok_or("couldn't create user, check your credentials and network connection");
+            // delete cache dir if couldn't log in
+            if res.is_err() {
+                crate::cache::delete_dir(&name)?;
+            }
+            res?;
             println!("created");
         } else {
             let name = conf
