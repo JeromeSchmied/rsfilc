@@ -6,8 +6,13 @@ use ekreta::{Lesson, Res};
 use log::*;
 use std::{fmt::Write, fs::File, io::Write as _, path::PathBuf};
 
-pub fn handle(day: Option<&String>, user: &Usr, current: bool, out_p: Option<PathBuf>) -> Res<()> {
-    let day = parse_day(day)?;
+pub fn handle(
+    day: Option<NaiveDate>,
+    user: &Usr,
+    current: bool,
+    out_p: Option<PathBuf>,
+) -> Res<()> {
+    let day = day.unwrap_or(Local::now().date_naive());
     let all_lessons_till_day = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
@@ -44,55 +49,42 @@ pub fn handle(day: Option<&String>, user: &Usr, current: bool, out_p: Option<Pat
 }
 /// Parse the day got as `argument`.
 ///
-/// # Panics
+/// # errors
 ///
-/// Panics if
 /// - day shifter contains invalid number.
 /// - any datetime is invalid.
-pub fn parse_day(day: Option<&String>) -> Res<NaiveDate> {
-    info!("parsing day");
-    if let Some(date) = day {
-        let date = date.replace(['/', '.'], "-");
-        info!("date: {date}");
-        if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
-            info!("valid as: {ndate}");
-            Ok(ndate)
-        } else if date.starts_with('+') || date.ends_with('-') {
-            info!("day_shift!");
-            let day_shift = if date.starts_with('+') {
-                info!("day_shift: +");
-                date.parse::<i16>()
-                    .map_err(|e| format!("invalid +day shifter: {e:?}"))?
-            } else {
-                let date = &date[0..date.len() - 1];
-                info!("day_shift: -");
-                -date
-                    .parse::<i16>()
-                    .map_err(|e| format!("invalid day- shifter: {e:?}"))?
-            };
-            let today = Local::now()
-                .checked_add_signed(Duration::days(day_shift.into()))
-                .ok_or("invalid datetime")?
-                .date_naive();
-            Ok(today)
-        } else if let Some(diff) = day_diff(&date) {
-            /* eg.:
-            today == thursday == 4
-            looking_for == tuesday == 2
-            (7 - today) + looking_for
-            */
-            let day = Local::now()
-                .checked_add_signed(Duration::days(diff.into()))
-                .ok_or("invalid datetime")?
-                .date_naive();
-            Ok(day)
+pub fn parse_day(day: &str) -> Result<NaiveDate, String> {
+    let today = Local::now().date_naive();
+    let date = day.replace(['/', '.'], "-");
+    info!("parsing date: {date}");
+
+    // Parse From String
+    let pfs = |s: &str| NaiveDate::parse_from_str(s, "%Y-%m-%d");
+    if let Ok(ymd) = pfs(&date) {
+        Ok(ymd)
+    } else if let Ok(md) = pfs(&format!("{}-{date}", today.year())) {
+        Ok(md)
+    } else if let Ok(d) = pfs(&format!("{}-{}-{date}", today.year(), today.month())) {
+        Ok(d)
+    } else if date.starts_with('+') || date.ends_with('-') {
+        info!("day_shift!");
+        let day_shift = if date.starts_with('+') {
+            info!("day_shift: +");
+            date.parse::<i16>()
+                .map_err(|e| format!("invalid +day shifter: {e:?}"))?
         } else {
-            info!("fallback: today");
-            Ok(Local::now().date_naive())
-        }
+            let date = &date[0..date.len() - 1];
+            info!("day_shift: -");
+            -date
+                .parse::<i16>()
+                .map_err(|e| format!("invalid day- shifter: {e:?}"))?
+        };
+        let day = today
+            .checked_add_signed(Duration::days(day_shift.into()))
+            .ok_or("invalid datetime")?;
+        Ok(day)
     } else {
-        info!("fallback: today");
-        Ok(Local::now().date_naive())
+        Err(String::from("couldn't parse day specifier"))
     }
 }
 
@@ -168,45 +160,4 @@ pub fn disp(lsn: &Lesson) -> String {
     }
 
     f
-}
-
-/// get the number of days difference from today to `value`
-/// if `value` is invalid, return `None`
-fn day_diff(value: &str) -> Option<i8> {
-    let value = value.to_lowercase();
-    let num_from_mon = match value.as_str() {
-        "hétfő" | "hé" | "mon" | "monday" => Some(1),
-        "kedd" | "ke" | "tue" | "tuesday" => Some(2),
-        "szerda" | "sze" | "wed" | "wednesday" => Some(3),
-        "csütörtök" | "csüt" | "thu" | "thursday" => Some(4),
-        "péntek" | "pé" | "fri" | "friday" => Some(5),
-        _ => {
-            warn!("\"{value}\" not valid as a day of week");
-            None
-        }
-    };
-    let today_as_num = Local::now().weekday().number_from_monday() as u8;
-    info!("today_as_num: {today_as_num}");
-    info!("other_as_num: {num_from_mon:?}");
-    let diff = if let Some(from_mon) = num_from_mon {
-        let x = from_mon as i8 - today_as_num as i8;
-        if x < 0 {
-            7 - today_as_num as i8 + x.abs() - 1
-        } else {
-            x
-        }
-    } else {
-        match value.as_str() {
-            "ma" | "today" => 0,
-            "holnap" | "tomorrow" => 1,
-            "tegnap" | "yesterday" => -1,
-            _ => {
-                warn!("\"{value}\" not valid as a day shifter word");
-                return None;
-            }
-        }
-    };
-
-    info!("day diff: {diff}");
-    Some(diff)
 }

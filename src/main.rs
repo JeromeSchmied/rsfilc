@@ -74,7 +74,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             current,
             export_day,
         } => {
-            timetable::handle(day.as_ref(), &user, current, export_day)?;
+            timetable::handle(day, &user, current, export_day)?;
         }
 
         Command::Evals {
