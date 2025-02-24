@@ -7,7 +7,7 @@ use log::*;
 use std::{fmt::Write, fs::File, io::Write as _, path::PathBuf};
 
 pub fn handle(day: Option<&String>, user: &Usr, current: bool, out_p: Option<PathBuf>) -> Res<()> {
-    let day = parse_day(day);
+    let day = parse_day(day)?;
     let all_lessons_till_day = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
@@ -49,45 +49,50 @@ pub fn handle(day: Option<&String>, user: &Usr, current: bool, out_p: Option<Pat
 /// Panics if
 /// - day shifter contains invalid number.
 /// - any datetime is invalid.
-pub fn parse_day(day: Option<&String>) -> NaiveDate {
+pub fn parse_day(day: Option<&String>) -> Res<NaiveDate> {
     info!("parsing day");
     if let Some(date) = day {
         let date = date.replace(['/', '.'], "-");
         info!("date: {date}");
         if let Ok(ndate) = NaiveDate::parse_from_str(&date, "%Y-%m-%d") {
             info!("valid as: {ndate}");
-            ndate
+            Ok(ndate)
         } else if date.starts_with('+') || date.ends_with('-') {
             info!("day_shift!");
             let day_shift = if date.starts_with('+') {
                 info!("day_shift: +");
-                date.parse::<i16>().expect("invalid +day shifter")
+                date.parse::<i16>()
+                    .map_err(|e| format!("invalid +day shifter: {e:?}"))?
             } else {
                 let date = &date[0..date.len() - 1];
                 info!("day_shift: -");
-                -date.parse::<i16>().expect("invalid day- shifter")
+                -date
+                    .parse::<i16>()
+                    .map_err(|e| format!("invalid day- shifter: {e:?}"))?
             };
-            Local::now()
+            let today = Local::now()
                 .checked_add_signed(Duration::days(day_shift.into()))
-                .expect("invalid datetime")
-                .date_naive()
+                .ok_or("invalid datetime")?
+                .date_naive();
+            Ok(today)
         } else if let Some(diff) = day_diff(&date) {
             /* eg.:
             today == thursday == 4
             looking_for == tuesday == 2
             (7 - today) + looking_for
             */
-            Local::now()
+            let day = Local::now()
                 .checked_add_signed(Duration::days(diff.into()))
-                .expect("invalid datetime")
-                .date_naive()
+                .ok_or("invalid datetime")?
+                .date_naive();
+            Ok(day)
         } else {
             info!("fallback: today");
-            Local::now().date_naive()
+            Ok(Local::now().date_naive())
         }
     } else {
         info!("fallback: today");
-        Local::now().date_naive()
+        Ok(Local::now().date_naive())
     }
 }
 
