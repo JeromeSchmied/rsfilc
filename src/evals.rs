@@ -1,7 +1,6 @@
 //! evaluations/grades the user received
 
 use crate::{time::MyDate, user::Usr, utils};
-use ascii_table::AsciiTable;
 use ekreta::{Evaluation, Res};
 use log::info;
 
@@ -28,12 +27,9 @@ pub fn handle(
 
         return Ok(());
     }
-    utils::print_to_or_rev(&evals, num, rev, disp);
+    // utils::print_to_or_rev(&evals, num, rev, disp);
 
-    let mut table = AsciiTable::default();
-    if let Some(size) = termsize::get() {
-        table.set_max_width(size.cols.into());
-    }
+    let mut table = ascii_table::AsciiTable::default();
     table.column(0).set_header("TÉMA");
     table.column(1).set_header("JEGY");
     table.column(2).set_header("TANTÁRGY");

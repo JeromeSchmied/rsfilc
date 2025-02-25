@@ -25,5 +25,4 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 confy = "0.6.1"
 nanohtml2text = "0.2.1"
-ascii_table = { version = "4.0.5", features = ["color_codes"] }
-termsize = "0.1.9"
+ascii_table = { version = "4.0.6", features = ["auto_table_width"], git = "https://gitlab.com/d5b4b2/ascii-table" }
