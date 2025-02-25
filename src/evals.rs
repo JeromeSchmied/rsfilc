@@ -1,7 +1,8 @@
 //! evaluations/grades the user received
 
+use std::process::Command;
+
 use crate::{time::MyDate, user::Usr};
-use ascii_table::AsciiTable;
 use ekreta::{Evaluation, Res};
 use log::info;
 
@@ -31,10 +32,7 @@ pub fn handle(
 
         return Ok(());
     }
-    let mut table = AsciiTable::default();
-    if let Some(size) = termsize::get() {
-        table.set_max_width(size.cols.into());
-    }
+    let mut table = ascii_table::AsciiTable::default();
     table.column(0).set_header("TÉMA");
     table.column(1).set_header("JEGY");
     table.column(2).set_header("TANTÁRGY");
