@@ -33,8 +33,8 @@ pub enum Command {
     #[clap(visible_alias = "tt")]
     Timetable {
         /// which day to show: `+n|n-` (`n` is the number of days added to today) or [YYYY-][MM-][DD]
-        #[arg(default_value_t = crate::timetable::default_day(), value_parser = crate::timetable::parse_day)]
-        day: chrono::NaiveDate,
+        #[arg(value_parser = crate::timetable::parse_day)]
+        day: Option<chrono::NaiveDate>,
 
         /// show current lesson if any
         #[arg(short, long, default_value_t = false)]

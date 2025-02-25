@@ -1,12 +1,13 @@
 //! lessons the student has
 
 use crate::user::Usr;
-use chrono::{Datelike, Duration, Local, NaiveDate, NaiveTime, TimeDelta};
+use chrono::{Datelike, Duration, Local, NaiveDate, TimeDelta};
 use ekreta::{Lesson, Res};
 use log::*;
 use std::fmt::Write;
 
-pub fn handle(day: NaiveDate, user: &Usr, current: bool) -> Res<()> {
+pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool) -> Res<()> {
+    let day = day.unwrap_or(default_day(user));
     let all_lessons_till_day = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
@@ -150,14 +151,19 @@ pub fn disp(lsn: &Lesson) -> String {
     f
 }
 
-pub fn default_day() -> NaiveDate {
-    const END_OF_DAY: NaiveTime = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
+pub fn default_day(user: &Usr) -> NaiveDate {
     let now = Local::now();
-    if now.naive_local().time() < END_OF_DAY {
-        now.date_naive()
+    let today = now.date_naive();
+    let end_of_today = if let Ok(lessons) = user.get_timetable(today, false) {
+        lessons.last().map(|l| l.veg_idopont.time())
     } else {
-        now.date_naive()
-            .checked_add_signed(TimeDelta::days(1))
-            .unwrap()
+        Some(now.time())
+    };
+
+    // const END_OF_DAY: NaiveTime = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
+    if end_of_today.is_some_and(|eot| eot < now.time()) {
+        today.checked_add_signed(TimeDelta::days(1)).unwrap()
+    } else {
+        today
     }
 }
