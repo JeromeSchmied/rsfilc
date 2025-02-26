@@ -2,7 +2,6 @@
 
 use clap::{Parser, Subcommand};
 use log::info;
-use std::path::PathBuf;
 
 /// default number of entries to show
 const NUM: usize = usize::MAX;
@@ -33,16 +32,13 @@ pub enum Command {
     /// information about lessons, today by default
     #[clap(visible_alias = "tt")]
     Timetable {
-        /// which day to show: `name_of_day` or +n/n- (`n` is the number of days added to today) or YYYY/MM/DD
-        day: Option<String>,
+        /// which day to show: `+n|n-` (`n` is the number of days added to today) or [YYYY-][MM-][DD]
+        #[arg(value_parser = crate::timetable::parse_day)]
+        day: Option<chrono::NaiveDate>,
 
         /// show current lesson if any
         #[arg(short, long, default_value_t = false)]
         current: bool,
-
-        /// export as json
-        #[arg(short, long, name = "FILENAME.json")]
-        export_day: Option<PathBuf>,
     },
 
     /// evaluations/grades the user received

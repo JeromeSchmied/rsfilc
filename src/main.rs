@@ -47,10 +47,9 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             return Ok(());
         }
     }
-    let command = args.command.unwrap_or(args::Command::Timetable {
+    let command = args.command.unwrap_or(Command::Timetable {
         day: None,
         current: false,
-        export_day: None,
     });
     // have a valid user
     let user = if command.user_needed() {
@@ -69,12 +68,8 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             warn!("TUI is not yet written");
             todo!("TUI is to be written (soon)");
         }
-        Command::Timetable {
-            day,
-            current,
-            export_day,
-        } => {
-            timetable::handle(day.as_ref(), &user, current, export_day)?;
+        Command::Timetable { day, current } => {
+            timetable::handle(day, &user, current)?;
         }
 
         Command::Evals {
