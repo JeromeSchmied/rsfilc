@@ -88,3 +88,16 @@ pub fn print_to_or_rev<T>(items: &[T], num: usize, rev: bool, to_str: impl Fn(&T
         print_them_basic(items.iter().take(num), to_str);
     }
 }
+/// print `num` `items` using `to_str`, reversed if `rev` otherwise not
+pub fn print_table<T, U: Iterator<Item = impl ToString>>(
+    items: &[T],
+    headers: U,
+    to_str: impl Fn(&T) -> Vec<String>,
+) {
+    let mut table = ascii_table::AsciiTable::default();
+    for (i, head) in headers.into_iter().enumerate() {
+        table.column(i).set_header(head.to_string());
+    }
+    let data = items.into_iter().map(to_str).collect::<Vec<_>>();
+    table.print(data);
+}

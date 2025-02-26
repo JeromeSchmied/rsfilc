@@ -28,17 +28,9 @@ pub fn handle(
         return Ok(());
     }
     // utils::print_to_or_rev(&evals, num, rev, disp);
-
-    let mut table = ascii_table::AsciiTable::default();
-    table.column(0).set_header("TÉMA");
-    table.column(1).set_header("JEGY");
-    table.column(2).set_header("TANTÁRGY");
-    table.column(3).set_header("MÓD");
-    table.column(4).set_header("TÍPUS");
-    table.column(5).set_header("TANÁR");
-    table.column(6).set_header("IDŐPONT");
-    let data = evals.into_iter().map(disp).collect::<Vec<_>>();
-    table.print(data);
+    #[rustfmt::skip]
+    let headers = ["TÉMA", "JEGY", "TANTÁRGY", "MÓD", "TÍPUS", "TANÁR", "IDŐPONT"];
+    utils::print_table(&evals, headers.into_iter(), disp);
 
     Ok(())
 }
@@ -89,7 +81,7 @@ pub fn calc_average(evals: &[Evaluation], ghosts: &[u8]) -> f32 {
     sum / count
 }
 
-pub fn disp(eval: Evaluation) -> Vec<String> {
+pub fn disp(eval: &Evaluation) -> Vec<String> {
     let desc = eval.tema.clone().unwrap_or_default();
     let grade = if let Some(num) = eval.szam_ertek {
         num.to_string()
