@@ -1,6 +1,6 @@
 //! Absences
 
-use crate::{fill, time::MyDate, user::Usr};
+use crate::{time::MyDate, user::Usr, utils};
 use ekreta::{Absence, Res};
 use std::fmt::Write;
 
@@ -17,19 +17,7 @@ pub fn handle(user: &Usr, subj: Option<String>, count: bool, rev: bool, num: usi
         );
         return Ok(());
     }
-    if rev {
-        for absence in absences.iter().take(num).rev() {
-            let as_str = disp(absence);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    } else {
-        for absence in absences.iter().take(num) {
-            let as_str = disp(absence);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    }
+    utils::print_to_or_rev(&absences, num, rev, disp);
     Ok(())
 }
 

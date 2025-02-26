@@ -1,29 +1,20 @@
 //! Announced tests
 
-use crate::{fill, time::MyDate, user::Usr};
-use chrono::Local;
+use crate::{time::MyDate, user::Usr, utils};
+use chrono::{Datelike, Local};
 use ekreta::{AnnouncedTest, Res};
 use std::fmt::Write;
 
 pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usize) -> Res<()> {
-    let from = if past { None } else { Some(Local::now()) }.map(|ln| ln.date_naive());
-    let mut all_announced = user.get_all_announced((from, None))?;
+    let mut all_announced = user.get_tests((None, None))?;
+    if !past {
+        let today = Local::now().num_days_from_ce();
+        all_announced.retain(|ancd| ancd.datum.num_days_from_ce() >= today);
+    }
     if let Some(subject) = subj {
         filter_by_subject(&mut all_announced, &subject);
     }
-    if rev {
-        for announced in all_announced.iter().take(num).rev() {
-            let as_str = disp(announced);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    } else {
-        for announced in all_announced.iter().take(num) {
-            let as_str = disp(announced);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    }
+    utils::print_to_or_rev(&all_announced, num, rev, disp);
     Ok(())
 }
 

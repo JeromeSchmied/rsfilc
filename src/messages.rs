@@ -1,42 +1,17 @@
 //! messages from teachers and staff
 
-use crate::{fill, paths::download_dir, time::MyDate, user::Usr};
+use crate::{paths::download_dir, time::MyDate, user::Usr, utils};
 use ekreta::Res;
 use std::{char, fmt::Write};
 
 pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize) -> Res<()> {
     if notes {
         let notes = user.get_note_msgs((None, None))?;
-        if rev {
-            for note in notes.iter().take(num).rev() {
-                let as_str = disp_note_msg(note);
-                println!("\n\n\n\n{as_str}");
-                fill(&as_str, '-', None);
-            }
-        } else {
-            for note in notes.iter().take(num) {
-                let as_str = disp_note_msg(note);
-                println!("\n\n\n\n{as_str}");
-                fill(&as_str, '-', None);
-            }
-        }
-
+        utils::print_to_or_rev(&notes, num, rev, disp_note_msg);
         return Ok(());
     }
     let msgs = user.msgs((None, None))?;
-    if rev {
-        for msg in msgs.iter().rev().take(num) {
-            let as_str = disp_msg(msg);
-            println!("\n\n\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    } else {
-        for msg in msgs.iter().take(num) {
-            let as_str = disp_msg(msg);
-            println!("\n\n\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
-    }
+    utils::print_to_or_rev(&msgs, num, rev, disp_msg);
     Ok(())
 }
 
