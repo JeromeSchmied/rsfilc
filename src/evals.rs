@@ -30,7 +30,7 @@ pub fn handle(
     // utils::print_to_or_rev(&evals, num, rev, disp);
     #[rustfmt::skip]
     let headers = ["TÉMA", "JEGY", "TANTÁRGY", "MÓD", "TÍPUS", "TANÁR", "IDŐPONT"];
-    utils::print_table(&evals, headers.into_iter(), disp);
+    utils::print_table(&evals, headers.into_iter(), rev, num, disp);
 
     Ok(())
 }
