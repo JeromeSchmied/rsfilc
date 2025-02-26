@@ -50,14 +50,7 @@ pub fn handle(
             return Ok(());
         }
         println!("Felhasználók:");
-        for current_user in &conf.users {
-            // definitely overkill, but does the job ;)
-            let user_info = current_user.get_userinfo()?;
-            let as_str =
-                information::disp(&user_info, &current_user.0.username, &conf.default_username);
-            println!("\n\n{as_str}");
-            fill(&as_str, '-', None);
-        }
+        information::disp(conf.users.iter(), &conf.default_username)?;
     }
     Ok(())
 }
