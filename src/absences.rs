@@ -2,7 +2,6 @@
 
 use crate::{time::MyDate, user::Usr, utils};
 use ekreta::{Absence, Res};
-use std::fmt::Write;
 
 pub fn handle(user: &Usr, subj: Option<String>, count: bool, rev: bool, num: usize) -> Res<()> {
     let mut absences = user.get_absences((None, None))?;
@@ -17,7 +16,9 @@ pub fn handle(user: &Usr, subj: Option<String>, count: bool, rev: bool, num: usi
         );
         return Ok(());
     }
-    utils::print_to_or_rev(&absences, num, rev, disp);
+    #[rustfmt::skip]
+    let headers = ["TANTÁRGY", "TANÁR", "ETTŐL", "EDDIG", "ENNYIT", "IGAZOLÁS TIPUS"];
+    utils::print_table(&absences, headers.into_iter(), rev, num, disp);
     Ok(())
 }
 
@@ -32,24 +33,17 @@ pub fn filter_by_subject(abss: &mut Vec<Absence>, subj: &str) {
     });
 }
 
-pub fn disp(abs: &Absence) -> String {
-    let mut f = String::new();
-    _ = writeln!(&mut f, "| {}", abs.tantargy.nev);
-    _ = writeln!(&mut f, "| {}", abs.rogzito_tanar_neve);
-    _ = writeln!(
-        f,
-        "| {} -> {}",
-        &abs.ora.kezdo_datum.pretty(),
-        &abs.ora.veg_datum.pretty(),
-    );
-    if let Some(late) = &abs.keses_percben {
-        _ = writeln!(&mut f, "| Késtél {late} percet");
-    }
-
-    if abs.igazolt() {
-        _ = write!(&mut f, "| igazolt");
+pub fn disp(abs: &Absence) -> Vec<String> {
+    let from = abs.ora.kezdo_datum.pretty();
+    let to = abs.ora.veg_datum.pretty();
+    let subj = abs.tantargy.nev.clone();
+    let teacher = abs.rogzito_tanar_neve.clone();
+    let lateness = if let Some(min) = &abs.keses_percben {
+        format!("késtél {min} percet")
     } else {
-        _ = write!(&mut f, "| igazolatlan");
-    }
-    f
+        abs.igazolas_allapota.to_lowercase().replace("do", "dó")
+    };
+    let kind = abs.igazolas_tipusa.clone().unwrap_or_default().leiras;
+
+    vec![subj, teacher, from, to, lateness, kind]
 }

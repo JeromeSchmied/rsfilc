@@ -2,7 +2,6 @@
 
 use crate::{cache, utils, Res};
 use log::info;
-use std::fmt::Write;
 
 pub fn handle(search: Option<String>) -> Res<()> {
     let mut schools = fetch()?;
@@ -10,7 +9,9 @@ pub fn handle(search: Option<String>) -> Res<()> {
         filter(&mut schools, &school_name);
     }
     info!("listing schools");
-    utils::print_them_basic(schools.iter(), disp);
+    // utils::print_them_basic(schools.iter(), disp);
+    let headers = ["NÉV", "AZONOSÍTÓ", "TELEPÜLÉS"];
+    utils::print_table(&schools, headers.into_iter(), false, usize::MAX, disp);
     Ok(())
 }
 
@@ -43,11 +44,10 @@ pub fn filter(schools: &mut Vec<ekreta::School>, search_for: &str) {
     });
 }
 
-pub fn disp(school: &ekreta::School) -> String {
-    let mut f = String::new();
-    _ = writeln!(&mut f, "| {}", school.nev.replace('"', ""));
-    _ = writeln!(&mut f, "| id: {}", school.azonosito);
-    _ = write!(&mut f, "| helye: {}", school.telepules);
-
-    f
+pub fn disp(school: &ekreta::School) -> Vec<String> {
+    vec![
+        school.nev.clone(),
+        school.azonosito.clone(),
+        school.telepules.clone(),
+    ]
 }
