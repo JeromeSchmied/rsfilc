@@ -24,21 +24,23 @@ pub fn type_to_kind_name<T>() -> Res<String> {
 }
 
 #[macro_export]
-/// generate get fn named `fn_name` for type `ep` and sort with `sorting`
+/// generate get fn named `fn_name` for type `ep`, specify whether
+/// content once `cached_can_change` or not then sort with `sorting`
 macro_rules! gen_get_for {
-    ($fn_name:ident, $ep:ty, $sorting:expr) => {
+    ($fn_name:ident, $ep:ty, $cached_can_change:expr, $sorting:expr) => {
         /// get all items between `from` and `to`
         /// # Errors
         /// net
         pub fn $fn_name(&self, mut interval: OptIrval) -> Res<Vec<$ep>> {
             let orig_irval = interval;
-            self.load_n_fetch::<$ep>(&mut interval).map(|mut items| {
-                $sorting(&mut items);
-                if orig_irval.0.is_none() {
-                    self.store_cache(&items)?;
-                }
-                Ok(items)
-            })?
+            self.load_n_fetch::<$ep>(&mut interval, $cached_can_change)
+                .map(|mut items| {
+                    $sorting(&mut items);
+                    if orig_irval.0.is_none() {
+                        self.store_cache(&items)?;
+                    }
+                    Ok(items)
+                })?
         }
     };
 }

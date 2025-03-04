@@ -206,7 +206,7 @@ impl Usr {
         }
     }
 
-    gen_get_for! { get_evals, Eval,
+    gen_get_for! { get_evals, Eval, false,
         (|evals: &mut Vec<Eval>| {
             evals.sort_unstable_by_key(|e| e.keszites_datuma);
             evals.dedup_by_key(|e| e.uid.clone());
@@ -257,14 +257,14 @@ impl Usr {
         Ok(lessons)
     }
 
-    gen_get_for! { get_tests, Ancd,
+    gen_get_for! { get_tests, Ancd, false,
         (|tests: &mut Vec<Ancd>| {
             tests.sort_unstable_by_key(|a| (a.datum, a.uid.clone()));
             tests.dedup_by_key(|a| a.uid.clone());
         })
     }
 
-    gen_get_for! { get_absences, Absence,
+    gen_get_for! { get_absences, Absence, true,
         (|absences: &mut Vec<Absence>| {
                 absences.sort_unstable_by_key(|a| (a.ora.kezdo_datum, !a.igazolt()));
                 absences.dedup_by_key(|a| a.ora.clone());
@@ -378,26 +378,28 @@ impl Usr {
         Ok(fetched_msgs)
     }
 
-    gen_get_for! { get_note_msgs, ekreta::NoteMsg,
+    gen_get_for! { get_note_msgs, ekreta::NoteMsg, false,
         (|nmsgs: &mut Vec<ekreta::NoteMsg>| {
             nmsgs.sort_unstable_by_key(|nmsg| nmsg.datum);
             nmsgs.dedup();
         })
     }
 
-    /// load data from cache, fetch remaining of interval, merge these two sources
+    /// load data from cache, fetch remaining(or full, depending on `fix_irval`) interval, merge these two sources
     /// # NOTE
     /// - if any of the two fails, it will be logged, but ignored and the other source will be used instead
     /// - don't forget to deduplicate the returned Vec **properly**
     /// # WARN
     /// `irval.1` so the end of the interval, 'to' will be ignored in terms of cached data
-    fn load_n_fetch<Ep>(&self, irval: &mut OptIrval) -> Res<Vec<Ep>>
+    fn load_n_fetch<Ep>(&self, irval: &mut OptIrval, fix_irval: bool) -> Res<Vec<Ep>>
     where
         Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> Deserialize<'a> + Clone,
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
 
-        *irval = utils::fix_from(cache_t, *irval);
+        if fix_irval {
+            *irval = utils::fix_from(cache_t, *irval);
+        }
 
         let fetched = self.fetch_vec::<Ep>(*irval);
 
