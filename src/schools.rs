@@ -11,7 +11,7 @@ pub fn handle(search: Option<String>, json: bool) -> Res<()> {
     info!("listing schools");
     // utils::print_them_basic(schools.iter(), disp);
     let headers = ["NÉV", "AZONOSÍTÓ", "TELEPÜLÉS"];
-    let disp = if json { Some(display) } else { None };
+    let disp = if json { None } else { Some(display) };
     utils::print_table(&schools, headers.into_iter(), false, usize::MAX, disp)
 }
 

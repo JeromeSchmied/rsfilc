@@ -10,9 +10,7 @@ pub fn handle(
     subj: Option<String>,
     ghost: &[u8],
     avg: bool,
-    json: bool,
-    rev: bool,
-    num: usize,
+    args: &crate::Args,
 ) -> Res<()> {
     let mut evals = user.get_evals((None, None))?;
     info!("got evals");
@@ -30,8 +28,8 @@ pub fn handle(
     }
     #[rustfmt::skip]
     let headers = ["TÉMA", "JEGY", "TANTÁRGY", "MÓD", "TÍPUS", "TANÁR", "IDŐPONT"];
-    let disp = if json { None } else { Some(display) };
-    utils::print_table(&evals, headers.into_iter(), rev, num, disp)
+    let disp = if args.machine { None } else { Some(display) };
+    utils::print_table(&evals, headers.into_iter(), args.reverse, args.number, disp)
 }
 
 /// Filter `evals` by `kind`

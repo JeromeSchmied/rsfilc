@@ -4,18 +4,15 @@ use crate::{paths::download_dir, time::MyDate, user::Usr, utils};
 use ekreta::Res;
 use std::{char, fmt::Write};
 
-pub fn handle(notes: bool, user: &Usr, json: bool, rev: bool, num: usize) -> Res<()> {
-    if json {
-        todo!()
-    }
+pub fn handle(notes: bool, user: &Usr, args: crate::Args) -> Res<()> {
     if notes {
         let notes = user.get_note_msgs((None, None))?;
-        utils::print_to_or_rev(&notes, num, rev, disp_note_msg);
-        return Ok(());
+        let disp = if args.machine { None } else { Some(disp_nm) };
+        return utils::print_to_or_rev(&notes, args.number, args.reverse, disp);
     }
     let msgs = user.msgs((None, None))?;
-    utils::print_to_or_rev(&msgs, num, rev, disp_msg);
-    Ok(())
+    let disp = if args.machine { None } else { Some(disp_msg) };
+    utils::print_to_or_rev(&msgs, args.number, args.reverse, disp)
 }
 
 // impl fmt::Display for MsgOverview {
@@ -68,7 +65,7 @@ pub fn disp_msg(msg: &ekreta::MsgItem) -> String {
     f
 }
 
-pub fn disp_note_msg(note_msg: &ekreta::NoteMsg) -> String {
+pub fn disp_nm(note_msg: &ekreta::NoteMsg) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| {}", note_msg.cim);
     _ = writeln!(&mut f, "| Időpont: {}", note_msg.datum.pretty());

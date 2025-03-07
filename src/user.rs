@@ -14,7 +14,7 @@ pub fn handle(
     conf: &mut Config,
     del: bool,
     switch: bool,
-    cachedir: bool,
+    cache_dir: bool,
     json: bool,
 ) -> Res<()> {
     if let Some(name) = userid {
@@ -37,24 +37,26 @@ pub fn handle(
             } else if switch {
                 conf.switch_user_to(name);
                 println!("switched");
-            } else if cachedir {
-                let cache_dir = cache_dir(&name).ok_or("no cache dir found for user")?;
+            } else if cache_dir {
+                let cache_dir = paths::cache_dir(&name).ok_or("no cache dir found for user")?;
                 println!("{}", cache_dir.display());
             }
         }
         conf.save()?;
     } else {
-        if cachedir {
+        if cache_dir {
             let cache_dir =
-                cache_dir(&conf.default_username).ok_or("no cachedir found of for user")?;
+                paths::cache_dir(&conf.default_username).ok_or("no cachedir found of for user")?;
             println!("{}", cache_dir.display());
             return Ok(());
         }
-        println!("Felhasználók:");
         if json {
-            todo!()
+            let json = serde_json::to_string(&(&conf.default_username, &conf.users))?;
+            println!("{json}");
+        } else {
+            println!("Felhasználók:");
+            information::display(conf)?;
         }
-        information::display(conf.users.iter(), &conf.default_username)?;
     }
     Ok(())
 }
