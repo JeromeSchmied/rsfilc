@@ -104,7 +104,7 @@ pub fn print_table<T, S1: ToString, I: Iterator<Item = S1>>(
         table.column(i).set_header(head.to_string());
     }
     let data: Vec<_> = if rev {
-        items.into_iter().map(to_str).rev().take(num).collect()
+        items.into_iter().rev().take(num).map(to_str).collect()
     } else {
         items.into_iter().take(num).map(to_str).collect()
     };
