@@ -87,9 +87,9 @@ where
     F: Fn(&T) -> String,
 {
     let iter: Box<dyn Iterator<Item = &T>> = if rev {
-        Box::new(items.into_iter().rev())
+        Box::new(items.iter().rev())
     } else {
-        Box::new(items.into_iter())
+        Box::new(items.iter())
     };
     if let Some(to_str) = to_str {
         print_them_basic(iter.take(num), to_str);
@@ -115,9 +115,9 @@ where
     F: Fn(&T) -> Vec<String>,
 {
     let iter: Box<dyn Iterator<Item = &T>> = if rev {
-        Box::new(items.into_iter().rev())
+        Box::new(items.iter().rev())
     } else {
-        Box::new(items.into_iter())
+        Box::new(items.iter())
     };
     if let Some(to_str) = to_str {
         let mut table = ascii_table::AsciiTable::default();

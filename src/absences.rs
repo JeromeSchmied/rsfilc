@@ -3,7 +3,7 @@
 use crate::{time::MyDate, user::Usr, utils};
 use ekreta::{Absence, Res};
 
-pub fn handle(user: &Usr, subj: Option<String>, count: bool, args: crate::Args) -> Res<()> {
+pub fn handle(user: &Usr, subj: Option<String>, count: bool, args: &crate::Args) -> Res<()> {
     let mut absences = user.get_absences((None, None))?;
     if let Some(subject) = subj {
         filter_by_subject(&mut absences, &subject);

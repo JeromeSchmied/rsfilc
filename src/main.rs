@@ -88,15 +88,15 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         }
 
         Command::Messages { notes } => {
-            messages::handle(notes, &user, args)?;
+            messages::handle(notes, &user, &args)?;
         }
 
         Command::Absences { count, subject } => {
-            absences::handle(&user, subject, count, args)?;
+            absences::handle(&user, subject, count, &args)?;
         }
 
         Command::Tests { subject, past } => {
-            announced::handle(past, &user, subject, args)?;
+            announced::handle(past, &user, subject, &args)?;
         }
 
         Command::User {

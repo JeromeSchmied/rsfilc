@@ -96,8 +96,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     }
     lessons
         .iter()
-        .filter(|lsn| lsn.forecoming() && !ignore_lesson(*lsn))
-        .next()
+        .find(|lsn| lsn.forecoming() && !ignore_lesson(*lsn))
 }
 /// whether it's fake or cancelled
 fn ignore_lesson(lsn: &Lesson) -> bool {
