@@ -90,20 +90,34 @@ pub fn print_to_or_rev<T>(items: &[T], num: usize, rev: bool, to_str: impl Fn(&T
 }
 
 /// print `num` `items` using `to_str`, reversed if `rev` otherwise not
-pub fn print_table<T, S1, I, F>(items: &[T], headers: I, rev: bool, num: usize, to_str: F)
+pub fn print_table<T, S1, I, F>(
+    items: &[T],
+    headers: I,
+    rev: bool,
+    num: usize,
+    to_str: Option<F>,
+) -> Res<()>
 where
+    T: serde::Serialize,
     S1: ToString,
     I: Iterator<Item = S1>,
     F: Fn(&T) -> Vec<String>,
 {
-    let mut table = ascii_table::AsciiTable::default();
-    for (i, head) in headers.into_iter().enumerate() {
-        table.column(i).set_header(head.to_string());
-    }
-    let data: Vec<_> = if rev {
-        items.into_iter().rev().take(num).map(to_str).collect()
+    let iter: Box<dyn Iterator<Item = &T>> = if rev {
+        Box::new(items.into_iter().rev())
     } else {
-        items.into_iter().take(num).map(to_str).collect()
+        Box::new(items.into_iter())
     };
-    table.print(data);
+    if let Some(to_str) = to_str {
+        let mut table = ascii_table::AsciiTable::default();
+        for (i, head) in headers.into_iter().enumerate() {
+            table.column(i).set_header(head.to_string());
+        }
+        let data: Vec<_> = iter.take(num).map(to_str).collect();
+        table.print(data);
+    } else {
+        let data = serde_json::to_string(&iter.take(num).collect::<Vec<_>>())?;
+        println!("{data}");
+    }
+    Ok(())
 }

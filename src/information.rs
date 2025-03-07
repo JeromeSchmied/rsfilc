@@ -3,7 +3,7 @@
 use crate::user::Usr;
 use ekreta::{Res, UserInfo};
 
-pub fn disp<'a>(users: impl Iterator<Item = &'a Usr>, def_id: &str) -> Res<()> {
+pub fn display<'a>(users: impl Iterator<Item = &'a Usr>, def_id: &str) -> Res<()> {
     let mut table = ascii_table::AsciiTable::default();
     let headers = ["NÉV", "OM AZONOSÍTÓ", "OSKOLA", "SZÜLETETT"];
     for (i, head) in headers.into_iter().enumerate() {
@@ -13,7 +13,7 @@ pub fn disp<'a>(users: impl Iterator<Item = &'a Usr>, def_id: &str) -> Res<()> {
         .into_iter()
         .map(|u| {
             let info = u.get_userinfo()?;
-            Ok(_disp(&info, &u.0.username, def_id))
+            Ok(disp(&info, &u.0.username, def_id))
         })
         .collect::<Res<Vec<_>>>()?;
     table.print(data);
@@ -21,7 +21,7 @@ pub fn disp<'a>(users: impl Iterator<Item = &'a Usr>, def_id: &str) -> Res<()> {
     Ok(())
 }
 
-pub fn _disp(user_info: &UserInfo, id: &str, def_id: &str) -> Vec<String> {
+fn disp(user_info: &UserInfo, id: &str, def_id: &str) -> Vec<String> {
     let def_usr = if id == def_id {
         "Alapértelmezett: "
     } else {

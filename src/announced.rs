@@ -4,7 +4,14 @@ use crate::{time::MyDate, user::Usr, utils};
 use chrono::{Datelike, Local};
 use ekreta::{AnnouncedTest, Res};
 
-pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usize) -> Res<()> {
+pub fn handle(
+    past: bool,
+    user: &Usr,
+    subj: Option<String>,
+    json: bool,
+    rev: bool,
+    num: usize,
+) -> Res<()> {
     let mut all_announced = user.get_tests((None, None))?;
     if !past {
         let today = Local::now().num_days_from_ce();
@@ -14,8 +21,8 @@ pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usiz
         filter_by_subject(&mut all_announced, &subject);
     }
     let headers = ["TÉMA", "TANTÁRGY", "DÁTUM", "MÓD", "TANÁR"];
-    utils::print_table(&all_announced, headers.into_iter(), rev, num, disp);
-    Ok(())
+    let dix = if json { None } else { Some(display) };
+    utils::print_table(&all_announced, headers.into_iter(), rev, num, dix)
 }
 
 /// filter [`Ancd`] tests by `subj`ect
@@ -28,7 +35,7 @@ pub fn filter_by_subject(ancds: &mut Vec<AnnouncedTest>, subj: &str) {
     });
 }
 
-pub fn disp(ancd: &AnnouncedTest) -> Vec<String> {
+fn display(ancd: &AnnouncedTest) -> Vec<String> {
     let about = ancd.temaja.clone().unwrap_or_default();
     let subj = ancd.tantargy_neve.clone();
     let date = ancd.datum.pretty();
