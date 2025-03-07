@@ -81,12 +81,23 @@ pub fn print_them_basic<T>(items: impl Iterator<Item = T>, to_str: impl Fn(T) ->
 }
 
 /// print `num` `items` using `to_str`, reversed if `rev` otherwise not
-pub fn print_to_or_rev<T>(items: &[T], num: usize, rev: bool, to_str: impl Fn(&T) -> String) {
-    if rev {
-        print_them_basic(items.iter().rev().take(num), to_str);
+pub fn print_to_or_rev<T, F>(items: &[T], num: usize, rev: bool, to_str: Option<F>) -> Res<()>
+where
+    T: serde::Serialize,
+    F: Fn(&T) -> String,
+{
+    let iter: Box<dyn Iterator<Item = &T>> = if rev {
+        Box::new(items.into_iter().rev())
     } else {
-        print_them_basic(items.iter().take(num), to_str);
+        Box::new(items.into_iter())
+    };
+    if let Some(to_str) = to_str {
+        print_them_basic(iter.take(num), to_str);
+    } else {
+        let data = serde_json::to_string(&iter.take(num).collect::<Vec<_>>())?;
+        println!("{data}");
     }
+    Ok(())
 }
 
 /// print `num` `items` using `to_str`, reversed if `rev` otherwise not

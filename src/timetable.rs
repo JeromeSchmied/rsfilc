@@ -10,9 +10,6 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> 
     let day = day.unwrap_or(default_day(user));
     let all_lessons_till_day = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
-    if json {
-        todo!()
-    }
     if lessons.is_empty() {
         println!("{day} ({}) nincs rögzített órád, juhé!", day.weekday());
         return Ok(());
@@ -36,7 +33,12 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> 
 
         return Ok(());
     }
-    user.print_day(lessons);
+    if json {
+        let json = serde_json::to_string(&lessons)?;
+        println!("{json}");
+    } else {
+        user.print_day(lessons);
+    }
     Ok(())
 }
 /// Parse the day got as `argument`.

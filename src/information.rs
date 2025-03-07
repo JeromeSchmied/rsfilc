@@ -1,19 +1,19 @@
 //! basic User info, `Kréta` stores
 
-use crate::user::Usr;
 use ekreta::{Res, UserInfo};
 
-pub fn display<'a>(users: impl Iterator<Item = &'a Usr>, def_id: &str) -> Res<()> {
+pub fn display<'a>(conf: &crate::Config) -> Res<()> {
     let mut table = ascii_table::AsciiTable::default();
     let headers = ["NÉV", "OM AZONOSÍTÓ", "OSKOLA", "SZÜLETETT"];
     for (i, head) in headers.into_iter().enumerate() {
         table.column(i).set_header(head);
     }
-    let data = users
-        .into_iter()
+    let data = conf
+        .users
+        .iter()
         .map(|u| {
             let info = u.get_userinfo()?;
-            Ok(disp(&info, &u.0.username, def_id))
+            Ok(disp(&info, &u.0.username, &conf.default_username))
         })
         .collect::<Res<Vec<_>>>()?;
     table.print(data);

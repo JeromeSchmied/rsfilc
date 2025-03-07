@@ -3,14 +3,7 @@
 use crate::{time::MyDate, user::Usr, utils};
 use ekreta::{Absence, Res};
 
-pub fn handle(
-    user: &Usr,
-    subj: Option<String>,
-    count: bool,
-    json: bool,
-    rev: bool,
-    num: usize,
-) -> Res<()> {
+pub fn handle(user: &Usr, subj: Option<String>, count: bool, args: crate::Args) -> Res<()> {
     let mut absences = user.get_absences((None, None))?;
     if let Some(subject) = subj {
         filter_by_subject(&mut absences, &subject);
@@ -24,9 +17,9 @@ pub fn handle(
         return Ok(());
     }
     #[rustfmt::skip]
-    let headers = ["TANTÁRGY", "TANÁR", "ETTŐL", "EDDIG", "ENNYIT", "IGAZOLÁS TIPUS"];
-    let disp = if json { None } else { Some(display) };
-    utils::print_table(&absences, headers.into_iter(), rev, num, disp)
+    let headers = ["TANTÁRGY", "TANÁR", "ETTŐL", "EDDIG", "ENNYIT", "IGAZOLÁS TIPUS"].into_iter();
+    let disp = if args.machine { None } else { Some(display) };
+    utils::print_table(&absences, headers, args.reverse, args.number, disp)
 }
 
 /// filter [`Abs`]ences by `subj`ect

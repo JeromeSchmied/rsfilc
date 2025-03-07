@@ -49,10 +49,14 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             return Ok(());
         }
     }
-    let command = args.command.unwrap_or(Command::Timetable {
-        day: None,
-        current: false,
-    });
+    let command = args
+        .command
+        .as_ref()
+        .unwrap_or(&Command::Timetable {
+            day: None,
+            current: false,
+        })
+        .clone();
     // have a valid user
     let user = if command.user_needed() {
         Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
@@ -77,38 +81,22 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         Command::Evals {
             subject: subj,
             filter,
-            number: num,
             average,
-            reverse: rev,
             ghost,
         } => {
-            evals::handle(&user, filter, subj, &ghost, average, args.machine, rev, num)?;
+            evals::handle(&user, filter, subj, &ghost, average, &args)?;
         }
 
-        Command::Messages {
-            number,
-            reverse,
-            notes,
-        } => {
-            messages::handle(notes, &user, args.machine, reverse, number)?;
+        Command::Messages { notes } => {
+            messages::handle(notes, &user, args)?;
         }
 
-        Command::Absences {
-            number,
-            count,
-            subject,
-            reverse,
-        } => {
-            absences::handle(&user, subject, count, args.machine, reverse, number)?;
+        Command::Absences { count, subject } => {
+            absences::handle(&user, subject, count, args)?;
         }
 
-        Command::Tests {
-            number,
-            subject,
-            reverse,
-            past,
-        } => {
-            announced::handle(past, &user, subject, args.machine, reverse, number)?;
+        Command::Tests { subject, past } => {
+            announced::handle(past, &user, subject, args)?;
         }
 
         Command::User {

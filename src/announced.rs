@@ -4,14 +4,7 @@ use crate::{time::MyDate, user::Usr, utils};
 use chrono::{Datelike, Local};
 use ekreta::{AnnouncedTest, Res};
 
-pub fn handle(
-    past: bool,
-    user: &Usr,
-    subj: Option<String>,
-    json: bool,
-    rev: bool,
-    num: usize,
-) -> Res<()> {
+pub fn handle(past: bool, user: &Usr, subj: Option<String>, args: crate::Args) -> Res<()> {
     let mut all_announced = user.get_tests((None, None))?;
     if !past {
         let today = Local::now().num_days_from_ce();
@@ -20,9 +13,9 @@ pub fn handle(
     if let Some(subject) = subj {
         filter_by_subject(&mut all_announced, &subject);
     }
-    let headers = ["TÉMA", "TANTÁRGY", "DÁTUM", "MÓD", "TANÁR"];
-    let dix = if json { None } else { Some(display) };
-    utils::print_table(&all_announced, headers.into_iter(), rev, num, dix)
+    let headers = ["TÉMA", "TANTÁRGY", "DÁTUM", "MÓD", "TANÁR"].into_iter();
+    let dix = if args.machine { None } else { Some(display) };
+    utils::print_table(&all_announced, headers, args.reverse, args.number, dix)
 }
 
 /// filter [`Ancd`] tests by `subj`ect
