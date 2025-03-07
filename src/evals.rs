@@ -10,6 +10,7 @@ pub fn handle(
     subj: Option<String>,
     ghost: &[u8],
     avg: bool,
+    json: bool,
     rev: bool,
     num: usize,
 ) -> Res<()> {
@@ -29,9 +30,8 @@ pub fn handle(
     }
     #[rustfmt::skip]
     let headers = ["TÉMA", "JEGY", "TANTÁRGY", "MÓD", "TÍPUS", "TANÁR", "IDŐPONT"];
-    utils::print_table(&evals, headers.into_iter(), rev, num, disp);
-
-    Ok(())
+    let disp = if json { None } else { Some(display) };
+    utils::print_table(&evals, headers.into_iter(), rev, num, disp)
 }
 
 /// Filter `evals` by `kind`
@@ -80,7 +80,7 @@ pub fn calc_average(evals: &[Evaluation], ghosts: &[u8]) -> f32 {
     sum / count
 }
 
-pub fn disp(eval: &Evaluation) -> Vec<String> {
+fn display(eval: &Evaluation) -> Vec<String> {
     let desc = eval.tema.clone().unwrap_or_default();
     let grade = if let Some(num) = eval.szam_ertek {
         num.to_string()

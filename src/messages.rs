@@ -4,7 +4,10 @@ use crate::{paths::download_dir, time::MyDate, user::Usr, utils};
 use ekreta::Res;
 use std::{char, fmt::Write};
 
-pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize) -> Res<()> {
+pub fn handle(notes: bool, user: &Usr, json: bool, rev: bool, num: usize) -> Res<()> {
+    if json {
+        todo!()
+    }
     if notes {
         let notes = user.get_note_msgs((None, None))?;
         utils::print_to_or_rev(&notes, num, rev, disp_note_msg);

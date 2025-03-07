@@ -15,6 +15,7 @@ pub fn handle(
     del: bool,
     switch: bool,
     cachedir: bool,
+    json: bool,
 ) -> Res<()> {
     if let Some(name) = userid {
         if create {
@@ -50,7 +51,10 @@ pub fn handle(
             return Ok(());
         }
         println!("Felhasználók:");
-        information::disp(conf.users.iter(), &conf.default_username)?;
+        if json {
+            todo!()
+        }
+        information::display(conf.users.iter(), &conf.default_username)?;
     }
     Ok(())
 }

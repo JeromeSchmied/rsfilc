@@ -11,6 +11,9 @@ const NUM: usize = usize::MAX;
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Command>,
+    /// produce machine-readable output, mostly json, WARN: will be ignored by some commands
+    #[arg(short, long, visible_alias = "json", default_value_t = false)]
+    pub machine: bool,
     /// enable verbose logging into the log file
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,

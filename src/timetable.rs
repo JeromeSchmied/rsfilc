@@ -6,10 +6,13 @@ use ekreta::{Lesson, Res};
 use log::*;
 use std::fmt::Write;
 
-pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool) -> Res<()> {
+pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> Res<()> {
     let day = day.unwrap_or(default_day(user));
     let all_lessons_till_day = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
+    if json {
+        todo!()
+    }
     if lessons.is_empty() {
         println!("{day} ({}) nincs rögzített órád, juhé!", day.weekday());
         return Ok(());
@@ -99,7 +102,7 @@ fn ignore_lesson(lsn: &Lesson) -> bool {
     lsn.kamu_smafu() || lsn.cancelled()
 }
 
-pub fn disp(lsn: &Lesson) -> String {
+pub fn display(lsn: &Lesson) -> String {
     let mut f = String::new();
     _ = write!(&mut f, "{}", lsn.nev);
     if let Some(room) = &lsn.terem_neve {
@@ -157,7 +160,7 @@ impl Usr {
                 first_lesson.kezdet_idopont.hun_day_of_week()
             );
             if first_lesson.kamu_smafu() {
-                let as_str = disp(first_lesson);
+                let as_str = display(first_lesson);
                 println!("{as_str}");
                 fill(&as_str, '|', None);
             }
@@ -186,7 +189,7 @@ impl Usr {
                     fill(&no_lesson_buf, '^', Some("Juhé"));
                 }
                 // so fill_under() works fine
-                let mut printer = format!("\n\n{nth}. {}", disp(lesson));
+                let mut printer = format!("\n\n{nth}. {}", display(lesson));
 
                 if let Some(Some(test)) = lesson
                     .bejelentett_szamonkeres_uid

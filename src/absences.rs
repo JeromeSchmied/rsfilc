@@ -3,7 +3,14 @@
 use crate::{time::MyDate, user::Usr, utils};
 use ekreta::{Absence, Res};
 
-pub fn handle(user: &Usr, subj: Option<String>, count: bool, rev: bool, num: usize) -> Res<()> {
+pub fn handle(
+    user: &Usr,
+    subj: Option<String>,
+    count: bool,
+    json: bool,
+    rev: bool,
+    num: usize,
+) -> Res<()> {
     let mut absences = user.get_absences((None, None))?;
     if let Some(subject) = subj {
         filter_by_subject(&mut absences, &subject);
@@ -18,8 +25,8 @@ pub fn handle(user: &Usr, subj: Option<String>, count: bool, rev: bool, num: usi
     }
     #[rustfmt::skip]
     let headers = ["TANTÁRGY", "TANÁR", "ETTŐL", "EDDIG", "ENNYIT", "IGAZOLÁS TIPUS"];
-    utils::print_table(&absences, headers.into_iter(), rev, num, disp);
-    Ok(())
+    let disp = if json { None } else { Some(display) };
+    utils::print_table(&absences, headers.into_iter(), rev, num, disp)
 }
 
 /// filter [`Abs`]ences by `subj`ect
@@ -33,7 +40,7 @@ pub fn filter_by_subject(abss: &mut Vec<Absence>, subj: &str) {
     });
 }
 
-pub fn disp(abs: &Absence) -> Vec<String> {
+fn display(abs: &Absence) -> Vec<String> {
     let from = abs.ora.kezdo_datum.pretty();
     let to = abs.ora.veg_datum.pretty();
     let subj = abs.tantargy.nev.clone();

@@ -71,18 +71,18 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             todo!("TUI is to be written (soon)");
         }
         Command::Timetable { day, current } => {
-            timetable::handle(day, &user, current)?;
+            timetable::handle(day, &user, current, args.machine)?;
         }
 
         Command::Evals {
-            subject,
+            subject: subj,
             filter,
-            number,
+            number: num,
             average,
-            reverse,
+            reverse: rev,
             ghost,
         } => {
-            evals::handle(&user, filter, subject, &ghost, average, reverse, number)?;
+            evals::handle(&user, filter, subj, &ghost, average, args.machine, rev, num)?;
         }
 
         Command::Messages {
@@ -90,7 +90,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             reverse,
             notes,
         } => {
-            messages::handle(notes, &user, reverse, number)?;
+            messages::handle(notes, &user, args.machine, reverse, number)?;
         }
 
         Command::Absences {
@@ -99,7 +99,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             subject,
             reverse,
         } => {
-            absences::handle(&user, subject, count, reverse, number)?;
+            absences::handle(&user, subject, count, args.machine, reverse, number)?;
         }
 
         Command::Tests {
@@ -108,21 +108,21 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             reverse,
             past,
         } => {
-            announced::handle(past, &user, subject, reverse, number)?;
+            announced::handle(past, &user, subject, args.machine, reverse, number)?;
         }
 
         Command::User {
-            delete,
+            delete: del,
             create,
             switch,
             cache_dir,
             userid,
         } => {
-            user::handle(userid, create, conf, delete, switch, cache_dir)?;
+            user::handle(userid, create, conf, del, switch, cache_dir, args.machine)?;
         }
 
         Command::Schools { search } => {
-            schools::handle(search)?;
+            schools::handle(search, args.machine)?;
         }
     }
     Ok(())
