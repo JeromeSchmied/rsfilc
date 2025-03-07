@@ -4,7 +4,7 @@ use crate::{paths::download_dir, time::MyDate, user::Usr, utils};
 use ekreta::Res;
 use std::{char, fmt::Write};
 
-pub fn handle(notes: bool, user: &Usr, args: crate::Args) -> Res<()> {
+pub fn handle(notes: bool, user: &Usr, args: &crate::Args) -> Res<()> {
     if notes {
         let notes = user.get_note_msgs((None, None))?;
         let disp = if args.machine { None } else { Some(disp_nm) };

@@ -4,7 +4,7 @@ use crate::{time::MyDate, user::Usr, utils};
 use chrono::{Datelike, Local};
 use ekreta::{AnnouncedTest, Res};
 
-pub fn handle(past: bool, user: &Usr, subj: Option<String>, args: crate::Args) -> Res<()> {
+pub fn handle(past: bool, user: &Usr, subj: Option<String>, args: &crate::Args) -> Res<()> {
     let mut all_announced = user.get_tests((None, None))?;
     if !past {
         let today = Local::now().num_days_from_ce();

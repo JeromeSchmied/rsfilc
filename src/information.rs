@@ -2,7 +2,7 @@
 
 use ekreta::{Res, UserInfo};
 
-pub fn display<'a>(conf: &crate::Config) -> Res<()> {
+pub fn display(conf: &crate::Config) -> Res<()> {
     let mut table = ascii_table::AsciiTable::default();
     let headers = ["NÉV", "OM AZONOSÍTÓ", "OSKOLA", "SZÜLETETT"];
     for (i, head) in headers.into_iter().enumerate() {

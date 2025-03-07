@@ -102,8 +102,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     }
     lessons
         .iter()
-        .filter(|lsn| lsn.forecoming() && !lsn.kamu_smafu() && !lsn.cancelled())
-        .next()
+        .find(|lsn| lsn.forecoming() && !lsn.kamu_smafu() && !lsn.cancelled())
 }
 
 pub fn display(lsn: &Lesson) -> String {
