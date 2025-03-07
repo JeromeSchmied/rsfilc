@@ -27,7 +27,6 @@ pub fn handle(
 
         return Ok(());
     }
-    // utils::print_to_or_rev(&evals, num, rev, disp);
     #[rustfmt::skip]
     let headers = ["TÉMA", "JEGY", "TANTÁRGY", "MÓD", "TÍPUS", "TANÁR", "IDŐPONT"];
     utils::print_table(&evals, headers.into_iter(), rev, num, disp);
@@ -90,7 +89,7 @@ pub fn disp(eval: &Evaluation) -> Vec<String> {
     };
     let subj_name = eval.tantargy.nev.clone();
     let how_desc = eval.r#mod.clone().map(|l| l.leiras).unwrap_or_default();
-    let kind_name = eval.tipus.leiras.replace(" jegy/értékelés", "");
+    // let kind_name = eval.tipus.leiras.replace(" jegy/értékelés", "");
     let teacher = eval.ertekelo_tanar_neve.clone().unwrap_or_default();
     let when = eval.keszites_datuma.pretty();
 
