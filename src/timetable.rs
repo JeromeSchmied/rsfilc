@@ -2,7 +2,7 @@
 
 use crate::{fill, time::MyDate, user::Usr};
 use chrono::{Datelike, Duration, Local, NaiveDate, TimeDelta};
-use ekreta::{Lesson, Res};
+use ekreta::{LDateTime, Lesson, Res};
 use log::*;
 use std::fmt::Write;
 
@@ -19,22 +19,13 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> 
         return Ok(());
     }
     if current {
-        let current_lessons = current_lessons(&lessons);
+        let mins_till = |till: LDateTime| (till - Local::now()).num_minutes();
         if let Some(nxt) = next_lesson(&all_lessons_till_day) {
-            println!(
-                "{}m -> {}",
-                (nxt.kezdet_idopont - Local::now()).num_minutes(), // minutes remaining
-                nxt.nev
-            );
+            println!("{}m -> {}", mins_till(nxt.kezdet_idopont), nxt.nev);
         }
-        for current_lesson in current_lessons {
-            println!(
-                "{}, {}m",
-                current_lesson.nev,
-                (current_lesson.veg_idopont - Local::now()).num_minutes() // minutes remaining
-            );
+        for cnt_lsn in current_lessons(&lessons) {
+            println!("{}, {}m", cnt_lsn.nev, mins_till(cnt_lsn.veg_idopont));
         }
-
         return Ok(());
     }
     if json {
