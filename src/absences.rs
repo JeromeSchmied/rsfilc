@@ -9,11 +9,13 @@ pub fn handle(user: &Usr, subj: Option<String>, count: bool, args: &crate::Args)
         filter_by_subject(&mut absences, &subject);
     }
     if count {
-        println!("Összes hiányzásod száma: {}", absences.len());
-        println!(
-            "Ebből még igazolatlan: {}",
-            absences.iter().filter(|item| !item.igazolt()).count()
-        );
+        let unverified = absences.iter().filter(|item| !item.igazolt()).count();
+        if args.machine {
+            println!("{},{unverified}", absences.len());
+        } else {
+            println!("Összes hiányzásod száma: {}", absences.len());
+            println!("Ebből még igazolatlan: {unverified}");
+        }
         return Ok(());
     }
     #[rustfmt::skip]
