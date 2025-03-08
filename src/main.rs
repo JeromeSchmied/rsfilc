@@ -6,6 +6,7 @@ use ekreta::Res;
 use log::*;
 use paths::cache_dir;
 use std::fs::OpenOptions;
+use std::io::{self, IsTerminal};
 use user::Usr;
 use utils::fill;
 
@@ -38,7 +39,7 @@ fn main() -> Res<()> {
     Ok(())
 }
 
-fn run(args: Args, conf: &mut Config) -> Res<()> {
+fn run(mut args: Args, conf: &mut Config) -> Res<()> {
     if args.command.is_none() {
         if args.cache_dir {
             println!("{}", cache_dir("").ok_or("no cache dir found")?.display());
@@ -64,10 +65,15 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         Usr::dummy()
     };
 
+    if !io::stdout().is_terminal() {
+        info!("most probably talking to a machine, producing machine output (eg json)");
+        eprintln!("welcome to the machine!");
+        args.machine = true;
+    }
     match command {
         Command::Completions { shell: sh } => {
             info!("creating shell completions for {sh}");
-            clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
+            clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut io::stdout());
             return Ok(());
         }
         Command::Tui {} => {
