@@ -19,7 +19,6 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> 
         return Ok(());
     }
     if current {
-        let mins_till = |till: LDateTime| (till - Local::now()).num_minutes();
         if let Some(nxt) = next_lesson(&all_lessons_till_day) {
             if json {
                 let data = serde_json::to_string(&(mins_till(nxt.kezdet_idopont), nxt))?;
@@ -45,6 +44,11 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> 
         user.print_day(lessons);
     }
     Ok(())
+}
+
+/// minutes `till` now
+fn mins_till(till: LDateTime) -> i64 {
+    (till - Local::now()).num_minutes()
 }
 /// Parse the day got as `argument`.
 /// # errors
@@ -108,6 +112,7 @@ fn ignore_lesson(lsn: &Lesson) -> bool {
     lsn.kamu_smafu() || lsn.cancelled()
 }
 
+/// you may want to check `lsn` validity: `lsn.kamu_smafu()`
 pub fn display(lsn: &Lesson) -> String {
     let mut f = String::new();
     _ = write!(&mut f, "{}", lsn.nev);
@@ -115,14 +120,12 @@ pub fn display(lsn: &Lesson) -> String {
         _ = writeln!(&mut f, ", {}", room.replace("terem", "").trim());
     }
 
-    if !lsn.kamu_smafu() {
-        _ = writeln!(
-            f,
-            "| {} -> {}",
-            lsn.kezdet_idopont.format("%H:%M"),
-            lsn.veg_idopont.format("%H:%M")
-        );
-    }
+    _ = writeln!(
+        f,
+        "| {} -> {}",
+        lsn.kezdet_idopont.format("%H:%M"),
+        lsn.veg_idopont.format("%H:%M")
+    );
 
     if let Some(tema) = &lsn.tema {
         _ = writeln!(&mut f, "| {tema}");
@@ -159,90 +162,68 @@ pub fn display(lsn: &Lesson) -> String {
 impl Usr {
     /// print all lessons of a day
     pub fn print_day(&self, mut lessons: Vec<Lesson>) {
-        if let Some(first_lesson) = lessons.first() {
-            println!(
-                "    {} ({})",
-                &first_lesson.kezdet_idopont.pretty(),
-                first_lesson.kezdet_idopont.hun_day_of_week()
-            );
-            if first_lesson.kamu_smafu() {
-                let as_str = display(first_lesson);
-                println!("{as_str}");
-                fill(&as_str, '|', None);
-            }
-            let tests = self.get_tests((None, None)).unwrap_or_default();
-            let all_lessons_till_day = self
-                .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
-                .unwrap_or_default();
-            // info!("all announced: {todays_tests:?}");
+        let Some(first_lesson) = lessons.first() else {
+            return;
+        };
+        let day_start = first_lesson.kezdet_idopont;
+        let header = if first_lesson.kamu_smafu() {
+            format!("{}", lessons.remove(0).nev)
+        } else {
+            format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty(),)
+        };
+        println!("{header}");
+        fill(&header, '|', "");
+        let tests = self.get_tests((None, None)).unwrap_or_default();
+        let all_lessons_till_day = self
+            .get_timetable(day_start.date_naive(), true)
+            .unwrap_or_default();
 
-            // number of lessons at the same time
-            lessons.retain(|l| !l.kamu_smafu());
-
-            for (n, lesson) in lessons.iter().enumerate() {
-                // calculate `n`. this lesson is
-                let nth = lesson.oraszam.unwrap_or(u8::MAX);
-                if n as u8 + 2 == nth
-                    && lessons
-                        .get(n.overflowing_sub(1).0)
-                        .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
-                {
-                    let no_lesson_buf = format!(
+        for (n, lsn) in lessons.iter().enumerate() {
+            // calculate `n`. this lesson is
+            let nth = lsn.oraszam.unwrap_or(u8::MAX);
+            if n as u8 + 2 == nth
+                && lessons
+                    .get(n.overflowing_sub(1).0)
+                    .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
+            {
+                let no_lesson_buf = format!(
                         "\n\n{}. Lyukas (avagy Lukas) óra\n| Erre az időpontra nincsen tanóra rögzítve.",
                         n + 1
                     );
-                    println!("{no_lesson_buf}");
-                    fill(&no_lesson_buf, '^', Some("Juhé"));
-                }
-                // so fill_under() works fine
-                let mut printer = format!("\n\n{nth}. {}", display(lesson));
-
-                if let Some(Some(test)) = lesson
-                    .bejelentett_szamonkeres_uid
-                    .as_ref()
-                    .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
-                {
-                    printer += &format!(
-                        "\n| {}{}",
-                        test.modja.leiras,
-                        if let Some(topic) = test.temaja.as_ref() {
-                            format!(": {topic}")
-                        } else {
-                            String::new()
-                        }
-                    );
-                }
-                println!("{printer}");
-
-                let (with, inlay_hint) = if lesson.happening() {
-                    (
-                        '$',
-                        Some(format!(
-                            "{} perc",
-                            (lesson.veg_idopont - Local::now()).num_minutes()
-                        )),
-                    )
-                } else if next_lesson(&all_lessons_till_day).is_some_and(|nxt| nxt == lesson) {
-                    (
-                        '>',
-                        Some(format!(
-                            "{} perc",
-                            (lesson.kezdet_idopont - Local::now()).num_minutes()
-                        )),
-                    )
-                } else if lesson.cancelled() {
-                    (
-                        'X',
-                        Some(format!(
-                            "elmarad{}",
-                            if lesson.forecoming() { "" } else { "t" }
-                        )),
-                    )
-                } else {
-                    ('-', None)
-                };
-                fill(&printer, with, inlay_hint.as_deref());
+                println!("{no_lesson_buf}");
+                fill(&no_lesson_buf, '^', "ojjé");
             }
+            // so fill() works fine
+            let mut printer = format!("\n\n{nth}. {}", display(lsn));
+
+            if let Some(Some(test)) = lsn
+                .bejelentett_szamonkeres_uid
+                .as_ref()
+                .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
+            {
+                printer += &format!(
+                    "\n| {}{}",
+                    test.modja.leiras,
+                    if let Some(topic) = test.temaja.as_ref() {
+                        format!(": {topic}")
+                    } else {
+                        String::new()
+                    }
+                );
+            }
+            println!("{printer}");
+
+            let (with, inlay_hint) = if lsn.happening() {
+                ('$', format!("{} perc", mins_till(lsn.veg_idopont)))
+            } else if next_lesson(&all_lessons_till_day).is_some_and(|nxt| nxt == lsn) {
+                ('>', format!("{} perc", mins_till(lsn.kezdet_idopont)))
+            } else if lsn.cancelled() {
+                let past_morpheme = if lsn.forecoming() { "" } else { "t" };
+                ('X', format!("elmarad{past_morpheme}"))
+            } else {
+                ('-', String::new())
+            };
+            fill(&printer, with, inlay_hint);
         }
     }
 }
