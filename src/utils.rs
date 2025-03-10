@@ -53,22 +53,21 @@ macro_rules! gen_get_for {
 ///
 /// so:     "123456789" <- len: 9
 /// result: "12 bab 89" <- len: 9
-pub fn fill(this: &str, with: char, hint: Option<&str>) {
+pub fn fill(this: &str, with: char, hint: impl std::fmt::Display) {
     let longest = this.lines().map(|l| l.chars().count()).max().unwrap_or(0);
-    let inlay_hint = if let Some(il_hint) = hint {
-        [" ", il_hint, " "].concat()
-    } else {
+    let hint = hint.to_string();
+    let inlay_hint = if hint.is_empty() {
         String::new()
+    } else {
+        [" ", &hint, " "].concat()
     };
 
-    let left = (longest - inlay_hint.chars().count()) / 2;
-    println!(
-        "{}{}{}",
-        with.to_string().repeat(left),
-        inlay_hint,
-        with.to_string()
-            .repeat(longest - left - inlay_hint.chars().count())
-    );
+    let hint_len = inlay_hint.chars().count();
+    let left_len = (longest - hint_len) / 2;
+    let with = with.to_string();
+    let left_pad = with.repeat(left_len);
+    let right_pad = with.repeat(longest - left_len - hint_len);
+    println!("{left_pad}{inlay_hint}{right_pad}");
 }
 
 /// print `items` using `to_str`
@@ -76,7 +75,7 @@ pub fn print_them_basic<T>(items: impl Iterator<Item = T>, to_str: impl Fn(T) ->
     for item in items {
         let as_str = to_str(item);
         println!("\n\n{as_str}");
-        fill(&as_str, '-', None);
+        fill(&as_str, '-', "");
     }
 }
 
