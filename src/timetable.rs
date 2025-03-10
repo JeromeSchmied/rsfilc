@@ -21,10 +21,20 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> 
     if current {
         let mins_till = |till: LDateTime| (till - Local::now()).num_minutes();
         if let Some(nxt) = next_lesson(&all_lessons_till_day) {
-            println!("{}m -> {}", mins_till(nxt.kezdet_idopont), nxt.nev);
+            if json {
+                let data = serde_json::to_string(&(mins_till(nxt.kezdet_idopont), nxt))?;
+                println!("{data}");
+            } else {
+                println!("{}m -> {}", mins_till(nxt.kezdet_idopont), nxt.nev);
+            }
         }
         for cnt_lsn in current_lessons(&lessons) {
-            println!("{}, {}m", cnt_lsn.nev, mins_till(cnt_lsn.veg_idopont));
+            if json {
+                let data = serde_json::to_string(&(mins_till(cnt_lsn.veg_idopont), cnt_lsn))?;
+                println!("{data}");
+            } else {
+                println!("{}, {}m", cnt_lsn.nev, mins_till(cnt_lsn.veg_idopont));
+            }
         }
         return Ok(());
     }
