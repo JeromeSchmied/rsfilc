@@ -2,6 +2,7 @@
 
 use clap::{Parser, Subcommand};
 use log::info;
+use std::io::IsTerminal;
 
 /// default number of entries to show
 const NUM: usize = usize::MAX;
@@ -11,8 +12,8 @@ const NUM: usize = usize::MAX;
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Command>,
-    /// produce machine-readable output, mostly json, WARN: will be ignored by some commands
-    #[arg(short, long, visible_alias = "json", default_value_t = false)]
+    /// produce machine-readable output, mostly json
+    #[arg(short, long, num_args(1), visible_alias = "json", default_value_t=!std::io::stdout().is_terminal())]
     pub machine: bool,
     /// reverse the order of entries, WARN: will be ignored by some commands
     #[arg(short, long, default_value_t = false)]
