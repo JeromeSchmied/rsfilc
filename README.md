@@ -83,7 +83,13 @@ if not available for your platform ([file an issue](https://codeberg.org/jark/rs
 ## Usage
 
 general help: `rsfilc --help`  
-createing a new user: `rsfilc user --create <USER_ID>`
+creating a new user: `rsfilc user --create <USER_ID>`
+
+### useful stuff
+
+- when in doubt, be sure to check `rsfilc --help` first
+- if you'd like to have instant replies, only loading cached data, not caring about latest changes on the server, you shall try setting the environment variable `NO_NET` to `1`, eg. on linux: `NO_NET=1 rsfilc timetable`
+- if you feel like refreshing your cache, you'd do (again on linux): `NO_CACHE=1 rsfilc absences`, but don't forget `rsfilc user --cache-dir` either
 
 ![demo](./rsfilc_demo.gif "using rsfilc")
 

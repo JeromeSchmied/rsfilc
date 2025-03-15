@@ -76,6 +76,12 @@ ha esetleg nem elérhető a platformodra([tudasd ezt velünk](https://codeberg.o
 kedves kis használati utasítás: `rsfilc --help`  
 új felhasználó létrehozása: `rsfilc user --create <OM_AZON>`
 
+### jól vésd eszedbe!
+
+- ha megbotlasz, először nézz a lábad elé: `rsfilc --help`
+- ha a vároteremben nagy a tömeg, nézdd mit tartalmaz zsebed, környezeti változók használatát ne feledd, állítsd be `1`-re a `NO_NET`, tegyük fel linuxon így műveled: `NO_NET=1 rsfilc timetable`
+- ha attól tartasz zsebed kacatokkal tele, mondj egy hasonlót: `NO_CACHE=1 rsfilc absences`, vagy használd a `clap`-et: `rsfilc user --cache-dir`
+
 ![demo](./rsfilc_demo.gif "using rsfilc")
 
 ## Finomságok

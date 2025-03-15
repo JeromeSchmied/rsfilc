@@ -151,10 +151,17 @@ impl Usr {
     /// helper fn, loads cache of `kind` from `self.0.username` cache-dir
     fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(ekreta::LDateTime, D)> {
         let kind = utils::type_to_kind_name::<D>().ok()?;
+        if std::env::var("NO_CACHE").is_ok_and(|nc| nc == "1") && kind != "token" {
+            log::info!("manually triggered 'no cache' error");
+            return None;
+        }
 
         let (cache_t, content) = cache::load(&self.0.username, &kind)?;
         let deserd = serde_json::from_str(&content)
-            .inspect_err(|e| error!("error {e:?} - couldn't deserialize {kind}: {content}"))
+            .inspect_err(|e| {
+                error!("{e:?} - couldn't deserialize {kind}: {content}");
+                eprintln!("error: {e:?}, check logs with `cat $(rsfilc --cache-dir)/rsfilc.log`");
+            })
             .ok()?;
         Some((cache_t, deserd))
     }
@@ -301,25 +308,28 @@ impl Usr {
     /// # Errors
     ///
     /// - net
-    pub fn msgs(&self, interval: OptIrval) -> Res<Vec<MsgItem>> {
+    pub fn msgs(&self, mut interval: OptIrval) -> Res<Vec<MsgItem>> {
         let (cache_t, cached_msg) = self.load_cache::<Vec<MsgItem>>().unzip();
-        let mut msgs = cached_msg.unwrap_or_default();
+        if cache_t.is_some() {
+            interval = utils::fix_from(cache_t, interval)
+        }
+        let mut msgs;
 
-        let (from, _) = utils::fix_from(cache_t, interval);
-
-        match self.fetch_msgs(from, interval) {
+        match self.fetch_msgs(interval) {
             Ok(fetched_msgs) => {
+                msgs = cached_msg.unwrap_or_default();
                 msgs.extend(fetched_msgs);
                 msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
                 msgs.dedup_by_key(|m| m.azonosito);
 
-                if interval.0.is_none() {
+                if interval.0.is_none() && !msgs.is_empty() {
                     self.store_cache(&msgs)?;
                 }
             }
             Err(e) => {
-                error!("{e:?} while fetching messages, using only cached ones instead");
-                eprintln!("{e:?} while fetching messages, using only cached ones instead");
+                error!("couldn't reach E-Kréta server: {e:?}, only loading cached messages");
+                eprintln!("couldn't reach E-Kréta server: {e:?}, only loading cached messages");
+                msgs = cached_msg.ok_or("nothing cached")?;
             }
         }
 
@@ -346,16 +356,14 @@ impl Usr {
         Ok(())
     }
 
-    fn fetch_msgs(&self, from: Option<NaiveDate>, interval: OptIrval) -> Res<Vec<MsgItem>> {
+    fn fetch_msgs(&self, interval: OptIrval) -> Res<Vec<MsgItem>> {
         let mut fetched_msgs = Vec::new();
         let mut handles = Vec::new();
-        for msg_oview in self
-            .0
-            .fetch_msg_oviews(&self.headers()?)
-            .unwrap_or_default()
-        {
+        for msg_oview in self.0.fetch_msg_oviews(&self.headers()?)? {
             // if isn't between `from`-`to`
-            if from.is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.into())
+            if interval
+                .0
+                .is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.into())
                 || interval
                     .1
                     .is_some_and(|to| msg_oview.uzenet_kuldes_datum > to.into())
@@ -397,14 +405,21 @@ impl Usr {
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
 
-        if fix_irval {
+        if fix_irval && cached.is_some() {
             *irval = utils::fix_from(cache_t, *irval);
         }
 
         let fetched = self.fetch_vec::<Ep>(*irval);
 
         match fetched {
-            Ok(fetched_items) => Ok([cached.unwrap_or_default(), fetched_items].concat()),
+            Ok(fetched_items) => {
+                let mut cached = cached.unwrap_or_default();
+                cached.retain(|item| {
+                    item.when()
+                        .is_none_or(|dt| irval.0.is_none_or(|from| dt.date_naive() < from))
+                });
+                Ok([cached, fetched_items].concat())
+            }
             Err(e) => {
                 error!("couldn't reach E-Kréta server: {e:?}");
                 eprintln!("couldn't reach E-Kréta server: {e:?}");
