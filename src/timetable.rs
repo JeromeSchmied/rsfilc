@@ -37,9 +37,7 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool) -> Res<()> {
     Ok(())
 }
 /// Parse the day got as `argument`.
-///
 /// # errors
-///
 /// - day shifter contains invalid number.
 /// - any datetime is invalid.
 pub fn parse_day(day: &str) -> Result<NaiveDate, String> {
@@ -78,17 +76,13 @@ pub fn parse_day(day: &str) -> Result<NaiveDate, String> {
 }
 
 /// Returns the current [`Lesson`]s of this [`User`] from `lessons` which shall include today's [`Lesson`]s.
-///
 /// # Warning
-///
 /// returns a `Vec<&Lesson>`, as a person might accidentally have more than one lessons at a time
 pub fn current_lessons(lessons: &[Lesson]) -> Vec<&Lesson> {
     lessons.iter().filter(|lsn| lsn.happening()).collect()
 }
 /// Returns the next [`Lesson`] of this [`User`] from `lessons` which shall include today's [`Lesson`]s.
-///
 /// # Warning
-///
 /// There might accidentally be more next [`Lesson`]s. In this case only one of them is returned.
 /// Also, if there is any `current_lesson`, None is returned
 pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
@@ -97,8 +91,12 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     }
     lessons
         .iter()
-        .filter(|lsn| lsn.forecoming() && !lsn.kamu_smafu() && !lsn.cancelled())
+        .filter(|lsn| lsn.forecoming() && !ignore_lesson(*lsn))
         .next()
+}
+/// whether it's fake or cancelled
+fn ignore_lesson(lsn: &Lesson) -> bool {
+    lsn.kamu_smafu() || lsn.cancelled()
 }
 
 pub fn disp(lsn: &Lesson) -> String {
@@ -243,16 +241,22 @@ impl Usr {
 pub fn default_day(user: &Usr) -> NaiveDate {
     let now = Local::now();
     let today = now.date_naive();
-    let end_of_today = if let Ok(lessons) = user.get_timetable(today, false) {
-        lessons.last().map(|l| l.veg_idopont.time())
+    let end_of_today = if let Ok(mut lessons) = user.get_timetable(today, false) {
+        lessons.retain(|l| !ignore_lesson(l));
+        lessons.last().map(|l| l.veg_idopont)
     } else {
-        Some(now.time())
+        return today;
     };
 
-    // const END_OF_DAY: NaiveTime = NaiveTime::from_hms_opt(18, 0, 0).unwrap();
-    if end_of_today.is_some_and(|eot| eot < now.time()) {
-        today.checked_add_signed(TimeDelta::days(1)).unwrap()
-    } else {
-        today
+    let mut skip_days = TimeDelta::days(0);
+    if end_of_today.is_none_or(|eot| eot < now) {
+        skip_days = TimeDelta::days(1); // skipping today, as it's already done
+        while let Ok(lsns) = user.get_timetable(today + skip_days, false) {
+            if next_lesson(&lsns).is_some() {
+                break;
+            }
+            skip_days += TimeDelta::days(1);
+        }
     }
+    today + skip_days
 }
