@@ -412,14 +412,7 @@ impl Usr {
         let fetched = self.fetch_vec::<Ep>(*irval);
 
         match fetched {
-            Ok(fetched_items) => {
-                let mut cached = cached.unwrap_or_default();
-                cached.retain(|item| {
-                    item.when()
-                        .is_none_or(|dt| irval.0.is_none_or(|from| dt.date_naive() <= from))
-                });
-                Ok([cached, fetched_items].concat())
-            }
+            Ok(fetched_items) => Ok([cached.unwrap_or_default(), fetched_items].concat()),
             Err(e) => {
                 error!("couldn't reach E-Kréta server: {e:?}");
                 eprintln!("couldn't reach E-Kréta server: {e:?}");
