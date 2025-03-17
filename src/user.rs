@@ -416,7 +416,7 @@ impl Usr {
                 let mut cached = cached.unwrap_or_default();
                 cached.retain(|item| {
                     item.when()
-                        .is_none_or(|dt| irval.0.is_none_or(|from| dt.date_naive() < from))
+                        .is_none_or(|dt| irval.0.is_none_or(|from| dt.date_naive() <= from))
                 });
                 Ok([cached, fetched_items].concat())
             }
