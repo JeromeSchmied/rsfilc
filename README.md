@@ -1,6 +1,6 @@
 # [RozsdásFilc](https://codeberg.org/jark/rsfilc): [`E-Kréta`](https://www.e-kreta.hu/) console client in [Rust](https://rust-lang.org)
 
-> `E-Kréta` is an awful Hungarian electronic school administration system
+> `E-Kréta` is an awful Hungarian electronic school administration system, really!
 
 > [Magyar leírás](README.hu.md)
 
