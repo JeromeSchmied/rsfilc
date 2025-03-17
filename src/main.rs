@@ -149,5 +149,6 @@ fn set_up_logger(verbose: bool) -> Res<()> {
         })
         .chain(OpenOptions::new().create(true).append(true).open(path)?)
         .apply()?;
+    eprintln!("set upt logger");
     Ok(())
 }
