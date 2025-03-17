@@ -2,9 +2,8 @@
 
 use crate::{fill, time::MyDate, user::Usr};
 use chrono::{Datelike, Duration, Local, NaiveDate, TimeDelta};
-use ekreta::{LDateTime, Lesson, Res};
+use ekreta::{AnnouncedTest, LDateTime, Lesson, Res};
 use log::*;
-use std::fmt::Write;
 
 pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> Res<()> {
     let day = day.unwrap_or(default_day(user));
@@ -113,50 +112,58 @@ fn ignore_lesson(lsn: &Lesson) -> bool {
 }
 
 /// you may want to check `lsn` validity: `lsn.kamu_smafu()`
-pub fn display(lsn: &Lesson) -> String {
-    let mut f = String::new();
-    _ = write!(&mut f, "{}", lsn.nev);
-    if let Some(room) = &lsn.terem_neve {
-        _ = writeln!(&mut f, ", {}", room.replace("terem", "").trim());
-    }
+pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>) -> Vec<String> {
+    let cancelled = if lsn.cancelled() {
+        let past_morpheme = if lsn.forecoming() { "" } else { "t" };
+        format!("elmarad{}: ", past_morpheme)
+    } else {
+        String::new()
+    };
+    let topic = lsn
+        .tema
+        .clone()
+        .map(|t| [": ", t.as_str()].concat())
+        .unwrap_or_default();
+    let name = format!("{cancelled}{}{topic}", lsn.nev);
+    let room = lsn
+        .clone()
+        .terem_neve
+        .unwrap_or_default()
+        .replace("terem", "")
+        .trim()
+        .to_string();
+    let teacher = if let Some(sub_teacher) = &lsn.helyettes_tanar_neve {
+        format!("helyettes: {sub_teacher}")
+    } else {
+        lsn.tanar_neve.clone().unwrap_or_default()
+    };
+    let from = if next_lesson(&past_lessons).is_some_and(|nxt| nxt == lsn) {
+        format!("{} perc", mins_till(lsn.kezdet_idopont))
+    } else {
+        lsn.kezdet_idopont.format("%H:%M").to_string()
+    };
+    let to = if lsn.happening() {
+        format!("{} perc", mins_till(lsn.veg_idopont))
+    } else {
+        lsn.veg_idopont.format("%H:%M").to_string()
+    };
+    let num = format!("{}.", lsn.oraszam.unwrap_or(u8::MAX));
 
-    _ = writeln!(
-        f,
-        "| {} -> {}",
-        lsn.kezdet_idopont.format("%H:%M"),
-        lsn.veg_idopont.format("%H:%M")
-    );
-
-    if let Some(tema) = &lsn.tema {
-        _ = writeln!(&mut f, "| {tema}");
-    }
-
+    let mut row = vec![num, name, room, from, to, teacher];
     if lsn.absent() {
-        _ = writeln!(&mut f, "| Ezen az órán nem voltál jelen.");
+        row.push("hiányoztál".to_string());
+    };
+    if let Some(existing_test) = test {
+        let topic = if let Some(topic) = existing_test.temaja.as_ref() {
+            format!(": {topic}")
+        } else {
+            String::new()
+        };
+        let test = format!("{}{}", existing_test.modja.leiras, topic);
+        row.push(test);
     }
 
-    if lsn.cancelled() {
-        _ = writeln!(&mut f, "| Ez az óra elmarad{}.", {
-            if lsn.forecoming() {
-                ""
-            } else {
-                "t"
-            }
-        });
-    }
-
-    if let Some(teacher) = &lsn.tanar_neve {
-        // only show teacher, if there is no alternative one
-        if lsn.helyettes_tanar_neve.is_none() {
-            _ = write!(&mut f, "| {teacher}");
-        }
-    }
-
-    if let Some(helyettes_tanar) = &lsn.helyettes_tanar_neve {
-        _ = write!(&mut f, "| Helyettesítő tanár: {helyettes_tanar}");
-    }
-
-    f
+    row
 }
 
 impl Usr {
@@ -173,11 +180,20 @@ impl Usr {
         };
         println!("{header}");
         fill(&header, '|', "");
+
         let tests = self.get_tests((None, None)).unwrap_or_default();
         let all_lessons_till_day = self
             .get_timetable(day_start.date_naive(), true)
             .unwrap_or_default();
 
+        let mut table = ascii_table::AsciiTable::default();
+        #[rustfmt::skip]
+        let headers = ["szám", "tantárgy", "terem", "mettől", "meddig", "tanár", "extra", "extra-extra"];
+        for (i, head) in headers.into_iter().enumerate() {
+            table.column(i).set_header(head);
+        }
+
+        let mut data = vec![];
         for (n, lsn) in lessons.iter().enumerate() {
             // calculate `n`. this lesson is
             let nth = lsn.oraszam.unwrap_or(u8::MAX);
@@ -186,46 +202,33 @@ impl Usr {
                     .get(n.overflowing_sub(1).0)
                     .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
             {
-                let no_lesson_buf = format!(
-                        "\n\n{}. Lyukas (avagy Lukas) óra\n| Erre az időpontra nincsen tanóra rögzítve.",
-                        n + 1
-                    );
-                println!("{no_lesson_buf}");
-                fill(&no_lesson_buf, '^', "ojjé");
+                let fake = get_empty(Some(n as u8 + 1), None, None);
+                data.push(disp(&fake, &all_lessons_till_day, None));
             }
-            // so fill() works fine
-            let mut printer = format!("\n\n{nth}. {}", display(lsn));
-
-            if let Some(Some(test)) = lsn
+            let ancd_test = lsn
                 .bejelentett_szamonkeres_uid
                 .as_ref()
                 .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
-            {
-                printer += &format!(
-                    "\n| {}{}",
-                    test.modja.leiras,
-                    if let Some(topic) = test.temaja.as_ref() {
-                        format!(": {topic}")
-                    } else {
-                        String::new()
-                    }
-                );
-            }
-            println!("{printer}");
-
-            let (with, inlay_hint) = if lsn.happening() {
-                ('$', format!("{} perc", mins_till(lsn.veg_idopont)))
-            } else if next_lesson(&all_lessons_till_day).is_some_and(|nxt| nxt == lsn) {
-                ('>', format!("{} perc", mins_till(lsn.kezdet_idopont)))
-            } else if lsn.cancelled() {
-                let past_morpheme = if lsn.forecoming() { "" } else { "t" };
-                ('X', format!("elmarad{past_morpheme}"))
-            } else {
-                ('-', String::new())
-            };
-            fill(&printer, with, inlay_hint);
+                .unwrap_or_default();
+            let row = disp(lsn, &all_lessons_till_day, ancd_test);
+            data.push(row);
         }
+        table.print(data);
     }
+}
+
+fn get_empty(n: Option<u8>, start: Option<LDateTime>, end: Option<LDateTime>) -> Lesson {
+    let mut empty = Lesson::default();
+    empty.nev = String::from("lukas");
+    empty.tema = Some(String::from("lazíts!"));
+    empty.oraszam = n;
+    if let Some(start) = start {
+        empty.kezdet_idopont = start;
+    }
+    if let Some(end) = end {
+        empty.veg_idopont = end;
+    }
+    empty
 }
 
 pub fn default_day(user: &Usr) -> NaiveDate {
