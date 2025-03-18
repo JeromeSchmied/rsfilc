@@ -70,35 +70,6 @@ pub fn fill(this: &str, with: char, hint: impl std::fmt::Display) {
     println!("{left_pad}{inlay_hint}{right_pad}");
 }
 
-/// print `items` using `to_str`
-pub fn print_them_basic<T>(items: impl Iterator<Item = T>, to_str: impl Fn(T) -> String) {
-    for item in items {
-        let as_str = to_str(item);
-        println!("\n\n{as_str}");
-        fill(&as_str, '-', "");
-    }
-}
-
-/// print `num` `items` using `to_str`, reversed if `rev` otherwise not
-pub fn print_to_or_rev<T, F>(items: &[T], num: usize, rev: bool, to_str: Option<F>) -> Res<()>
-where
-    T: serde::Serialize,
-    F: Fn(&T) -> String,
-{
-    let iter: Box<dyn Iterator<Item = &T>> = if rev {
-        Box::new(items.iter().rev())
-    } else {
-        Box::new(items.iter())
-    };
-    if let Some(to_str) = to_str {
-        print_them_basic(iter.take(num), to_str);
-    } else {
-        let data = serde_json::to_string(&iter.take(num).collect::<Vec<_>>())?;
-        println!("{data}");
-    }
-    Ok(())
-}
-
 /// print `num` `items` using `to_str`, reversed if `rev` otherwise not
 pub fn print_table<T, S1, I, F>(
     items: &[T],

@@ -88,8 +88,12 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             evals::handle(&user, filter, subj, &ghost, average, &args)?;
         }
 
-        Command::Messages { notes } => {
-            messages::handle(notes, &user, &args)?;
+        Command::Messages { notes, id } => {
+            if notes {
+                messages::handle_note_msgs(&user, id, &args)?;
+            } else {
+                messages::handle(&user, id, &args)?;
+            }
         }
 
         Command::Absences { count, subject } => {

@@ -74,6 +74,8 @@ pub enum Command {
         /// show additional notes/system messages
         #[arg(long, default_value_t = false)]
         notes: bool,
+        /// id of the message to render
+        id: Option<usize>,
     },
 
     /// information about lessons the user missed
