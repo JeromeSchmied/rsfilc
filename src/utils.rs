@@ -45,31 +45,6 @@ macro_rules! gen_get_for {
     };
 }
 
-/// Fill under `this` with many `with` [`char`]s, inlaying `hint` if any.
-///
-/// this:   "123456789" <- len: 9
-/// with:   '#'
-/// hint:   "bab" <- len: 3
-///
-/// so:     "123456789" <- len: 9
-/// result: "12 bab 89" <- len: 9
-pub fn fill(this: &str, with: char, hint: impl std::fmt::Display) {
-    let longest = this.lines().map(|l| l.chars().count()).max().unwrap_or(0);
-    let hint = hint.to_string();
-    let inlay_hint = if hint.is_empty() {
-        String::new()
-    } else {
-        [" ", &hint, " "].concat()
-    };
-
-    let hint_len = inlay_hint.chars().count();
-    let left_len = (longest - hint_len) / 2;
-    let with = with.to_string();
-    let left_pad = with.repeat(left_len);
-    let right_pad = with.repeat(longest - left_len - hint_len);
-    println!("{left_pad}{inlay_hint}{right_pad}");
-}
-
 /// print `num` `items` using `to_str`, reversed if `rev` otherwise not
 pub fn print_table<T, S1, I, F>(
     items: &[T],

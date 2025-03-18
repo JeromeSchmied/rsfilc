@@ -1,6 +1,6 @@
 //! lessons the student has
 
-use crate::{fill, time::MyDate, user::Usr};
+use crate::{time::MyDate, user::Usr};
 use chrono::{Datelike, Duration, Local, NaiveDate, TimeDelta};
 use ekreta::{AnnouncedTest, LDateTime, Lesson, Res};
 use log::*;
@@ -181,7 +181,6 @@ impl Usr {
             format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty(),)
         };
         println!("{header}");
-        fill(&header, '|', "");
 
         let tests = self.get_tests((None, None)).unwrap_or_default();
         let all_lessons_till_day = self

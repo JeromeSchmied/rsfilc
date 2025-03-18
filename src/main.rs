@@ -8,7 +8,6 @@ use paths::cache_dir;
 use std::fs::OpenOptions;
 use std::io;
 use user::Usr;
-use utils::fill;
 
 mod absences;
 mod announced;
