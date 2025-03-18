@@ -137,7 +137,8 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
     } else {
         lsn.tanar_neve.clone().unwrap_or_default()
     };
-    let from = if next_lesson(&past_lessons).is_some_and(|nxt| nxt == lsn) {
+    let mins_to_start = mins_till(lsn.kezdet_idopont);
+    let from = if next_lesson(&past_lessons).is_some_and(|nxt| nxt == lsn) && mins_to_start < 120 {
         format!("{} perc", mins_till(lsn.kezdet_idopont))
     } else {
         lsn.kezdet_idopont.format("%H:%M").to_string()
@@ -147,9 +148,10 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
     } else {
         lsn.veg_idopont.format("%H:%M").to_string()
     };
-    let num = format!("{}.", lsn.oraszam.unwrap_or(u8::MAX));
+    let date_time = [from, to].join(" - ");
+    let num = lsn.oraszam.unwrap_or(u8::MAX).to_string();
 
-    let mut row = vec![num, name, room, from, to, teacher];
+    let mut row = vec![num, name, room, date_time, teacher];
     if lsn.absent() {
         row.push("hiányoztál".to_string());
     };
@@ -188,7 +190,7 @@ impl Usr {
 
         let mut table = ascii_table::AsciiTable::default();
         #[rustfmt::skip]
-        let headers = ["szám", "tantárgy", "terem", "mettől", "meddig", "tanár", "extra", "extra-extra"];
+        let headers = [".", "tantárgy", "terem", "ekkor", "tanár", "extra", "extra-extra"];
         for (i, head) in headers.into_iter().enumerate() {
             table.column(i).set_header(head);
         }
