@@ -108,7 +108,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
 }
 /// whether it's fake or cancelled
 fn ignore_lesson(lsn: &Lesson) -> bool {
-    lsn.kamu_smafu() || lsn.cancelled()
+    lsn.kamu_smafu() || lsn.cancelled() || lsn.nev == EMPTY_NAME
 }
 
 /// you may want to check `lsn` validity: `lsn.kamu_smafu()`
@@ -204,8 +204,10 @@ impl Usr {
                     .get(n.overflowing_sub(1).0)
                     .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
             {
-                let fake = get_empty(Some(n as u8 + 1), None, None);
-                data.push(disp(&fake, &all_lessons_till_day, None));
+                let empty_n = n as u8 + 1;
+                let (from, to) = nth_lesson_when(empty_n, &all_lessons_till_day);
+                let empty = get_empty(Some(empty_n), from, to);
+                data.push(disp(&empty, &all_lessons_till_day, None));
             }
             let ancd_test = lsn
                 .bejelentett_szamonkeres_uid
@@ -219,9 +221,13 @@ impl Usr {
     }
 }
 
+/// name given to an empty lesson
+const EMPTY_NAME: &str = "lukas";
+
+/// create a good-looking empty lesson, using the given properties
 fn get_empty(n: Option<u8>, start: Option<LDateTime>, end: Option<LDateTime>) -> Lesson {
     let mut empty = Lesson::default();
-    empty.nev = String::from("lukas");
+    empty.nev = String::from(EMPTY_NAME);
     empty.tema = Some(String::from("lazíts!"));
     empty.oraszam = n;
     if let Some(start) = start {
@@ -231,6 +237,13 @@ fn get_empty(n: Option<u8>, start: Option<LDateTime>, end: Option<LDateTime>) ->
         empty.veg_idopont = end;
     }
     empty
+}
+
+/// When could this (empty) lesson take place?
+fn nth_lesson_when(n: u8, ref_lessons: &[Lesson]) -> (Option<LDateTime>, Option<LDateTime>) {
+    let same_n = |l: &&Lesson| l.oraszam.is_some_and(|ln| ln == n);
+    let extract_irval = |j: &Lesson| (j.kezdet_idopont, j.veg_idopont);
+    ref_lessons.iter().find(same_n).map(extract_irval).unzip()
 }
 
 pub fn default_day(user: &Usr) -> NaiveDate {
