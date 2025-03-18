@@ -23,54 +23,48 @@ pub fn handle_note_msgs(user: &Usr, id: Option<usize>, args: &crate::Args) -> Re
 }
 
 pub fn handle(user: &Usr, id: Option<usize>, args: &crate::Args) -> Res<()> {
-    let msgs = user.msgs((None, None))?;
+    let msg_oviews = user.fetch_msg_oviews()?;
     if let Some(ix) = id {
-        let Some(msg) = msgs.get(ix) else {
-            return Err(format!("can't find message with id: {ix}").into());
-        };
-        let print = disp_msg(msg);
+        let msg_oview = msg_oviews
+            .get(ix)
+            .ok_or(format!("can't find message with id: {ix}"))?;
+        let msg = user.get_msg(msg_oview)?;
+        let print = disp_msg(&msg);
         println!("{print}");
         return Ok(());
     }
 
-    let data = msgs.iter().enumerate().collect::<Vec<_>>();
-    let headers = ["id", "tárgya", "tőle", "ekkor", "ilyen", "csatolmány db"].iter();
+    let data = msg_oviews.iter().enumerate().collect::<Vec<_>>();
+    let headers = ["id", "tárgya", "tőle", "ekkor", "csatolmánya"].iter();
     #[rustfmt::skip]
-    let disp = if args.machine { None } else { Some(preview_msg) };
+    let disp = if args.machine { None } else { Some(disp_oviews) };
     utils::print_table(&data, headers, args.reverse, args.number, disp)
 }
 
-// impl fmt::Display for MsgOverview {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         writeln!(f, "{}", self.sent().format("%Y/%m/%d %H:%M"))?;
-//         writeln!(f, "{}", self.uzenet_targy)?;
-//         // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
-//         // if !self.is_elolvasva {
-//         //     writeln!(f, "Olvasatlan")?;
-//         // }
-//         Ok(())
-//     }
-// }
-
-pub fn download_attachment_to(am: &ekreta::Attachment) -> std::path::PathBuf {
-    download_dir().join(am.fajl_nev.replace(char::is_whitespace, "_"))
-}
-
-fn preview_msg(preview: &(usize, &ekreta::MsgItem)) -> Vec<String> {
+fn disp_oviews(preview: &(usize, &ekreta::MsgOview)) -> Vec<String> {
     let msg = preview.1;
-    let subj = msg.uzenet.targy.clone();
-    let attachment_count = msg.uzenet.csatolmanyok.len().to_string();
-
-    let kind = msg.tipus.nev.replace(" üzenet", "");
     let datetime = msg
-        .uzenet
-        .kuldes_datum
+        .uzenet_kuldes_datum
         .and_local_timezone(chrono::Local)
         .unwrap()
         .pretty();
-    let sender = format!("{} {}", msg.uzenet.felado_nev, msg.uzenet.felado_titulus);
+    let subj = msg.uzenet_targy.clone();
+    let prefix = msg.uzenet_felado_nev.clone().unwrap_or_default();
+    let name = msg.uzenet_felado_titulus.clone().unwrap_or_default();
+    let sender = format!("{prefix} {name}");
+    // if !msg_oview.is_elolvasva {
+    //     writeln!(f, "Olvasatlan")?;
+    // }
     let n = preview.0.to_string();
-    vec![n, subj, sender, kind, datetime, attachment_count]
+    let mut row = vec![n, subj, sender, datetime];
+    if msg.has_csatolmany {
+        row.push(String::from("van"));
+    }
+    row
+}
+
+pub fn download_attachment_to(am: &ekreta::Attachment) -> std::path::PathBuf {
+    download_dir().join(am.fajl_nev.replace(char::is_whitespace, "_"))
 }
 
 pub fn disp_msg(msg: &ekreta::MsgItem) -> String {

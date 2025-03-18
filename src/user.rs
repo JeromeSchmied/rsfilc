@@ -3,7 +3,7 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
     consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
-    OptIrval, Token,
+    MsgOview, OptIrval, Token,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
@@ -171,7 +171,7 @@ impl Usr {
         self.0.fetch_vec(query, &self.headers()?)
     }
     /// get headers which are necessary for making certain requests
-    fn headers(&self) -> Res<HeaderMap> {
+    pub fn headers(&self) -> Res<HeaderMap> {
         Ok(HeaderMap::from_iter([
             (
                 header::AUTHORIZATION,
@@ -301,88 +301,50 @@ impl Usr {
         Ok(())
     }
 
-    /// Fetch max `n` [`Msg`]s between `from` and `to`.
+    /// Fetch [`Msg`]s between `from` and `to`.
     /// Also download all `[Attachment]`s each [`Msg`] has.
-    ///
     /// # Errors
-    ///
     /// - net
-    pub fn msgs(&self, mut interval: OptIrval) -> Res<Vec<MsgItem>> {
-        let (cache_t, cached_msg) = self.load_cache::<Vec<MsgItem>>().unzip();
-        if cache_t.is_some() {
-            interval = utils::fix_from(cache_t, interval)
+    pub fn get_msg(&self, oview: &MsgOview) -> Res<MsgItem> {
+        let (_, cached_msgs) = self.load_cache::<Vec<MsgItem>>().unzip();
+        let mut cached_msgs = cached_msgs.unwrap_or_default();
+        eprintln!("loaded cached msgs");
+
+        if let Some(cache_hit) = cached_msgs.iter().find(|j| j.azonosito == oview.azonosito) {
+            return Ok(cache_hit.clone());
         }
-        let mut msgs;
+        let fetched_msg = self.0.fetch_full_msg(Some(oview), &self.headers()?)?;
 
-        match self.fetch_msgs(interval) {
-            Ok(fetched_msgs) => {
-                msgs = cached_msg.unwrap_or_default();
-                msgs.extend(fetched_msgs);
-                msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
-                msgs.dedup_by_key(|m| m.azonosito);
+        cached_msgs.push(fetched_msg.clone());
+        cached_msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
+        cached_msgs.dedup_by_key(|m| m.azonosito);
+        self.store_cache(&cached_msgs)?;
+        self.download_all_attachments(&fetched_msg)?;
 
-                if interval.0.is_none() && !msgs.is_empty() {
-                    self.store_cache(&msgs)?;
+        Ok(fetched_msg)
+    }
+
+    fn download_all_attachments(&self, msg: &MsgItem) -> Res<()> {
+        self.download_attachments(&msg)
+            .inspect_err(|e| error!("couldn't fetch from E-Kréta server: {e:?}"))
+    }
+
+    pub fn fetch_msg_oviews(&self) -> Res<Vec<MsgOview>> {
+        match self.0.fetch_msg_oviews(&self.headers()?) {
+            Ok(mut msg_oviews) => {
+                msg_oviews.sort_unstable_by_key(|a| a.uzenet_kuldes_datum);
+                if !msg_oviews.is_empty() {
+                    self.store_cache(&msg_oviews)?;
                 }
+                Ok(msg_oviews)
             }
             Err(e) => {
                 error!("couldn't reach E-Kréta server: {e:?}, only loading cached messages");
                 eprintln!("couldn't reach E-Kréta server: {e:?}, only loading cached messages");
-                msgs = cached_msg.ok_or("nothing cached")?;
+                let (_t, cached_msg_oviews) = self.load_cache().ok_or("nothing cached")?;
+                Ok(cached_msg_oviews)
             }
         }
-
-        self.download_all_attachments(&msgs)?;
-
-        Ok(msgs)
-    }
-
-    fn download_all_attachments(&self, msgs: &[MsgItem]) -> Res<()> {
-        let mut am_handles = Vec::new();
-        for msg in msgs.to_owned() {
-            let usr = self.clone();
-            let xl = std::thread::spawn(move || {
-                usr.download_attachments(&msg)
-                    .inspect_err(|e| error!("couldn't fetch from E-Kréta server: {e:?}"))
-                    .unwrap();
-            });
-            am_handles.push(xl);
-        }
-        for h in am_handles {
-            let j = h.join();
-            j.map_err(|e| *e.downcast::<String>().unwrap())?;
-        }
-        Ok(())
-    }
-
-    fn fetch_msgs(&self, interval: OptIrval) -> Res<Vec<MsgItem>> {
-        let mut fetched_msgs = Vec::new();
-        let mut handles = Vec::new();
-        for msg_oview in self.0.fetch_msg_oviews(&self.headers()?)? {
-            // if isn't between `from`-`to`
-            if interval
-                .0
-                .is_some_and(|fm| msg_oview.uzenet_kuldes_datum < fm.into())
-                || interval
-                    .1
-                    .is_some_and(|to| msg_oview.uzenet_kuldes_datum > to.into())
-            {
-                continue;
-            }
-            let s = self.clone();
-            let h = std::thread::spawn(move || {
-                s.0.fetch_full_msg(Some(&msg_oview), &s.headers().unwrap())
-                    .inspect_err(|e| {
-                        warn!("couldn't fetch from E-Kréta server: {e:?}");
-                    })
-                    .unwrap()
-            });
-            handles.push(h);
-        }
-        for h in handles {
-            fetched_msgs.push(h.join().map_err(|e| *e.downcast::<String>().unwrap())?);
-        }
-        Ok(fetched_msgs)
     }
 
     gen_get_for! { get_note_msgs, ekreta::NoteMsg, false,
