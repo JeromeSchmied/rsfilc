@@ -1,12 +1,9 @@
 use args::{Args, Command};
-use chrono::Local;
 use clap::{CommandFactory, Parser};
 use config::Config;
 use ekreta::Res;
 use log::*;
-use paths::cache_dir;
 use std::fs::OpenOptions;
-use std::io;
 use user::Usr;
 
 mod absences;
@@ -41,7 +38,8 @@ fn main() -> Res<()> {
 fn run(args: Args, conf: &mut Config) -> Res<()> {
     if args.command.is_none() {
         if args.cache_dir {
-            println!("{}", cache_dir("").ok_or("no cache dir found")?.display());
+            let cache_dir = paths::cache_dir("").ok_or("no cache dir found")?;
+            println!("{}", cache_dir.display());
             return Ok(());
         }
         if args.config_path {
@@ -67,7 +65,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
     match command {
         Command::Completions { shell: sh } => {
             info!("creating shell completions for {sh}");
-            clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut io::stdout());
+            clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
             return Ok(());
         }
         Command::Tui {} => {
@@ -129,7 +127,7 @@ fn set_up_logger(verbose: bool) -> Res<()> {
         .format(|out, message, record| {
             out.finish(format_args!(
                 "{} [{}] {} {message}",
-                Local::now(),
+                chrono::Local::now(),
                 record.level(),
                 record.target(),
             ));

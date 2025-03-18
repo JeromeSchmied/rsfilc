@@ -1,6 +1,6 @@
 use crate::{config::Config, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{Datelike, Days, NaiveDate};
+use chrono::{Datelike, Days, Local, NaiveDate};
 use ekreta::{
     consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
     OptIrval, Token,
