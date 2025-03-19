@@ -1,7 +1,7 @@
 //! messages from teachers and staff
 
 use crate::{paths::download_dir, time::MyDate, user::Usr, utils};
-use ekreta::Res;
+use ekreta::{Endpoint, Res};
 use std::{char, fmt::Write};
 
 pub fn handle_note_msgs(user: &Usr, id: Option<usize>, args: &crate::Args) -> Res<()> {
@@ -43,11 +43,7 @@ pub fn handle(user: &Usr, id: Option<usize>, args: &crate::Args) -> Res<()> {
 
 fn disp_oviews(preview: &(usize, &ekreta::MsgOview)) -> Vec<String> {
     let msg = preview.1;
-    let datetime = msg
-        .uzenet_kuldes_datum
-        .and_local_timezone(chrono::Local)
-        .unwrap()
-        .pretty();
+    let datetime = msg.when().unwrap().pretty();
     let subj = msg.uzenet_targy.clone();
     let prefix = msg.uzenet_felado_nev.clone().unwrap_or_default();
     let name = msg.uzenet_felado_titulus.clone().unwrap_or_default();
@@ -71,28 +67,13 @@ pub fn disp_msg(msg: &ekreta::MsgItem) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| Tárgy: {}", msg.uzenet.targy);
     for am in &msg.uzenet.csatolmanyok {
-        _ = writeln!(
-            &mut f,
-            "| Csatolmány: \"file://{}\"",
-            download_attachment_to(am).display()
-        );
+        let out_path = download_attachment_to(am);
+        _ = writeln!(&mut f, "| Csatolmány: \"file://{}\"", out_path.display());
     }
-
-    _ = writeln!(
-        &mut f,
-        "| {}: {}",
-        msg.tipus.nev,
-        &msg.uzenet
-            .kuldes_datum
-            .and_local_timezone(chrono::Local)
-            .unwrap()
-            .pretty()
-    );
-    _ = writeln!(
-        &mut f,
-        "| Feladó: {} {}",
-        msg.uzenet.felado_nev, msg.uzenet.felado_titulus
-    );
+    let name = &msg.tipus.nev;
+    _ = writeln!(&mut f, "| {name}: {}", msg.when().unwrap().pretty());
+    let sender = &msg.uzenet.felado_nev;
+    _ = writeln!(&mut f, "| Feladó: {sender} {}", msg.uzenet.felado_titulus);
     let rendered = nanohtml2text::html2text(&msg.uzenet.szoveg);
     _ = write!(&mut f, "\n{rendered}");
     // if !msg.is_elolvasva {
