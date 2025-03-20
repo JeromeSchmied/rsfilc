@@ -231,7 +231,7 @@ impl Usr {
         let fresh_cache = |ct: ekreta::LDateTime| (ct - Local::now()).abs() < TimeDelta::seconds(8);
         if whole_week && lessons.iter().any(is_cached) && cache_t.is_some_and(fresh_cache) {
             debug!("warm lesson cache hit (< 8s), using instead of fetching");
-            return Ok(lessons.iter().cloned().filter(is_cached).collect());
+            return Ok(lessons.into_iter().filter(is_cached).collect());
         }
 
         let mut fetch_err = false;
