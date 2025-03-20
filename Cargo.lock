@@ -70,7 +70,8 @@ dependencies = [
 [[package]]
 name = "ascii_table"
 version = "4.0.6"
-source = "git+https://gitlab.com/d5b4b2/ascii-table#6b6ae1eaf2e3aaca488cfb547f2827c2108e0284"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8bc070afe45e3d9e628b82d77d61c90531dc6997b341d57715b82461af415669"
 dependencies = [
  "termsize",
 ]
@@ -157,9 +158,9 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "4.5.46"
+version = "4.5.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5c5508ea23c5366f77e53f5a0070e5a84e51687ec3ef9e0464c86dc8d13ce98"
+checksum = "c06f5378ea264ad4f82bbc826628b5aad714a75abf6ece087e923010eb937fb6"
 dependencies = [
  "clap",
 ]
