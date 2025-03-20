@@ -10,7 +10,11 @@ pub fn handle_note_msgs(user: &Usr, id: Option<usize>, args: &crate::Args) -> Re
         let Some(nm) = notes.get(ix) else {
             return Err(format!("can't find message with id: {ix}").into());
         };
-        let print = disp_nm(nm);
+        let print = if args.machine {
+            serde_json::to_string(nm)?
+        } else {
+            disp_nm(nm)
+        };
         println!("{print}");
         return Ok(());
     }
@@ -29,7 +33,11 @@ pub fn handle(user: &Usr, id: Option<usize>, args: &crate::Args) -> Res<()> {
             .get(ix)
             .ok_or(format!("can't find message with id: {ix}"))?;
         let msg = user.get_msg(msg_oview)?;
-        let print = disp_msg(&msg);
+        let print = if args.machine {
+            serde_json::to_string(&msg)?
+        } else {
+            disp_msg(&msg)
+        };
         println!("{print}");
         return Ok(());
     }
