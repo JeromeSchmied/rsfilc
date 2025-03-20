@@ -172,11 +172,9 @@ impl Usr {
     }
     /// get headers which are necessary for making certain requests
     pub fn headers(&self) -> Res<HeaderMap> {
+        let token = self.get_token()?.access_token;
         Ok(HeaderMap::from_iter([
-            (
-                header::AUTHORIZATION,
-                format!("Bearer {}", self.get_token()?.access_token).parse()?,
-            ),
+            (header::AUTHORIZATION, format!("Bearer {token}").parse()?),
             (header::USER_AGENT, consts::USER_AGENT.parse()?),
         ]))
     }
