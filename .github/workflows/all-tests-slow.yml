@@ -1,0 +1,12 @@
+name: Run tests
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "**/*.md"
+
+jobs:
+  run-tests-for-all-combinations:
+    uses: ./.github/workflows/build-artifacts-and-run-tests.yml

@@ -1,0 +1,98 @@
+# This is a reusable workflow
+
+name: Build artifacts and run tests
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+
+jobs:
+  build-artifacts-and-run-tests:
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    env:
+      CARGO: cargo
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          # native
+          - x86_64-unknown-linux-gnu
+          - x86_64-pc-windows-msvc
+          - aarch64-pc-windows-msvc
+          - x86_64-apple-darwin
+          # cross
+          - aarch64-unknown-linux-gnu
+          # cargo-ndk
+          - aarch64-linux-android
+
+        include:
+          # runner overrides
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - target: aarch64-pc-windows-msvc
+            os: windows-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          # targets that use cross
+          - target: aarch64-unknown-linux-gnu
+            use-cross: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal -t ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.use-cross
+        run: |
+          pushd "$(mktemp -d)"
+          wget https://github.com/cross-rs/cross/releases/download/v0.2.4/cross-x86_64-unknown-linux-musl.tar.gz
+          tar xf cross-x86_64-unknown-linux-musl.tar.gz
+          cp cross ~/.cargo/bin
+          popd
+          echo CARGO=cross >> $GITHUB_ENV
+
+      - name: Install cargo-ndk
+        if: matrix.target == 'aarch64-linux-android'
+        run: |
+          rustup target add aarch64-linux-android
+          cargo install cargo-ndk
+          
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+          cache-targets: true
+          cache-on-failure: true
+
+      # - name: Test on stable
+      #   # there's no way to run tests for ARM64 Windows for now
+      #   if: matrix.target != 'aarch64-pc-windows-msvc'
+      #   run: |
+      #     ${{ env.CARGO }} +stable test --profile fast --target ${{ matrix.target }}
+
+      - name: Build release artifacts
+        shell: bash
+        run: |
+          if [[ "${{ matrix.target }}" == "aarch64-linux-android" ]]; then
+            cargo ndk -t arm64-v8a build --release
+          else
+            ${{ env.CARGO }} +stable build --release --target ${{ matrix.target }}
+          fi
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rsfilc-${{ matrix.target }}
+          path: |
+            target/${{ matrix.target }}/release/rsfilc
+            target/${{ matrix.target }}/release/rsfilc.exe
