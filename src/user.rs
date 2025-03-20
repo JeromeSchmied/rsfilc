@@ -325,7 +325,7 @@ impl Usr {
     }
 
     fn download_all_attachments(&self, msg: &MsgItem) -> Res<()> {
-        self.download_attachments(&msg)
+        self.download_attachments(msg)
             .inspect_err(|e| error!("couldn't fetch from E-Kréta server: {e:?}"))
     }
 

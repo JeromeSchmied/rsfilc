@@ -104,7 +104,7 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     }
     lessons
         .iter()
-        .find(|lsn| lsn.forecoming() && !ignore_lesson(*lsn))
+        .find(|lsn| lsn.forecoming() && !ignore_lesson(lsn))
 }
 /// whether it's fake or cancelled
 fn ignore_lesson(lsn: &Lesson) -> bool {
@@ -115,7 +115,7 @@ fn ignore_lesson(lsn: &Lesson) -> bool {
 pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>) -> Vec<String> {
     let cancelled = if lsn.cancelled() {
         let past_morpheme = if lsn.forecoming() { "" } else { "t" };
-        format!("elmarad{}: ", past_morpheme)
+        format!("elmarad{past_morpheme}: ")
     } else {
         String::new()
     };
@@ -138,7 +138,7 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
         lsn.tanar_neve.clone().unwrap_or_default()
     };
     let mins_to_start = mins_till(lsn.kezdet_idopont);
-    let from = if next_lesson(&past_lessons).is_some_and(|nxt| nxt == lsn) && mins_to_start < 120 {
+    let from = if next_lesson(past_lessons).is_some_and(|nxt| nxt == lsn) && mins_to_start < 120 {
         format!("{} perc", mins_till(lsn.kezdet_idopont))
     } else {
         lsn.kezdet_idopont.format("%H:%M").to_string()
@@ -176,7 +176,7 @@ impl Usr {
         };
         let day_start = first_lesson.kezdet_idopont;
         let header = if first_lesson.kamu_smafu() {
-            format!("{}", lessons.remove(0).nev)
+            lessons.remove(0).nev.clone()
         } else {
             format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty(),)
         };
@@ -225,17 +225,14 @@ const EMPTY_NAME: &str = "lukas";
 
 /// create a good-looking empty lesson, using the given properties
 fn get_empty(n: Option<u8>, start: Option<LDateTime>, end: Option<LDateTime>) -> Lesson {
-    let mut empty = Lesson::default();
-    empty.nev = String::from(EMPTY_NAME);
-    empty.tema = Some(String::from("lazíts!"));
-    empty.oraszam = n;
-    if let Some(start) = start {
-        empty.kezdet_idopont = start;
+    Lesson {
+        nev: EMPTY_NAME.to_string(),
+        tema: Some(String::from("lazíts!")),
+        oraszam: n,
+        kezdet_idopont: start.unwrap_or_default(),
+        veg_idopont: end.unwrap_or_default(),
+        ..Default::default()
     }
-    if let Some(end) = end {
-        empty.veg_idopont = end;
-    }
-    empty
 }
 
 /// When could this (empty) lesson take place?
