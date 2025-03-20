@@ -7,7 +7,7 @@ use log::*;
 
 pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> Res<()> {
     let day = day.unwrap_or(default_day(user));
-    let all_lessons_till_day = user.get_timetable(day, true)?;
+    let lessons_of_week = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
         if json {
@@ -18,7 +18,7 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> 
         return Ok(());
     }
     if current {
-        if let Some(nxt) = next_lesson(&all_lessons_till_day) {
+        if let Some(nxt) = next_lesson(&lessons_of_week) {
             if json {
                 let data = serde_json::to_string(&(mins_till(nxt.kezdet_idopont), nxt))?;
                 println!("{data}");
@@ -40,7 +40,7 @@ pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> 
         let json = serde_json::to_string(&lessons)?;
         println!("{json}");
     } else {
-        user.print_day(lessons);
+        user.print_day(lessons, &lessons_of_week);
     }
     Ok(())
 }
@@ -170,7 +170,7 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
 
 impl Usr {
     /// print all lessons of a day
-    pub fn print_day(&self, mut lessons: Vec<Lesson>) {
+    pub fn print_day(&self, mut lessons: Vec<Lesson>, lessons_of_week: &[Lesson]) {
         let Some(first_lesson) = lessons.first() else {
             return;
         };
@@ -183,9 +183,6 @@ impl Usr {
         println!("{header}");
 
         let tests = self.get_tests((None, None)).unwrap_or_default();
-        let all_lessons_till_day = self
-            .get_timetable(day_start.date_naive(), true)
-            .unwrap_or_default();
 
         let mut table = ascii_table::AsciiTable::default();
         #[rustfmt::skip]
@@ -204,16 +201,16 @@ impl Usr {
                     .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
             {
                 let empty_n = n as u8 + 1;
-                let (from, to) = nth_lesson_when(empty_n, &all_lessons_till_day);
+                let (from, to) = nth_lesson_when(empty_n, &lessons_of_week);
                 let empty = get_empty(Some(empty_n), from, to);
-                data.push(disp(&empty, &all_lessons_till_day, None));
+                data.push(disp(&empty, &lessons_of_week, None));
             }
             let ancd_test = lsn
                 .bejelentett_szamonkeres_uid
                 .as_ref()
                 .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
                 .unwrap_or_default();
-            let row = disp(lsn, &all_lessons_till_day, ancd_test);
+            let row = disp(lsn, &lessons_of_week, ancd_test);
             data.push(row);
         }
         table.print(data);

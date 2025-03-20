@@ -1,6 +1,6 @@
 use crate::{config::Config, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
-use chrono::{Datelike, Days, Local, NaiveDate};
+use chrono::{Datelike, Local, NaiveDate, TimeDelta};
 use ekreta::{
     consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
     MsgOview, OptIrval, Token,
@@ -217,45 +217,43 @@ impl Usr {
         })
     }
 
-    pub fn get_timetable(&self, day: NaiveDate, everything_till_day: bool) -> Res<Vec<Lesson>> {
-        let (_, cache_tt) = self.load_cache::<Vec<Lesson>>().unzip();
-        let mut lessons = cache_tt.unwrap_or_default();
-        let day_from_mon = day
-            .and_hms_opt(0, 0, 0)
-            .unwrap()
-            .and_local_timezone(Local)
-            .unwrap()
-            .weekday()
-            .number_from_monday()
-            - 1;
-        let day_till_sun = 7 - day_from_mon - 1;
-        let week_start = day
-            .checked_sub_days(Days::new(day_from_mon.into()))
-            .unwrap();
-        let week_end = day
-            .checked_add_days(Days::new(day_till_sun.into()))
-            .unwrap();
+    pub fn get_timetable(&self, day: NaiveDate, whole_week: bool) -> Res<Vec<Lesson>> {
+        let num_days_from_mon = day.weekday().number_from_monday() - 1;
+        let days_from_mon = TimeDelta::days(num_days_from_mon.into());
+        let days_till_sun = TimeDelta::days((7 - num_days_from_mon - 1).into());
+        let from = if whole_week { day - days_from_mon } else { day };
+        let to = if whole_week { day + days_till_sun } else { day };
+        debug!("fetching tt, whole week: {whole_week}, from {from} to {to}");
+
+        let (cache_t, cached_tt) = self.load_cache::<Vec<Lesson>>().unzip();
+        let mut lessons = cached_tt.unwrap_or_default();
+        let is_cached = |cl: &Lesson| cl.kezdet_idopont.date_naive() == day;
+        let fresh_cache = |ct: ekreta::LDateTime| (ct - Local::now()).abs() < TimeDelta::seconds(8);
+        if whole_week && lessons.iter().any(is_cached) && cache_t.is_some_and(fresh_cache) {
+            debug!("warm lesson cache hit (< 8s), using instead of fetching");
+            return Ok(lessons.iter().cloned().filter(is_cached).collect());
+        }
 
         let mut fetch_err = false;
-        let mut fetched_lessons_week: Vec<Lesson> = self
-            .fetch_vec((week_start, week_end))
+        let mut fetched_week = self
+            .fetch_vec((from, to))
             .inspect_err(|e| {
                 fetch_err = true;
+                eprintln!("couldn't fetch or deserialize data: {e:?}");
                 warn!("couldn't fetch or deserialize data: {e:?}");
             })
             .unwrap_or_default();
-        lessons.retain(|l| {
-            !fetched_lessons_week
-                .iter()
-                .any(|fl| l.kezdet_idopont == fl.kezdet_idopont && l.nev == fl.nev)
-        });
 
-        lessons.append(&mut fetched_lessons_week);
+        lessons.retain(|l| {
+            let has_fresh = |fl: &Lesson| l.kezdet_idopont == fl.kezdet_idopont && l.nev == fl.nev;
+            !fetched_week.iter().any(has_fresh)
+        });
+        lessons.append(&mut fetched_week);
         lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
         if !fetch_err {
             self.store_cache(&lessons)?;
         }
-        if !everything_till_day {
+        if !whole_week {
             lessons.retain(|lsn| lsn.kezdet_idopont.date_naive() == day);
         }
         Ok(lessons)
