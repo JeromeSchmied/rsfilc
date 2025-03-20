@@ -201,16 +201,16 @@ impl Usr {
                     .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
             {
                 let empty_n = n as u8 + 1;
-                let (from, to) = nth_lesson_when(empty_n, &lessons_of_week);
+                let (from, to) = nth_lesson_when(empty_n, lessons_of_week);
                 let empty = get_empty(Some(empty_n), from, to);
-                data.push(disp(&empty, &lessons_of_week, None));
+                data.push(disp(&empty, lessons_of_week, None));
             }
             let ancd_test = lsn
                 .bejelentett_szamonkeres_uid
                 .as_ref()
                 .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
                 .unwrap_or_default();
-            let row = disp(lsn, &lessons_of_week, ancd_test);
+            let row = disp(lsn, lessons_of_week, ancd_test);
             data.push(row);
         }
         table.print(data);
