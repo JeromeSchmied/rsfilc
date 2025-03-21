@@ -308,7 +308,6 @@ impl Usr {
     pub fn get_msg(&self, oview: &MsgOview) -> Res<MsgItem> {
         let (_, cached_msgs) = self.load_cache::<Vec<MsgItem>>().unzip();
         let mut cached_msgs = cached_msgs.unwrap_or_default();
-        eprintln!("loaded cached msgs");
 
         if let Some(cache_hit) = cached_msgs.iter().find(|j| j.azonosito == oview.azonosito) {
             return Ok(cache_hit.clone());

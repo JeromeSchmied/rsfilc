@@ -4,9 +4,9 @@ use crate::{paths::download_dir, time::MyDate, user::Usr, utils};
 use ekreta::{Endpoint, Res};
 use std::{char, fmt::Write};
 
-pub fn handle_note_msgs(user: &Usr, id: Option<usize>, args: &crate::Args) -> Res<()> {
+pub fn handle_note_msgs(user: &Usr, id: Option<isize>, args: &crate::Args) -> Res<()> {
     let notes = user.get_note_msgs((None, None))?;
-    if let Some(ix) = id {
+    if let Some(ix) = id_to_ix(id, notes.len()) {
         let Some(nm) = notes.get(ix) else {
             return Err(format!("can't find message with id: {ix}").into());
         };
@@ -26,9 +26,9 @@ pub fn handle_note_msgs(user: &Usr, id: Option<usize>, args: &crate::Args) -> Re
     utils::print_table(&data, headers, args.reverse, args.number, disp)
 }
 
-pub fn handle(user: &Usr, id: Option<usize>, args: &crate::Args) -> Res<()> {
+pub fn handle(user: &Usr, id: Option<isize>, args: &crate::Args) -> Res<()> {
     let msg_oviews = user.fetch_msg_oviews()?;
-    if let Some(ix) = id {
+    if let Some(ix) = id_to_ix(id, msg_oviews.len()) {
         let msg_oview = msg_oviews
             .get(ix)
             .ok_or(format!("can't find message with id: {ix}"))?;
@@ -47,6 +47,12 @@ pub fn handle(user: &Usr, id: Option<usize>, args: &crate::Args) -> Res<()> {
     #[rustfmt::skip]
     let disp = if args.machine { None } else { Some(disp_oviews) };
     utils::print_table(&data, headers, args.reverse, args.number, disp)
+}
+
+/// make a `-id` reverse of id, eg len: 8, id: -1 -> ix = 7
+fn id_to_ix(id: Option<isize>, len: usize) -> Option<usize> {
+    let len = isize::try_from(len).ok()?;
+    usize::try_from(len + id?).ok()
 }
 
 fn disp_oviews(preview: &(usize, &ekreta::MsgOview)) -> Vec<String> {

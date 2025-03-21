@@ -75,7 +75,7 @@ pub enum Command {
         #[arg(long, default_value_t = false)]
         notes: bool,
         /// id of the message to render
-        id: Option<usize>,
+        id: Option<isize>,
     },
 
     /// information about lessons the user missed
