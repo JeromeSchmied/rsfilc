@@ -222,7 +222,11 @@ impl Usr {
         let days_from_mon = TimeDelta::days(num_days_from_mon.into());
         let days_till_sun = TimeDelta::days((7 - num_days_from_mon - 1).into());
         let from = if whole_week { day - days_from_mon } else { day };
-        let to = if whole_week { day + days_till_sun } else { day };
+        let to = if whole_week {
+            day + days_till_sun
+        } else {
+            day + TimeDelta::days(1)
+        };
         debug!("fetching tt, whole week: {whole_week}, from {from} to {to}");
 
         let (cache_t, cached_tt) = self.load_cache::<Vec<Lesson>>().unzip();
