@@ -222,18 +222,14 @@ impl Usr {
         let days_from_mon = TimeDelta::days(num_days_from_mon.into());
         let days_till_sun = TimeDelta::days((7 - num_days_from_mon - 1).into());
         let from = if whole_week { day - days_from_mon } else { day };
-        let to = if whole_week {
-            day + days_till_sun
-        } else {
-            day + TimeDelta::days(1)
-        };
+        let to = if whole_week { day + days_till_sun } else { day };
         debug!("fetching tt, whole week: {whole_week}, from {from} to {to}");
 
         let (cache_t, cached_tt) = self.load_cache::<Vec<Lesson>>().unzip();
         let mut lessons = cached_tt.unwrap_or_default();
         let is_cached = |cl: &Lesson| cl.kezdet_idopont.date_naive() == day;
         let fresh_cache = |ct: ekreta::LDateTime| (ct - Local::now()).abs() < TimeDelta::seconds(8);
-        if whole_week && lessons.iter().any(is_cached) && cache_t.is_some_and(fresh_cache) {
+        if !whole_week && cache_t.is_some_and(fresh_cache) && lessons.iter().any(is_cached) {
             debug!("warm lesson cache hit (< 8s), using instead of fetching");
             return Ok(lessons.into_iter().filter(is_cached).collect());
         }
@@ -244,7 +240,7 @@ impl Usr {
             .inspect_err(|e| {
                 fetch_err = true;
                 eprintln!("couldn't fetch or deserialize data: {e:?}");
-                warn!("couldn't fetch or deserialize data: {e:?}");
+                error!("couldn't fetch or deserialize data: {e:?}");
             })
             .unwrap_or_default();
 
@@ -374,10 +370,9 @@ impl Usr {
         match fetched {
             Ok(fetched_items) => {
                 let mut cached = cached.unwrap_or_default();
-                cached.retain(|item| {
-                    item.when()
-                        .is_none_or(|dt| irval.0.is_none_or(|from| dt.date_naive() <= from))
-                });
+                let not_fetched =
+                    |dt: ekreta::LDateTime| irval.0.is_none_or(|from| dt.date_naive() <= from);
+                cached.retain(|item| item.when().is_none_or(not_fetched));
                 Ok([cached, fetched_items].concat())
             }
             Err(e) => {
