@@ -108,9 +108,9 @@ checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 
 [[package]]
 name = "cc"
-version = "1.2.16"
+version = "1.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be714c154be609ec7f5dad223a33bf1482fff90472de28f7362806e6d4832b8c"
+checksum = "1fcb57c740ae1daf453ae85f16e37396f672b039e00d9d866e07ddb24e328e3a"
 dependencies = [
  "shlex",
 ]
@@ -306,9 +306,9 @@ dependencies = [
 
 [[package]]
 name = "ekreta"
-version = "0.2.6"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "80196990f2347f3543f8694a5eb68f76108ccee5514767dbba4b4d42153e8b60"
+checksum = "72906b1ac5d4a04c91b4790dff000de0b3437df166c9ceaef2cc9c40b67f9254"
 dependencies = [
  "chrono",
  "http",
@@ -734,7 +734,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.9.44"
+version = "0.10.0"
 dependencies = [
  "ascii_table",
  "base64",
