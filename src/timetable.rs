@@ -1,7 +1,7 @@
 //! lessons the student has
 
 use crate::{time::MyDate, user::Usr};
-use chrono::{Datelike, Duration, Local, NaiveDate, TimeDelta};
+use chrono::{Datelike, Local, NaiveDate, TimeDelta};
 use ekreta::{AnnouncedTest, LDateTime, Lesson, Res};
 use log::*;
 
@@ -66,25 +66,13 @@ pub fn parse_day(day: &str) -> Result<NaiveDate, String> {
         Ok(md)
     } else if let Ok(d) = pfs(&format!("{}-{}-{date}", today.year(), today.month())) {
         Ok(d)
-    } else if date.starts_with('+') || date.ends_with('-') {
-        info!("day_shift!");
-        let day_shift = if date.starts_with('+') {
-            info!("day_shift: +");
-            date.parse::<i16>()
-                .map_err(|e| format!("invalid +day shifter: {e:?}"))?
-        } else {
-            let date = &date[0..date.len() - 1];
-            info!("day_shift: -");
-            -date
-                .parse::<i16>()
-                .map_err(|e| format!("invalid day- shifter: {e:?}"))?
-        };
-        let day = today
-            .checked_add_signed(Duration::days(day_shift.into()))
-            .ok_or("invalid datetime")?;
-        Ok(day)
     } else {
-        Err(String::from("couldn't parse day specifier"))
+        info!("day shifter");
+        let day_shift = date
+            .parse::<i16>()
+            .map_err(|e| format!("invalid day shifter: {e:?}"))?;
+        let day = today + TimeDelta::days(day_shift.into());
+        Ok(day)
     }
 }
 

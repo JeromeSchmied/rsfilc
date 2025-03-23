@@ -177,7 +177,7 @@ impl Usr {
     fn get_token(&self) -> Res<Token> {
         if let Some((cache_t, cached_token)) = self.load_cache::<Token>() {
             if Local::now().signed_duration_since(cache_t)
-                < chrono::Duration::seconds(cached_token.expires_in.into())
+                < TimeDelta::seconds(cached_token.expires_in.into())
             {
                 return Ok(cached_token);
             }
