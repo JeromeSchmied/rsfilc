@@ -164,6 +164,9 @@ impl Usr {
         };
         let day_start = first_lesson.kezdet_idopont;
         let header = if first_lesson.kamu_smafu() {
+            if lessons.len() == 1 {
+                return;
+            } // in the unfortunate case of stupidity
             lessons.remove(0).nev.clone()
         } else {
             format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty(),)
