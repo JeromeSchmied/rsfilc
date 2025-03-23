@@ -12,53 +12,48 @@ pub fn handle(
     userid: Option<String>,
     create: bool,
     conf: &mut Config,
-    del: bool,
+    delete: bool,
     switch: bool,
     cache_dir: bool,
-    json: bool,
+    args: &crate::Args,
 ) -> Res<()> {
-    if let Some(name) = userid {
-        if create {
-            let res = Usr::create(name.clone(), conf)
-                .ok_or("couldn't create user, check your credentials and network connection");
-            // delete cache dir if couldn't log in
-            if res.is_err() {
-                crate::cache::delete_dir(&name)?;
-            }
-            res?;
-            println!("created");
-        } else {
-            let name = conf
-                .get_userid(name)
-                .ok_or("the given userid/name isn't saved")?;
-            if del {
-                conf.delete(name);
-                println!("deleted");
-            } else if switch {
-                conf.switch_user_to(&name);
-                println!("switched");
-            } else if cache_dir {
-                let cache_dir = paths::cache_dir(&name).ok_or("no cache dir found for user")?;
-                println!("{}", cache_dir.display());
-            }
-        }
-        conf.save()?;
-    } else {
+    let Some(name) = userid else {
         if cache_dir {
             let cache_dir =
-                paths::cache_dir(&conf.default_username).ok_or("no cachedir found of for user")?;
+                paths::cache_dir(&conf.default_username).ok_or("no cache dir found for user")?;
             println!("{}", cache_dir.display());
             return Ok(());
         }
-        if json {
-            let json = serde_json::to_string(&(&conf.default_username, &conf.users))?;
-            println!("{json}");
-        } else {
-            println!("Felhasználók:");
-            information::display(conf)?;
+        return information::handle(&conf.default_username, conf.users.iter(), &args);
+    };
+    if create {
+        let res = Usr::create(name.clone(), conf)
+            .ok_or("couldn't create user, check your credentials and network connection");
+        // delete cache dir if couldn't log in
+        if res.is_err() {
+            crate::cache::delete_dir(&name)?;
         }
+        res?;
+        println!("created");
+        return conf.save();
     }
-    Ok(())
+    let userid = conf
+        .get_userid(name)
+        .ok_or("the given userid/name isn't saved")?;
+    if delete {
+        conf.delete(userid);
+        println!("deleted");
+    } else if switch {
+        conf.switch_user_to(&userid);
+        println!("switched");
+    } else if cache_dir {
+        let cache_dir = paths::cache_dir(&userid).ok_or("no cache dir found for user")?;
+        println!("{}", cache_dir.display());
+    } else {
+        let matching_users = conf.users.iter().filter(|u| u.0.username == userid);
+        information::handle(&conf.default_username, matching_users, &args)?;
+    }
+    conf.save()
 }
 
 /// Kréta, app user

@@ -1,35 +1,28 @@
 //! basic User info, `Kréta` stores
 
+use crate::utils;
 use ekreta::{Res, UserInfo};
 
-pub fn display(conf: &crate::Config) -> Res<()> {
-    let mut table = ascii_table::AsciiTable::default();
-    let headers = ["NÉV", "OM AZONOSÍTÓ", "OSKOLA", "SZÜLETETT"];
-    for (i, head) in headers.into_iter().enumerate() {
-        table.column(i).set_header(head);
-    }
-    let data = conf
-        .users
-        .iter()
-        .map(|u| {
-            let info = u.get_userinfo()?;
-            Ok(disp(&info, &u.0.username, &conf.default_username))
-        })
-        .collect::<Res<Vec<_>>>()?;
-    table.print(data);
-
-    Ok(())
+/// `user_data`: (`user_info`, `id`, `default_id`)
+fn disp(user_data: &(UserInfo, &String, &str)) -> Vec<String> {
+    let id = user_data.1.to_string();
+    let def_usr = if id == user_data.2 { "Alap: " } else { "" };
+    let info = &user_data.0;
+    let name = format!("{def_usr}{}", info.nev);
+    let school = info.intezmeny_nev.clone();
+    let birth = info.szuletesi_datum.format("%Y.%m.%d").to_string();
+    vec![name, id, school, birth]
 }
 
-fn disp(user_info: &UserInfo, id: &str, def_id: &str) -> Vec<String> {
-    let def_usr = if id == def_id {
-        "Alapértelmezett: "
-    } else {
-        ""
-    };
-    let name = format!("{def_usr}{}", user_info.nev);
-    let id = id.to_string();
-    let school = user_info.intezmeny_nev.clone();
-    let birth = user_info.szuletesi_datum.format("%Y.%m.%d").to_string();
-    vec![name, id, school, birth]
+pub fn handle<'a, I>(def_username: &str, users: I, args: &crate::Args) -> Res<()>
+where
+    I: Iterator<Item = &'a crate::Usr>,
+{
+    let data = users
+        .map(|u| Ok((u.get_userinfo()?, &u.0.username, def_username)))
+        .collect::<Res<Vec<_>>>()?;
+
+    let headers = ["név", "om azonosító", "oskola", "született"].into_iter();
+    let to_str = if args.machine { None } else { Some(disp) };
+    utils::print_table(&data, headers, args.reverse, args.number, to_str)
 }

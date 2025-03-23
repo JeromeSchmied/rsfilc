@@ -102,13 +102,13 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         }
 
         Command::User {
-            delete: del,
+            delete,
             create,
             switch,
             cache_dir,
             userid,
         } => {
-            user::handle(userid, create, conf, del, switch, cache_dir, args.machine)?;
+            user::handle(userid, create, conf, delete, switch, cache_dir, &args)?;
         }
 
         Command::Schools { search } => {
