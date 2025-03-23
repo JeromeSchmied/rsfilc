@@ -112,7 +112,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         }
 
         Command::Schools { search } => {
-            schools::handle(search, args.machine)?;
+            schools::handle(search, &args)?;
         }
     }
     Ok(())

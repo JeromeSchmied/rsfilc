@@ -3,16 +3,16 @@
 use crate::{cache, utils, Res};
 use log::info;
 
-pub fn handle(search: Option<String>, json: bool) -> Res<()> {
+pub fn handle(search: Option<String>, args: &crate::Args) -> Res<()> {
     let mut schools = fetch()?;
     if let Some(school_name) = search {
         filter(&mut schools, &school_name);
     }
     info!("listing schools");
     // utils::print_them_basic(schools.iter(), disp);
-    let headers = ["NÉV", "AZONOSÍTÓ", "TELEPÜLÉS"];
-    let disp = if json { None } else { Some(display) };
-    utils::print_table(&schools, headers.into_iter(), false, usize::MAX, disp)
+    let headers = ["név", "azonosító", "település"].into_iter();
+    let disp = if args.machine { None } else { Some(display) };
+    utils::print_table(&schools, headers, args.reverse, args.number, disp)
 }
 
 pub fn fetch() -> Res<Vec<ekreta::School>> {
