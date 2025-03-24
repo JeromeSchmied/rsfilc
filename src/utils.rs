@@ -59,6 +59,9 @@ where
     I: Iterator<Item = S1>,
     F: Fn(&T) -> Vec<String>,
 {
+    if items.is_empty() {
+        return Ok(());
+    }
     let iter: Box<dyn Iterator<Item = &T>> = if rev {
         Box::new(items.iter().rev())
     } else {
