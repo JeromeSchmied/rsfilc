@@ -51,8 +51,12 @@ pub fn handle(user: &Usr, id: Option<isize>, args: &crate::Args) -> Res<()> {
 
 /// make a `-id` reverse of id, eg len: 8, id: -1 -> ix = 7
 fn id_to_ix(id: Option<isize>, len: usize) -> Option<usize> {
+    let id = id?;
+    if id >= 0 {
+        return usize::try_from(id).ok();
+    }
     let len = isize::try_from(len).ok()?;
-    usize::try_from(len + id?).ok()
+    usize::try_from(len + id).ok()
 }
 
 fn disp_oviews(preview: &(usize, &ekreta::MsgOview)) -> Vec<String> {
