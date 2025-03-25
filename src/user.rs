@@ -190,7 +190,10 @@ impl Usr {
             password: self.decode_password(),
             ..self.clone().0
         };
-        let token = authed_user.fetch_token()?;
+        let token = authed_user.fetch_token().inspect_err(|e| {
+            log::error!("fetching token: {e}");
+            eprintln!("error fetching token: {e}");
+        })?;
         self.store_cache(&token)?;
         info!("received token");
         Ok(token)
