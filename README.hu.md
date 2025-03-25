@@ -81,6 +81,7 @@ kedves kis használati utasítás: `rsfilc --help`
 - ha megbotlasz, először nézz a lábad elé: `rsfilc --help`
 - ha a vároteremben nagy a tömeg, nézdd mit tartalmaz zsebed, környezeti változók használatát ne feledd, állítsd be `1`-re a `NO_NET`, tegyük fel linuxon így műveled: `NO_NET=1 rsfilc timetable`
 - ha attól tartasz zsebed kacatokkal tele, mondj egy hasonlót: `NO_CACHE=1 rsfilc absences`, vagy használd a `clap`-et: `rsfilc user --cache-dir`
+- ha egy adott nap már nincs több órád, s te mégis mondád: `rsfilc (timetable|tt)`, megjelenik a legközelebbi órákkal tarkított napod, ha te ezt mégsem akarod: `rsfilc tt +0` avagy `rsfilc tt -- -0` a barátod
 
 ![demo](./rsfilc_demo.gif "using rsfilc")
 

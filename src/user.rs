@@ -370,7 +370,10 @@ impl Usr {
                 let mut cached = cached.unwrap_or_default();
                 let not_fetched =
                     |dt: ekreta::LDateTime| irval.0.is_none_or(|from| dt.date_naive() <= from);
+                let orig_len = cached.len();
                 cached.retain(|item| item.when().is_none_or(not_fetched));
+                let filtered_len = cached.len();
+                log::info!("load_n_fetch deleted: {}", orig_len - filtered_len);
                 Ok([cached, fetched_items].concat())
             }
             Err(e) => {
