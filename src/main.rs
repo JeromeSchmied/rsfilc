@@ -60,7 +60,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         if let Some(user) = args.user.as_deref() {
             conf.get_userid(user)
                 .and_then(|userid| conf.users.iter().find(|u| u.0.username == userid).cloned())
-                .ok_or("manually specified user is invalid")?
+                .ok_or(format!("manually specified user is invalid ({user})"))?
         } else {
             Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
         }
