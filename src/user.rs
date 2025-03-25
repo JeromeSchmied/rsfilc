@@ -126,16 +126,10 @@ impl Usr {
 
     /// load default [`User`]
     pub fn load(conf: &Config) -> Option<Self> {
-        std::env::var("USER")
-            .ok()
-            .and_then(|user| conf.get_userid(user))
-            .and_then(|userid| conf.users.iter().find(|u| u.0.username == userid).cloned())
-            .or_else(|| {
-                conf.users
-                    .iter()
-                    .find(|u| u.0.username == conf.default_username)
-                    .cloned()
-            })
+        conf.users
+            .iter()
+            .find(|u| u.0.username == conf.default_username)
+            .cloned()
     }
 }
 
