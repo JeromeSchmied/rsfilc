@@ -57,13 +57,13 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         .clone();
     // have a valid user
     let user = if command.user_needed() {
-        args.user
-            .as_deref()
-            .and_then(|user| conf.get_userid(user))
-            .and_then(|userid| conf.users.iter().find(|u| u.0.username == userid))
-            .cloned()
-            .or_else(|| Usr::load(conf))
-            .ok_or("no suitable user found, if you wish, create one with `rsfilc user --create`")?
+        if let Some(user) = args.user.as_deref() {
+            conf.get_userid(user)
+                .and_then(|userid| conf.users.iter().find(|u| u.0.username == userid).cloned())
+                .ok_or("manually specified user is invalid")?
+        } else {
+            Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
+        }
     } else {
         Usr::dummy()
     };
