@@ -3,9 +3,8 @@
 use crate::{time::MyDate, user::Usr, utils};
 use chrono::{Datelike, Local};
 use ekreta::{AnnouncedTest, Res};
-use std::fmt::Write;
 
-pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usize) -> Res<()> {
+pub fn handle(past: bool, user: &Usr, subj: Option<String>, args: &crate::Args) -> Res<()> {
     let mut all_announced = user.get_tests((None, None))?;
     if !past {
         let today = Local::now().num_days_from_ce();
@@ -14,8 +13,9 @@ pub fn handle(past: bool, user: &Usr, subj: Option<String>, rev: bool, num: usiz
     if let Some(subject) = subj {
         filter_by_subject(&mut all_announced, &subject);
     }
-    utils::print_to_or_rev(&all_announced, num, rev, disp);
-    Ok(())
+    let headers = ["téma", "tantárgy", "dátum", "mód", "tanár"].into_iter();
+    let dix = if args.machine { None } else { Some(display) };
+    utils::print_table(&all_announced, headers, args.reverse, args.number, dix)
 }
 
 /// filter [`Ancd`] tests by `subj`ect
@@ -28,20 +28,12 @@ pub fn filter_by_subject(ancds: &mut Vec<AnnouncedTest>, subj: &str) {
     });
 }
 
-pub fn disp(ancd: &AnnouncedTest) -> String {
-    let mut f = String::new();
-    _ = write!(&mut f, "| {}", &ancd.datum.pretty());
-    _ = write!(&mut f, " {}", ancd.tantargy_neve);
-    if let Some(tc) = &ancd.temaja {
-        _ = write!(&mut f, ": {tc}");
-    }
+fn display(ancd: &AnnouncedTest) -> Vec<String> {
+    let about = ancd.temaja.clone().unwrap_or_default();
+    let subj = ancd.tantargy_neve.clone();
+    let date = ancd.datum.pretty();
+    let kind = ancd.modja.leiras.clone();
+    let teacher = ancd.rogzito_tanar_neve.clone();
 
-    _ = writeln!(&mut f, "\n| {}", ancd.modja.leiras);
-    _ = writeln!(&mut f, "| {}", ancd.rogzito_tanar_neve);
-    _ = write!(
-        &mut f,
-        "| Rögzítés dátuma: {}",
-        &ancd.bejelentes_datuma.pretty()
-    );
-    f
+    vec![about, subj, date, kind, teacher]
 }

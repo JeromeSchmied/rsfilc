@@ -2,6 +2,7 @@
 
 use clap::{Parser, Subcommand};
 use log::info;
+use std::io::IsTerminal;
 
 /// default number of entries to show
 const NUM: usize = usize::MAX;
@@ -11,6 +12,15 @@ const NUM: usize = usize::MAX;
 pub struct Args {
     #[command(subcommand)]
     pub command: Option<Command>,
+    /// produce machine-readable output, mostly json
+    #[arg(short, long, num_args(1), visible_alias = "json", default_value_t=!std::io::stdout().is_terminal())]
+    pub machine: bool,
+    /// reverse the order of entries, WARN: will be ignored by some commands
+    #[arg(short, long, default_value_t = false)]
+    pub reverse: bool,
+    /// maximum number of entries to show, WARN: will be ignored by some commands
+    #[arg(short, long, default_value_t = NUM)]
+    pub number: usize,
     /// enable verbose logging into the log file
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
@@ -32,7 +42,7 @@ pub enum Command {
     /// information about lessons, today by default
     #[clap(visible_alias = "tt")]
     Timetable {
-        /// which day to show: `+n|n-` (`n` is the number of days added to today) or [YYYY-][MM-][DD]
+        /// which day to show: `(+|-)n` (`n` is the number of days added to today) or [YYYY-][MM-][DD]
         #[arg(value_parser = crate::timetable::parse_day)]
         day: Option<chrono::NaiveDate>,
 
@@ -53,12 +63,6 @@ pub enum Command {
         /// calculate average
         #[arg(short, long, default_value_t = false)]
         average: bool,
-        /// reverse the output
-        #[arg(short, long, default_value_t = false)]
-        reverse: bool,
-        /// number of entries to show
-        #[arg(short, long, default_value_t = NUM)]
-        number: usize,
         /// ghost evals
         #[arg(requires = "average")]
         ghost: Vec<u8>,
@@ -67,15 +71,11 @@ pub enum Command {
     /// messages the user either received or sent
     #[clap(visible_alias = "msg")]
     Messages {
-        /// number of entries to show
-        #[arg(short, long, default_value_t = NUM)]
-        number: usize,
-        /// reverse the output
-        #[arg(short, long, default_value_t = false)]
-        reverse: bool,
         /// show additional notes/system messages
         #[arg(long, default_value_t = false)]
         notes: bool,
+        /// id of the message to render
+        id: Option<isize>,
     },
 
     /// information about lessons the user missed
@@ -84,15 +84,9 @@ pub enum Command {
         /// filter the subject to show
         #[arg(short, long)]
         subject: Option<String>,
-        /// number of entries to show
-        #[arg(short, long, default_value_t = NUM)]
-        number: usize,
         /// count the number of absences
         #[arg(short, long, default_value_t = false)]
         count: bool,
-        /// reverse the output
-        #[arg(short, long, default_value_t = false)]
-        reverse: bool,
     },
 
     /// information about forecoming exams/tests
@@ -101,12 +95,6 @@ pub enum Command {
         /// filter the subject to show
         #[arg(short, long)]
         subject: Option<String>,
-        /// number of entries to show
-        #[arg(short, long, default_value_t = NUM)]
-        number: usize,
-        /// reverse the output
-        #[arg(short, long, default_value_t = false)]
-        reverse: bool,
         /// show tests from the past as well
         #[arg(short, long, default_value_t = false)]
         past: bool,

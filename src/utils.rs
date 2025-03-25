@@ -45,46 +45,38 @@ macro_rules! gen_get_for {
     };
 }
 
-/// Fill under `this` with many `with` [`char`]s, inlaying `hint` if any.
-///
-/// this:   "123456789" <- len: 9
-/// with:   '#'
-/// hint:   "bab" <- len: 3
-///
-/// so:     "123456789" <- len: 9
-/// result: "12 bab 89" <- len: 9
-pub fn fill(this: &str, with: char, hint: Option<&str>) {
-    let longest = this.lines().map(|l| l.chars().count()).max().unwrap_or(0);
-    let inlay_hint = if let Some(il_hint) = hint {
-        [" ", il_hint, " "].concat()
-    } else {
-        String::new()
-    };
-
-    let left = (longest - inlay_hint.chars().count()) / 2;
-    println!(
-        "{}{}{}",
-        with.to_string().repeat(left),
-        inlay_hint,
-        with.to_string()
-            .repeat(longest - left - inlay_hint.chars().count())
-    );
-}
-
-/// print `items` using `to_str`
-pub fn print_them_basic<T>(items: impl Iterator<Item = T>, to_str: impl Fn(T) -> String) {
-    for item in items {
-        let as_str = to_str(item);
-        println!("\n\n{as_str}");
-        fill(&as_str, '-', None);
-    }
-}
-
 /// print `num` `items` using `to_str`, reversed if `rev` otherwise not
-pub fn print_to_or_rev<T>(items: &[T], num: usize, rev: bool, to_str: impl Fn(&T) -> String) {
-    if rev {
-        print_them_basic(items.iter().rev().take(num), to_str);
-    } else {
-        print_them_basic(items.iter().take(num), to_str);
+pub fn print_table<T, S1, I, F>(
+    items: &[T],
+    headers: I,
+    rev: bool,
+    num: usize,
+    to_str: Option<F>,
+) -> Res<()>
+where
+    T: serde::Serialize,
+    S1: ToString,
+    I: Iterator<Item = S1>,
+    F: Fn(&T) -> Vec<String>,
+{
+    if items.is_empty() {
+        return Ok(());
     }
+    let iter: Box<dyn Iterator<Item = &T>> = if rev {
+        Box::new(items.iter().rev())
+    } else {
+        Box::new(items.iter())
+    };
+    if let Some(to_str) = to_str {
+        let mut table = ascii_table::AsciiTable::default();
+        for (i, head) in headers.into_iter().enumerate() {
+            table.column(i).set_header(head.to_string());
+        }
+        let data: Vec<_> = iter.take(num).map(to_str).collect();
+        table.print(data);
+    } else {
+        let data = serde_json::to_string(&iter.take(num).collect::<Vec<_>>())?;
+        println!("{data}");
+    }
+    Ok(())
 }

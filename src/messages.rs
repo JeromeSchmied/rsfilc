@@ -1,31 +1,81 @@
 //! messages from teachers and staff
 
 use crate::{paths::download_dir, time::MyDate, user::Usr, utils};
-use ekreta::Res;
+use ekreta::{Endpoint, Res};
 use std::{char, fmt::Write};
 
-pub fn handle(notes: bool, user: &Usr, rev: bool, num: usize) -> Res<()> {
-    if notes {
-        let notes = user.get_note_msgs((None, None))?;
-        utils::print_to_or_rev(&notes, num, rev, disp_note_msg);
+pub fn handle_note_msgs(user: &Usr, id: Option<isize>, args: &crate::Args) -> Res<()> {
+    let notes = user.get_note_msgs((None, None))?;
+    if let Some(ix) = id_to_ix(id, notes.len()) {
+        let Some(nm) = notes.get(ix) else {
+            return Err(format!("can't find message with id: {ix}").into());
+        };
+        let print = if args.machine {
+            serde_json::to_string(nm)?
+        } else {
+            disp_nm(nm)
+        };
+        println!("{print}");
         return Ok(());
     }
-    let msgs = user.msgs((None, None))?;
-    utils::print_to_or_rev(&msgs, num, rev, disp_msg);
-    Ok(())
+
+    let data = notes.iter().enumerate().collect::<Vec<_>>();
+    let headers = ["id", "tárgya", "tőle", "ekkor"].iter();
+    #[rustfmt::skip]
+    let disp = if args.machine { None } else { Some(preview_nm) };
+    utils::print_table(&data, headers, args.reverse, args.number, disp)
 }
 
-// impl fmt::Display for MsgOverview {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         writeln!(f, "{}", self.sent().format("%Y/%m/%d %H:%M"))?;
-//         writeln!(f, "{}", self.uzenet_targy)?;
-//         // writeln!(f, "{}", self.uzenet_kuldes_datum)?;
-//         // if !self.is_elolvasva {
-//         //     writeln!(f, "Olvasatlan")?;
-//         // }
-//         Ok(())
-//     }
-// }
+pub fn handle(user: &Usr, id: Option<isize>, args: &crate::Args) -> Res<()> {
+    let msg_oviews = user.fetch_msg_oviews()?;
+    if let Some(ix) = id_to_ix(id, msg_oviews.len()) {
+        let msg_oview = msg_oviews
+            .get(ix)
+            .ok_or(format!("can't find message with id: {ix}"))?;
+        let msg = user.get_msg(msg_oview)?;
+        let print = if args.machine {
+            serde_json::to_string(&msg)?
+        } else {
+            disp_msg(&msg)
+        };
+        println!("{print}");
+        return Ok(());
+    }
+
+    let data = msg_oviews.iter().enumerate().collect::<Vec<_>>();
+    let headers = ["id", "tárgya", "tőle", "ekkor", "csatolmánya"].iter();
+    #[rustfmt::skip]
+    let disp = if args.machine { None } else { Some(disp_oviews) };
+    utils::print_table(&data, headers, args.reverse, args.number, disp)
+}
+
+/// make a `-id` reverse of id, eg len: 8, id: -1 -> ix = 7
+fn id_to_ix(id: Option<isize>, len: usize) -> Option<usize> {
+    let id = id?;
+    if id >= 0 {
+        return usize::try_from(id).ok();
+    }
+    let len = isize::try_from(len).ok()?;
+    usize::try_from(len + id).ok()
+}
+
+fn disp_oviews(preview: &(usize, &ekreta::MsgOview)) -> Vec<String> {
+    let msg = preview.1;
+    let datetime = msg.when().unwrap().pretty();
+    let subj = msg.uzenet_targy.clone();
+    let prefix = msg.uzenet_felado_nev.clone().unwrap_or_default();
+    let name = msg.uzenet_felado_titulus.clone().unwrap_or_default();
+    let sender = format!("{prefix} {name}");
+    // if !msg_oview.is_elolvasva {
+    //     writeln!(f, "Olvasatlan")?;
+    // }
+    let n = preview.0.to_string();
+    let mut row = vec![n, subj, sender, datetime];
+    if msg.has_csatolmany {
+        row.push(String::from("van"));
+    }
+    row
+}
 
 pub fn download_attachment_to(am: &ekreta::Attachment) -> std::path::PathBuf {
     download_dir().join(am.fajl_nev.replace(char::is_whitespace, "_"))
@@ -35,28 +85,13 @@ pub fn disp_msg(msg: &ekreta::MsgItem) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| Tárgy: {}", msg.uzenet.targy);
     for am in &msg.uzenet.csatolmanyok {
-        _ = writeln!(
-            &mut f,
-            "| Csatolmány: \"file://{}\"",
-            download_attachment_to(am).display()
-        );
+        let out_path = download_attachment_to(am);
+        _ = writeln!(&mut f, "| Csatolmány: \"file://{}\"", out_path.display());
     }
-
-    _ = writeln!(
-        &mut f,
-        "| {}: {}",
-        msg.tipus.nev,
-        &msg.uzenet
-            .kuldes_datum
-            .and_local_timezone(chrono::Local)
-            .unwrap()
-            .pretty()
-    );
-    _ = writeln!(
-        &mut f,
-        "| Feladó: {} {}",
-        msg.uzenet.felado_nev, msg.uzenet.felado_titulus
-    );
+    let name = &msg.tipus.nev;
+    _ = writeln!(&mut f, "| {name}: {}", msg.when().unwrap().pretty());
+    let sender = &msg.uzenet.felado_nev;
+    _ = writeln!(&mut f, "| Feladó: {sender} {}", msg.uzenet.felado_titulus);
     let rendered = nanohtml2text::html2text(&msg.uzenet.szoveg);
     _ = write!(&mut f, "\n{rendered}");
     // if !msg.is_elolvasva {
@@ -65,7 +100,17 @@ pub fn disp_msg(msg: &ekreta::MsgItem) -> String {
     f
 }
 
-pub fn disp_note_msg(note_msg: &ekreta::NoteMsg) -> String {
+pub fn preview_nm(preview: &(usize, &ekreta::NoteMsg)) -> Vec<String> {
+    let note_msg = preview.1;
+    let n = preview.0.to_string();
+    let subj = note_msg.cim.clone();
+    let datetime = note_msg.datum.pretty();
+    let sender = note_msg.keszito_tanar_neve.clone();
+
+    vec![n, subj, sender, datetime]
+}
+
+pub fn disp_nm(note_msg: &ekreta::NoteMsg) -> String {
     let mut f = String::new();
     _ = writeln!(&mut f, "| {}", note_msg.cim);
     _ = writeln!(&mut f, "| Időpont: {}", note_msg.datum.pretty());

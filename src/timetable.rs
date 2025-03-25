@@ -1,40 +1,53 @@
 //! lessons the student has
 
-use crate::{fill, time::MyDate, user::Usr};
-use chrono::{Datelike, Duration, Local, NaiveDate, TimeDelta};
-use ekreta::{Lesson, Res};
+use crate::{time::MyDate, user::Usr};
+use chrono::{Datelike, Local, NaiveDate, TimeDelta};
+use ekreta::{AnnouncedTest, LDateTime, Lesson, Res};
 use log::*;
-use std::fmt::Write;
 
-pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool) -> Res<()> {
+pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> Res<()> {
     let day = day.unwrap_or(default_day(user));
-    let all_lessons_till_day = user.get_timetable(day, true)?;
+    let lessons_of_week = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
-        println!("{day} ({}) nincs rögzített órád, juhé!", day.weekday());
+        if json {
+            println!("null");
+        } else {
+            println!("{day} ({}) nincs rögzített órád, juhé!", day.weekday());
+        }
         return Ok(());
     }
     if current {
-        let current_lessons = current_lessons(&lessons);
-        if let Some(nxt) = next_lesson(&all_lessons_till_day) {
-            println!(
-                "{}m -> {}",
-                (nxt.kezdet_idopont - Local::now()).num_minutes(), // minutes remaining
-                nxt.nev
-            );
+        if let Some(nxt) = next_lesson(&lessons_of_week) {
+            if json {
+                let data = serde_json::to_string(&(mins_till(nxt.kezdet_idopont), nxt))?;
+                println!("{data}");
+            } else {
+                println!("{}m -> {}", mins_till(nxt.kezdet_idopont), nxt.nev);
+            }
         }
-        for current_lesson in current_lessons {
-            println!(
-                "{}, {}m",
-                current_lesson.nev,
-                (current_lesson.veg_idopont - Local::now()).num_minutes() // minutes remaining
-            );
+        for cnt_lsn in current_lessons(&lessons) {
+            if json {
+                let data = serde_json::to_string(&(mins_till(cnt_lsn.veg_idopont), cnt_lsn))?;
+                println!("{data}");
+            } else {
+                println!("{}, {}m", cnt_lsn.nev, mins_till(cnt_lsn.veg_idopont));
+            }
         }
-
         return Ok(());
     }
-    user.print_day(lessons);
+    if json {
+        let json = serde_json::to_string(&lessons)?;
+        println!("{json}");
+    } else {
+        user.print_day(lessons, &lessons_of_week);
+    }
     Ok(())
+}
+
+/// minutes `till` now
+fn mins_till(till: LDateTime) -> i64 {
+    (till - Local::now()).num_minutes()
 }
 /// Parse the day got as `argument`.
 /// # errors
@@ -53,25 +66,13 @@ pub fn parse_day(day: &str) -> Result<NaiveDate, String> {
         Ok(md)
     } else if let Ok(d) = pfs(&format!("{}-{}-{date}", today.year(), today.month())) {
         Ok(d)
-    } else if date.starts_with('+') || date.ends_with('-') {
-        info!("day_shift!");
-        let day_shift = if date.starts_with('+') {
-            info!("day_shift: +");
-            date.parse::<i16>()
-                .map_err(|e| format!("invalid +day shifter: {e:?}"))?
-        } else {
-            let date = &date[0..date.len() - 1];
-            info!("day_shift: -");
-            -date
-                .parse::<i16>()
-                .map_err(|e| format!("invalid day- shifter: {e:?}"))?
-        };
-        let day = today
-            .checked_add_signed(Duration::days(day_shift.into()))
-            .ok_or("invalid datetime")?;
-        Ok(day)
     } else {
-        Err(String::from("couldn't parse day specifier"))
+        info!("day shifter");
+        let day_shift = date
+            .parse::<i16>()
+            .map_err(|e| format!("invalid day shifter: {e:?}"))?;
+        let day = today + TimeDelta::days(day_shift.into());
+        Ok(day)
     }
 }
 
@@ -91,151 +92,142 @@ pub fn next_lesson(lessons: &[Lesson]) -> Option<&Lesson> {
     }
     lessons
         .iter()
-        .filter(|lsn| lsn.forecoming() && !ignore_lesson(*lsn))
-        .next()
+        .find(|lsn| lsn.forecoming() && !ignore_lesson(lsn))
 }
 /// whether it's fake or cancelled
 fn ignore_lesson(lsn: &Lesson) -> bool {
-    lsn.kamu_smafu() || lsn.cancelled()
+    lsn.kamu_smafu() || lsn.cancelled() || lsn.nev == EMPTY_NAME
 }
 
-pub fn disp(lsn: &Lesson) -> String {
-    let mut f = String::new();
-    _ = write!(&mut f, "{}", lsn.nev);
-    if let Some(room) = &lsn.terem_neve {
-        _ = writeln!(&mut f, ", {}", room.replace("terem", "").trim());
-    }
+/// you may want to check `lsn` validity: `lsn.kamu_smafu()`
+pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>) -> Vec<String> {
+    let cancelled = if lsn.cancelled() {
+        let past_morpheme = if lsn.forecoming() { "" } else { "t" };
+        format!("elmarad{past_morpheme}: ")
+    } else {
+        String::new()
+    };
+    let topic = lsn
+        .tema
+        .clone()
+        .map(|t| [": ", t.as_str()].concat())
+        .unwrap_or_default();
+    let name = format!("{cancelled}{}{topic}", lsn.nev);
+    let room = lsn
+        .clone()
+        .terem_neve
+        .unwrap_or_default()
+        .replace("terem", "")
+        .trim()
+        .to_string();
+    let teacher = if let Some(sub_teacher) = &lsn.helyettes_tanar_neve {
+        format!("helyettes: {sub_teacher}")
+    } else {
+        lsn.tanar_neve.clone().unwrap_or_default()
+    };
+    let mins_to_start = mins_till(lsn.kezdet_idopont);
+    let from = if next_lesson(past_lessons).is_some_and(|nxt| nxt == lsn) && mins_to_start < 120 {
+        format!("{} perc", mins_till(lsn.kezdet_idopont))
+    } else {
+        lsn.kezdet_idopont.format("%H:%M").to_string()
+    };
+    let to = if lsn.happening() {
+        format!("{} perc", mins_till(lsn.veg_idopont))
+    } else {
+        lsn.veg_idopont.format("%H:%M").to_string()
+    };
+    let date_time = [from, to].join(" - ");
+    let num = lsn.oraszam.unwrap_or(u8::MAX).to_string();
 
-    if !lsn.kamu_smafu() {
-        _ = writeln!(
-            f,
-            "| {} -> {}",
-            lsn.kezdet_idopont.format("%H:%M"),
-            lsn.veg_idopont.format("%H:%M")
-        );
-    }
-
-    if let Some(tema) = &lsn.tema {
-        _ = writeln!(&mut f, "| {tema}");
-    }
-
+    let mut row = vec![num, date_time, name, room, teacher];
     if lsn.absent() {
-        _ = writeln!(&mut f, "| Ezen az órán nem voltál jelen.");
+        row.push("hiányoztál".to_string());
+    };
+    if let Some(existing_test) = test {
+        let topic = if let Some(topic) = existing_test.temaja.as_ref() {
+            format!(": {topic}")
+        } else {
+            String::new()
+        };
+        let test = format!("{}{}", existing_test.modja.leiras, topic);
+        row.push(test);
     }
 
-    if lsn.cancelled() {
-        _ = writeln!(&mut f, "| Ez az óra elmarad{}.", {
-            if lsn.forecoming() {
-                ""
-            } else {
-                "t"
-            }
-        });
-    }
-
-    if let Some(teacher) = &lsn.tanar_neve {
-        // only show teacher, if there is no alternative one
-        if lsn.helyettes_tanar_neve.is_none() {
-            _ = write!(&mut f, "| {teacher}");
-        }
-    }
-
-    if let Some(helyettes_tanar) = &lsn.helyettes_tanar_neve {
-        _ = write!(&mut f, "| Helyettesítő tanár: {helyettes_tanar}");
-    }
-
-    f
+    row
 }
 
 impl Usr {
     /// print all lessons of a day
-    pub fn print_day(&self, mut lessons: Vec<Lesson>) {
-        if let Some(first_lesson) = lessons.first() {
-            println!(
-                "    {} ({})",
-                &first_lesson.kezdet_idopont.pretty(),
-                first_lesson.kezdet_idopont.hun_day_of_week()
-            );
-            if first_lesson.kamu_smafu() {
-                let as_str = disp(first_lesson);
-                println!("{as_str}");
-                fill(&as_str, '|', None);
-            }
-            let tests = self.get_tests((None, None)).unwrap_or_default();
-            let all_lessons_till_day = self
-                .get_timetable(first_lesson.kezdet_idopont.date_naive(), true)
-                .unwrap_or_default();
-            // info!("all announced: {todays_tests:?}");
+    pub fn print_day(&self, mut lessons: Vec<Lesson>, lessons_of_week: &[Lesson]) {
+        let Some(first_lesson) = lessons.first() else {
+            return;
+        };
+        let day_start = first_lesson.kezdet_idopont;
+        let header = if first_lesson.kamu_smafu() {
+            if lessons.len() == 1 {
+                return;
+            } // in the unfortunate case of stupidity
+            lessons.remove(0).nev.clone()
+        } else {
+            format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty(),)
+        };
+        println!("{header}");
 
-            // number of lessons at the same time
-            lessons.retain(|l| !l.kamu_smafu());
+        let tests = self.get_tests((None, None)).unwrap_or_default();
 
-            for (n, lesson) in lessons.iter().enumerate() {
-                // calculate `n`. this lesson is
-                let nth = lesson.oraszam.unwrap_or(u8::MAX);
-                if n as u8 + 2 == nth
-                    && lessons
-                        .get(n.overflowing_sub(1).0)
-                        .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
-                {
-                    let no_lesson_buf = format!(
-                        "\n\n{}. Lyukas (avagy Lukas) óra\n| Erre az időpontra nincsen tanóra rögzítve.",
-                        n + 1
-                    );
-                    println!("{no_lesson_buf}");
-                    fill(&no_lesson_buf, '^', Some("Juhé"));
-                }
-                // so fill_under() works fine
-                let mut printer = format!("\n\n{nth}. {}", disp(lesson));
-
-                if let Some(Some(test)) = lesson
-                    .bejelentett_szamonkeres_uid
-                    .as_ref()
-                    .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
-                {
-                    printer += &format!(
-                        "\n| {}{}",
-                        test.modja.leiras,
-                        if let Some(topic) = test.temaja.as_ref() {
-                            format!(": {topic}")
-                        } else {
-                            String::new()
-                        }
-                    );
-                }
-                println!("{printer}");
-
-                let (with, inlay_hint) = if lesson.happening() {
-                    (
-                        '$',
-                        Some(format!(
-                            "{} perc",
-                            (lesson.veg_idopont - Local::now()).num_minutes()
-                        )),
-                    )
-                } else if next_lesson(&all_lessons_till_day).is_some_and(|nxt| nxt == lesson) {
-                    (
-                        '>',
-                        Some(format!(
-                            "{} perc",
-                            (lesson.kezdet_idopont - Local::now()).num_minutes()
-                        )),
-                    )
-                } else if lesson.cancelled() {
-                    (
-                        'X',
-                        Some(format!(
-                            "elmarad{}",
-                            if lesson.forecoming() { "" } else { "t" }
-                        )),
-                    )
-                } else {
-                    ('-', None)
-                };
-                fill(&printer, with, inlay_hint.as_deref());
-            }
+        let mut table = ascii_table::AsciiTable::default();
+        #[rustfmt::skip]
+        let headers = [".", "ekkor", "tantárgy", "terem", "tanár", "extra", "extra-extra"];
+        for (i, head) in headers.into_iter().enumerate() {
+            table.column(i).set_header(head);
         }
+
+        let mut data = vec![];
+        for (n, lsn) in lessons.iter().enumerate() {
+            // calculate `n`. this lesson is
+            let nth = lsn.oraszam.unwrap_or(u8::MAX);
+            if n as u8 + 2 == nth
+                && lessons
+                    .get(n.overflowing_sub(1).0)
+                    .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
+            {
+                let empty_n = n as u8 + 1;
+                let (from, to) = nth_lesson_when(empty_n, lessons_of_week);
+                let empty = get_empty(Some(empty_n), from, to);
+                data.push(disp(&empty, lessons_of_week, None));
+            }
+            let ancd_test = lsn
+                .bejelentett_szamonkeres_uid
+                .as_ref()
+                .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
+                .unwrap_or_default();
+            let row = disp(lsn, lessons_of_week, ancd_test);
+            data.push(row);
+        }
+        table.print(data);
     }
+}
+
+/// name given to an empty lesson
+const EMPTY_NAME: &str = "lukas";
+
+/// create a good-looking empty lesson, using the given properties
+fn get_empty(n: Option<u8>, start: Option<LDateTime>, end: Option<LDateTime>) -> Lesson {
+    Lesson {
+        nev: EMPTY_NAME.to_string(),
+        tema: Some(String::from("lazíts!")),
+        oraszam: n,
+        kezdet_idopont: start.unwrap_or_default(),
+        veg_idopont: end.unwrap_or_default(),
+        ..Default::default()
+    }
+}
+
+/// When could this (empty) lesson take place?
+fn nth_lesson_when(n: u8, ref_lessons: &[Lesson]) -> (Option<LDateTime>, Option<LDateTime>) {
+    let same_n = |l: &&Lesson| l.oraszam.is_some_and(|ln| ln == n);
+    let extract_irval = |j: &Lesson| (j.kezdet_idopont, j.veg_idopont);
+    ref_lessons.iter().find(same_n).map(extract_irval).unzip()
 }
 
 pub fn default_day(user: &Usr) -> NaiveDate {

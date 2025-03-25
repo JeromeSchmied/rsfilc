@@ -17,7 +17,7 @@ impl Config {
     pub fn save(&self) -> Res<()> {
         Ok(confy::store(APP_NAME, CONFIG_NAME, self)?)
     }
-    pub fn switch_user_to(&mut self, name: impl ToString) {
+    pub fn switch_user_to(&mut self, name: &impl ToString) {
         self.default_username = name.to_string();
     }
     pub fn delete(&mut self, name: impl AsRef<str>) {
@@ -26,9 +26,9 @@ impl Config {
             let _ = crate::cache::delete_dir(name.as_ref());
             // set default to the first element, not to die
             if let Some(first) = self.users.first().cloned() {
-                self.switch_user_to(first.0.username);
+                self.switch_user_to(&first.0.username);
             } else {
-                self.switch_user_to(String::new());
+                self.switch_user_to(&"");
             }
         }
     }

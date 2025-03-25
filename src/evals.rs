@@ -3,7 +3,6 @@
 use crate::{time::MyDate, user::Usr, utils};
 use ekreta::{Evaluation, Res};
 use log::info;
-use std::fmt::Write;
 
 pub fn handle(
     user: &Usr,
@@ -11,8 +10,7 @@ pub fn handle(
     subj: Option<String>,
     ghost: &[u8],
     avg: bool,
-    rev: bool,
-    num: usize,
+    args: &crate::Args,
 ) -> Res<()> {
     let mut evals = user.get_evals((None, None))?;
     info!("got evals");
@@ -28,8 +26,10 @@ pub fn handle(
 
         return Ok(());
     }
-    utils::print_to_or_rev(&evals, num, rev, disp);
-    Ok(())
+    #[rustfmt::skip]
+    let headers = ["téma", "jegy", "tantárgy", "típus", "tanár", "időpont"];
+    let disp = if args.machine { None } else { Some(display) };
+    utils::print_table(&evals, headers.into_iter(), args.reverse, args.number, disp)
 }
 
 /// Filter `evals` by `kind`
@@ -78,23 +78,20 @@ pub fn calc_average(evals: &[Evaluation], ghosts: &[u8]) -> f32 {
     sum / count
 }
 
-pub fn disp(eval: &Evaluation) -> String {
-    let mut f = String::new();
-    _ = write!(&mut f, "| ");
-    if let Some(desc) = &eval.tema {
-        _ = write!(&mut f, "{desc}: ");
-    }
-    _ = writeln!(&mut f, "{}", eval.szoveges_ertek);
-    _ = writeln!(&mut f, "| {}", eval.tantargy.nev);
-    if let Some(m) = &eval.r#mod {
-        _ = writeln!(&mut f, "| {}", m.leiras);
-    }
+fn display(eval: &Evaluation) -> Vec<String> {
+    let desc = eval.tema.clone().unwrap_or_default();
+    let grade = if let Some(num) = eval.szam_ertek {
+        num.to_string()
+    } else {
+        eval.szoveges_ertek.clone()
+    };
+    let subj_name = eval.tantargy.nev.clone();
+    let how_desc = eval.r#mod.clone().map(|l| l.leiras).unwrap_or_default();
+    // let kind_name = eval.tipus.leiras.replace(" jegy/értékelés", "");
+    let teacher = eval.ertekelo_tanar_neve.clone().unwrap_or_default();
+    let when = eval.keszites_datuma.pretty();
 
-    _ = writeln!(&mut f, "| {}", eval.tipus.leiras);
-    if let Some(teacher) = &eval.ertekelo_tanar_neve {
-        _ = writeln!(&mut f, "| {teacher}");
-    }
-    _ = write!(&mut f, "| Időpont: {}", &eval.keszites_datuma.pretty());
-
-    f
+    vec![
+        desc, grade, subj_name, how_desc, /* kind_name, */ teacher, when,
+    ]
 }

@@ -1,22 +1,28 @@
 //! basic User info, `Kréta` stores
 
-use ekreta::UserInfo;
-use std::fmt::Write;
+use crate::utils;
+use ekreta::{Res, UserInfo};
 
-pub fn disp(user_info: &UserInfo, id: &str, def_id: &str) -> String {
-    let mut f = String::new();
-    let def_usr = if id == def_id {
-        "Alapértelmezett: "
-    } else {
-        ""
-    };
-    _ = writeln!(&mut f, "| {def_usr}{}, ({id})", user_info.nev);
-    _ = writeln!(&mut f, "| Intézmény: {}", user_info.intezmeny_nev);
-    _ = writeln!(&mut f, "|   id: {}", user_info.intezmeny_azonosito);
-    _ = write!(
-        &mut f,
-        "| Születési dátum: {}",
-        user_info.szuletesi_datum.format("%Y.%m.%d")
-    );
-    f
+/// `user_data`: (`user_info`, `id`, `default_id`)
+fn disp(user_data: &(UserInfo, &String, &str)) -> Vec<String> {
+    let id = user_data.1.to_string();
+    let def_usr = if id == user_data.2 { "Alap: " } else { "" };
+    let info = &user_data.0;
+    let name = format!("{def_usr}{}", info.nev);
+    let school = info.intezmeny_nev.clone();
+    let birth = info.szuletesi_datum.format("%Y.%m.%d").to_string();
+    vec![name, id, school, birth]
+}
+
+pub fn handle<'a, I>(def_username: &str, users: I, args: &crate::Args) -> Res<()>
+where
+    I: Iterator<Item = &'a crate::Usr>,
+{
+    let data = users
+        .map(|u| Ok((u.get_userinfo()?, &u.0.username, def_username)))
+        .collect::<Res<Vec<_>>>()?;
+
+    let headers = ["név", "om azonosító", "oskola", "született"].into_iter();
+    let to_str = if args.machine { None } else { Some(disp) };
+    utils::print_table(&data, headers, args.reverse, args.number, to_str)
 }

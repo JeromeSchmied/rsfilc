@@ -1,13 +1,10 @@
 use args::{Args, Command};
-use chrono::Local;
 use clap::{CommandFactory, Parser};
 use config::Config;
 use ekreta::Res;
 use log::*;
-use paths::cache_dir;
 use std::fs::OpenOptions;
 use user::Usr;
-use utils::fill;
 
 mod absences;
 mod announced;
@@ -41,7 +38,8 @@ fn main() -> Res<()> {
 fn run(args: Args, conf: &mut Config) -> Res<()> {
     if args.command.is_none() {
         if args.cache_dir {
-            println!("{}", cache_dir("").ok_or("no cache dir found")?.display());
+            let cache_dir = paths::cache_dir("").ok_or("no cache dir found")?;
+            println!("{}", cache_dir.display());
             return Ok(());
         }
         if args.config_path {
@@ -49,10 +47,14 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             return Ok(());
         }
     }
-    let command = args.command.unwrap_or(Command::Timetable {
-        day: None,
-        current: false,
-    });
+    let command = args
+        .command
+        .as_ref()
+        .unwrap_or(&Command::Timetable {
+            day: None,
+            current: false,
+        })
+        .clone();
     // have a valid user
     let user = if command.user_needed() {
         Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
@@ -71,44 +73,32 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             todo!("TUI is to be written (soon)");
         }
         Command::Timetable { day, current } => {
-            timetable::handle(day, &user, current)?;
+            timetable::handle(day, &user, current, args.machine)?;
         }
 
         Command::Evals {
-            subject,
+            subject: subj,
             filter,
-            number,
             average,
-            reverse,
             ghost,
         } => {
-            evals::handle(&user, filter, subject, &ghost, average, reverse, number)?;
+            evals::handle(&user, filter, subj, &ghost, average, &args)?;
         }
 
-        Command::Messages {
-            number,
-            reverse,
-            notes,
-        } => {
-            messages::handle(notes, &user, reverse, number)?;
+        Command::Messages { notes, id } => {
+            if notes {
+                messages::handle_note_msgs(&user, id, &args)?;
+            } else {
+                messages::handle(&user, id, &args)?;
+            }
         }
 
-        Command::Absences {
-            number,
-            count,
-            subject,
-            reverse,
-        } => {
-            absences::handle(&user, subject, count, reverse, number)?;
+        Command::Absences { count, subject } => {
+            absences::handle(&user, subject, count, &args)?;
         }
 
-        Command::Tests {
-            number,
-            subject,
-            reverse,
-            past,
-        } => {
-            announced::handle(past, &user, subject, reverse, number)?;
+        Command::Tests { subject, past } => {
+            announced::handle(past, &user, subject, &args)?;
         }
 
         Command::User {
@@ -118,11 +108,11 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             cache_dir,
             userid,
         } => {
-            user::handle(userid, create, conf, delete, switch, cache_dir)?;
+            user::handle(userid, create, conf, delete, switch, cache_dir, &args)?;
         }
 
         Command::Schools { search } => {
-            schools::handle(search)?;
+            schools::handle(search, &args)?;
         }
     }
     Ok(())
@@ -137,7 +127,7 @@ fn set_up_logger(verbose: bool) -> Res<()> {
         .format(|out, message, record| {
             out.finish(format_args!(
                 "{} [{}] {} {message}",
-                Local::now(),
+                chrono::Local::now(),
                 record.level(),
                 record.target(),
             ));
