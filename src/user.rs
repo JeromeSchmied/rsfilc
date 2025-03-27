@@ -2,8 +2,8 @@ use crate::{config::Config, *};
 use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Local, NaiveDate, TimeDelta};
 use ekreta::{
-    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, Lesson, MsgItem,
-    MsgOview, OptIrval, Token,
+    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
+    Lesson, MsgItem, MsgOview, OptIrval, Token,
 };
 use serde::{Deserialize, Serialize};
 use std::io::{self, Write};
@@ -27,8 +27,9 @@ pub fn handle(
         return information::handle(&conf.default_username, conf.users.iter(), &args);
     };
     if create {
-        let res = Usr::create(name.clone(), conf)
-            .ok_or("couldn't create user, check your credentials and network connection");
+        let res = Usr::create(name.clone(), conf).ok_or(
+            "couldn't create user, check your credentials, network connection, Kréta server",
+        );
         // delete cache dir if couldn't log in
         if res.is_err() {
             crate::cache::delete_dir(&name)?;
@@ -143,7 +144,7 @@ impl Usr {
         cache::store(&self.0.username, &kind, &content)
     }
     /// helper fn, loads cache of `kind` from `self.0.username` cache-dir
-    fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(ekreta::LDateTime, D)> {
+    fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(LDateTime, D)> {
         let kind = utils::type_to_kind_name::<D>().ok()?;
         if std::env::var("NO_CACHE").is_ok_and(|nc| nc == "1") && kind != "token" {
             log::info!("manually triggered 'no cache' error");
@@ -191,7 +192,7 @@ impl Usr {
             ..self.clone().0
         };
         let token = authed_user.fetch_token().inspect_err(|e| {
-            log::error!("fetching token: {e}");
+            log::error!("error fetching token: {e}");
             eprintln!("error fetching token: {e}");
         })?;
         self.store_cache(&token)?;
@@ -224,37 +225,33 @@ impl Usr {
         debug!("fetching tt, whole week: {whole_week}, from {from} to {to}");
 
         let (cache_t, cached_tt) = self.load_cache::<Vec<Lesson>>().unzip();
-        let mut lessons = cached_tt.unwrap_or_default();
-        let is_cached = |cl: &Lesson| cl.kezdet_idopont.date_naive() == day;
-        let fresh_cache = |ct: ekreta::LDateTime| (ct - Local::now()).abs() < TimeDelta::seconds(8);
-        if !whole_week && cache_t.is_some_and(fresh_cache) && lessons.iter().any(is_cached) {
-            debug!("warm lesson cache hit (< 8s), using instead of fetching");
-            return Ok(lessons.into_iter().filter(is_cached).collect());
+        if let Some(lessons) = cached_tt.as_ref() {
+            let is_cached = |cl: &Lesson| cl.kezdet_idopont.date_naive() == day;
+            let fresh_cache = |ct: LDateTime| (ct - Local::now()).abs() < TimeDelta::seconds(8);
+            if !whole_week && cache_t.is_some_and(fresh_cache) && lessons.iter().any(is_cached) {
+                debug!("warm lesson cache hit (< 8s), using instead of fetching");
+                return Ok(lessons.iter().cloned().filter(is_cached).collect());
+            }
         }
-
-        let mut fetch_err = false;
-        let mut fetched_week = self
-            .fetch_vec((from, to))
-            .inspect_err(|e| {
-                fetch_err = true;
-                eprintln!("couldn't fetch or deserialize data: {e:?}");
-                error!("couldn't fetch or deserialize data: {e:?}");
-            })
-            .unwrap_or_default();
-
-        lessons.retain(|l| {
-            let has_fresh = |fl: &Lesson| l.kezdet_idopont == fl.kezdet_idopont && l.nev == fl.nev;
-            !fetched_week.iter().any(has_fresh)
-        });
-        lessons.append(&mut fetched_week);
-        lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
-        if !fetch_err {
-            self.store_cache(&lessons)?;
+        match self.fetch_vec((from, to)) {
+            Ok(mut fetched_items) => {
+                let mut lessons = cached_tt.unwrap_or_default();
+                lessons.retain(|l| {
+                    let eq = |fl: &Lesson| l.kezdet_idopont == fl.kezdet_idopont && l.uid == fl.uid;
+                    !fetched_items.iter().any(eq) // has fresh
+                });
+                lessons.append(&mut fetched_items);
+                lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
+                self.store_cache(&lessons)?;
+                lessons.retain(|lsn| !whole_week || lsn.kezdet_idopont.date_naive() == day);
+                Ok(lessons)
+            }
+            Err(e) => {
+                error!("only loading cached lessons, couldn't reach E-Kréta server: {e:?}");
+                eprintln!("only loading cached lessons, couldn't reach E-Kréta server: {e:?}");
+                cached_tt.ok_or("nothing cached".into())
+            }
         }
-        if !whole_week {
-            lessons.retain(|lsn| lsn.kezdet_idopont.date_naive() == day);
-        }
-        Ok(lessons)
     }
 
     gen_get_for! { get_tests, Ancd, false,
@@ -369,7 +366,7 @@ impl Usr {
             Ok(fetched_items) => {
                 let mut cached = cached.unwrap_or_default();
                 let not_fetched =
-                    |dt: ekreta::LDateTime| irval.0.is_none_or(|from| dt.date_naive() <= from);
+                    |dt: LDateTime| irval.0.is_none_or(|from| dt.date_naive() <= from);
                 let orig_len = cached.len();
                 cached.retain(|item| item.when().is_none_or(not_fetched));
                 let filtered_len = cached.len();
@@ -377,11 +374,9 @@ impl Usr {
                 Ok([cached, fetched_items].concat())
             }
             Err(e) => {
-                error!("couldn't reach E-Kréta server: {e:?}");
-                eprintln!("couldn't reach E-Kréta server: {e:?}");
                 let kind_name = utils::type_to_kind_name::<Ep>().unwrap_or_default();
-                warn!("request error, only loading cached {kind_name}");
-                eprintln!("request error, only loading cached {kind_name}");
+                error!("only loading cached {kind_name}, couldn't reach E-Kréta server: {e:?}");
+                eprintln!("only loading cached {kind_name}, couldn't reach E-Kréta server: {e:?}");
                 cached.ok_or("nothing cached".into())
             }
         }
