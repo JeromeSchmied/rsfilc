@@ -9,6 +9,7 @@ const CONFIG_NAME: &str = "config";
 pub struct Config {
     pub default_username: String,
     pub users: BTreeSet<Usr>,
+    pub rename: Vec<[String; 2]>,
 }
 impl Config {
     pub fn load() -> Res<Config> {
