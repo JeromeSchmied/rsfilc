@@ -83,7 +83,7 @@ kedves kis használati utasítás: `rsfilc --help`
 - ha attól tartasz zsebed kacatokkal tele, mondj egy hasonlót: `NO_CACHE=1 rsfilc absences`, vagy használd a `clap`-et: `rsfilc user --cache-dir`
 - ha egy adott nap már nincs több órád, s te mégis mondád: `rsfilc (timetable|tt)`, megjelenik a legközelebbi órákkal tarkított napod, ha te ezt mégsem akarod: `rsfilc tt +0` avagy `rsfilc tt -- -0` a barátod
 
-![demo](./rsfilc_demo.gif "using rsfilc")
+![demo](./assets/demo.gif "using rsfilc")
 
 ## Finomságok
 

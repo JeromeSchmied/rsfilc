@@ -92,7 +92,7 @@ creating a new user: `rsfilc user --create <USER_ID>`
 - if you feel like refreshing your cache, you'd do (again on linux): `NO_CACHE=1 rsfilc absences`, but don't forget `rsfilc user --cache-dir` either
 - if your lessons are over for a day, and say: `rsfilc (timetable|tt)`, the next day with lessons will be shown by default, to show today you could: `rsfilc tt +0` or `rsfilc tt -- -0`
 
-![demo](./rsfilc_demo.gif "using rsfilc")
+![demo](./assets/demo.gif "using rsfilc")
 
 ## Features
 
