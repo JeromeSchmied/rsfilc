@@ -62,12 +62,13 @@ pub struct Usr(pub ekreta::User);
 // basic stuff
 impl Usr {
     /// create new instance of [`User`]
-    pub fn new(username: String, password: String, schoolid: String) -> Self {
-        let password = STANDARD.encode(password);
+    pub fn new(userid: String, passwd: String, schoolid: String, rename: Vec<[String; 2]>) -> Self {
+        let password = STANDARD.encode(passwd);
         Self(ekreta::User {
-            username,
+            username: userid,
             password,
             schoolid,
+            rename,
         })
     }
     /// Returns the decoded password of this [`User`].
@@ -82,7 +83,7 @@ impl Usr {
     /// creates dummy [`User`], that won't be saved and shouldn't be used
     pub fn dummy() -> Self {
         info!("created dummy user");
-        Self::new(String::new(), String::new(), String::new())
+        Self::new(String::new(), String::new(), String::new(), vec![])
     }
 
     /// create a [`User`] from cli and write it to `conf`!
@@ -111,7 +112,7 @@ impl Usr {
         }
         info!("received schoolid {schoolid} from cli");
 
-        let user = Self::new(username, password, schoolid);
+        let user = Self::new(username, password, schoolid, conf.rename.clone());
         user.get_userinfo().ok()?;
         user.save(conf);
         Some(user)
@@ -126,10 +127,13 @@ impl Usr {
 
     /// load default [`User`]
     pub fn load(conf: &Config) -> Option<Self> {
-        conf.users
+        let mut def_usr = conf
+            .users
             .iter()
             .find(|u| u.0.username == conf.default_username)
-            .cloned()
+            .cloned()?;
+        def_usr.0.rename = conf.rename.clone();
+        Some(def_usr)
     }
 }
 
