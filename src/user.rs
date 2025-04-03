@@ -233,23 +233,33 @@ impl Usr {
                 return Ok(lessons.iter().cloned().filter(is_cached).collect());
             }
         }
+        let remain_relevant = |lessons: &mut Vec<Lesson>| {
+            if !whole_week {
+                lessons.retain(|lsn| lsn.kezdet_idopont.date_naive() == day);
+            }
+        };
         match self.fetch_vec((from, to)) {
             Ok(mut fetched_items) => {
                 let mut lessons = cached_tt.unwrap_or_default();
-                lessons.retain(|l| {
-                    let eq = |fl: &Lesson| l.kezdet_idopont == fl.kezdet_idopont && l.uid == fl.uid;
-                    !fetched_items.iter().any(eq) // has fresh
-                });
+                // delete cached if same but fresh was fetched
+                lessons.retain(|l| !fetched_items.iter().any(|fl: &Lesson| l.uid == fl.uid));
                 lessons.append(&mut fetched_items);
                 lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
                 self.store_cache(&lessons)?;
-                lessons.retain(|lsn| !whole_week || lsn.kezdet_idopont.date_naive() == day);
+                remain_relevant(&mut lessons);
                 Ok(lessons)
             }
             Err(e) => {
                 error!("only loading cached lessons, couldn't reach E-Kréta server: {e:?}");
                 eprintln!("only loading cached lessons, couldn't reach E-Kréta server: {e:?}");
-                cached_tt.ok_or("nothing cached".into())
+                let mut lessons = cached_tt.ok_or("nothing cached")?;
+                remain_relevant(&mut lessons);
+                // shouldn't have any lesson on weekends by default
+                if lessons.is_empty() && days_till_sun > TimeDelta::days(1) {
+                    Err("nothing cached for this period".into())
+                } else {
+                    Ok(lessons)
+                }
             }
         }
     }
