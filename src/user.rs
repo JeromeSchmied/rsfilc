@@ -242,7 +242,13 @@ impl Usr {
             Ok(mut fetched_items) => {
                 let mut lessons = cached_tt.unwrap_or_default();
                 // delete cached if same but fresh was fetched
-                lessons.retain(|l| !fetched_items.iter().any(|fl: &Lesson| l.uid == fl.uid));
+                lessons.retain(|l| {
+                    !fetched_items.iter().any(|fl: &Lesson| {
+                        l.kezdet_idopont == fl.kezdet_idopont
+                            && l.veg_idopont == fl.veg_idopont
+                            && l.ora_eves_sorszama == fl.ora_eves_sorszama
+                    })
+                });
                 lessons.append(&mut fetched_items);
                 lessons.sort_unstable_by_key(|l| l.kezdet_idopont);
                 self.store_cache(&lessons)?;
