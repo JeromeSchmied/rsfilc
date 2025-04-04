@@ -96,6 +96,12 @@ creating a new user: `rsfilc user --create <USER_ID>`
 
 ## Features
 
+### renaming
+
+like: teachers, subjects, ...  
+check out the config path with `rsfilc --config-path` and edit `rename` to your liking  
+you may wanna check out [example config](./assets/example-config.toml)
+
 ### cross-platform: not tested thoroughly but should run on
 
 -   linux
