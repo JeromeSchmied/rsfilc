@@ -381,7 +381,7 @@ impl Usr {
             Ok(fetched_items) => {
                 let mut cached = cached.unwrap_or_default();
                 let not_fetched =
-                    |dt: LDateTime| orig_irval.0.is_none_or(|from| dt.date_naive() <= from);
+                    |dt: LDateTime| irval.0.is_none_or(|from| dt.date_naive() <= from);
                 let orig_len = cached.len();
                 cached.retain(|item| item.when().is_none_or(not_fetched));
                 let overwritten = orig_len - cached.len();
