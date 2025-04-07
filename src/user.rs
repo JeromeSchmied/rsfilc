@@ -1,5 +1,4 @@
 use crate::{config::Config, *};
-use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::{Datelike, Local, NaiveDate, TimeDelta};
 use ekreta::{
     consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
@@ -63,28 +62,17 @@ pub struct User(pub ekreta::Account);
 // basic stuff
 impl User {
     /// create new instance of [`User`]
-    pub fn new(userid: String, passwd: String, schoolid: String, rename: Vec<[String; 2]>) -> Self {
-        let password = STANDARD.encode(passwd);
+    pub fn new(userid: String, schoolid: String, rename: Vec<[String; 2]>) -> Self {
         Self(ekreta::Account {
             userid,
-            password,
             schoolid,
             rename,
         })
     }
-    /// Returns the decoded password of this [`User`].
-    ///
-    /// # Panics
-    ///
-    /// Panics if decode fails.
-    fn decode_password(&self) -> String {
-        let decoded_password = STANDARD.decode(&self.0.password).unwrap();
-        String::from_utf8(decoded_password).unwrap()
-    }
     /// creates dummy [`User`], that won't be saved and shouldn't be used
     pub fn dummy() -> Self {
         info!("created dummy user");
-        Self::new(String::new(), String::new(), String::new(), vec![])
+        Self::new(String::new(), String::new(), vec![])
     }
 
     /// create a [`User`] from cli and write it to `conf`!
@@ -95,12 +83,6 @@ impl User {
     pub fn create(username: String, conf: &mut Config) -> Option<Self> {
         info!("creating user from cli");
         info!("received username from cli");
-
-        let Ok(password) = rpassword::prompt_password("password: ") else {
-            println!("password is required");
-            return None;
-        };
-        info!("received password {} from cli", "*".repeat(password.len()));
 
         print!("schoolid: ");
         io::stdout().flush().ok()?;
@@ -113,7 +95,7 @@ impl User {
         }
         info!("received schoolid {schoolid} from cli");
 
-        let user = Self::new(username, password, schoolid, conf.rename.clone());
+        let user = Self::new(username, schoolid, conf.rename.clone());
         user.get_userinfo().ok()?;
         user.save(conf);
         Some(user)
@@ -179,6 +161,7 @@ impl User {
         ]))
     }
 
+    /// will read password from tty if there's no cached `Token`, otherwise uses `refresh_token`
     fn get_token(&self) -> Res<Token> {
         if let Some((cache_t, cached_token)) = self.load_cache::<Token>() {
             if Local::now().signed_duration_since(cache_t)
@@ -191,11 +174,10 @@ impl User {
             self.store_cache(&token)?;
             return Ok(token);
         }
-        let authed_user = ekreta::Account {
-            password: self.decode_password(),
-            ..self.clone().0
-        };
-        let token = authed_user.fetch_token().inspect_err(|e| {
+        let password = rpassword::prompt_password("password: ")?;
+        info!("received password {} from cli", "*".repeat(password.len()));
+
+        let token = self.0.fetch_token(password).inspect_err(|e| {
             log::error!("error fetching token: {e}");
             eprintln!("error fetching token: {e}");
         })?;
