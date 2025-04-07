@@ -364,37 +364,45 @@ impl Usr {
     /// # NOTE
     /// - if any of the two fails, it will be logged, but ignored and the other source will be used instead
     /// - don't forget to deduplicate the returned Vec **properly**
-    /// # WARN
-    /// `irval.1` so the end of the interval, 'to' will be ignored in terms of cached data
-    fn load_n_fetch<Ep>(&self, irval: &mut OptIrval, fix_irval: bool) -> Res<Vec<Ep>>
+    fn load_n_fetch<Ep>(&self, mut irval: OptIrval, fix_irval: bool) -> Res<Vec<Ep>>
     where
         Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> Deserialize<'a> + Clone,
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
+        let orig_irval = irval.clone();
 
         if fix_irval && cached.is_some() {
-            *irval = utils::fix_from(cache_t, *irval);
+            irval = utils::fix_from(cache_t, irval);
         }
 
-        let fetched = self.fetch_vec::<Ep>(*irval);
+        let fetched = self.fetch_vec::<Ep>(irval);
 
-        match fetched {
+        let mut items = match fetched {
             Ok(fetched_items) => {
                 let mut cached = cached.unwrap_or_default();
                 let not_fetched =
                     |dt: LDateTime| irval.0.is_none_or(|from| dt.date_naive() <= from);
                 let orig_len = cached.len();
                 cached.retain(|item| item.when().is_none_or(not_fetched));
-                let filtered_len = cached.len();
-                log::info!("load_n_fetch deleted: {}", orig_len - filtered_len);
+                let overwritten = orig_len - cached.len();
+                log::info!("{overwritten} cached items were overwritten with fetched");
                 Ok([cached, fetched_items].concat())
             }
             Err(e) => {
                 let kind_name = utils::type_to_kind_name::<Ep>().unwrap_or_default();
                 error!("only loading cached {kind_name}, couldn't reach E-Kréta server: {e:?}");
                 eprintln!("only loading cached {kind_name}, couldn't reach E-Kréta server: {e:?}");
-                cached.ok_or("nothing cached".into())
+                cached.ok_or("nothing cached".to_owned())
             }
-        }
+        }?;
+        let orig_len = items.len();
+        let in_irval = |dt: LDateTime| {
+            orig_irval.0.is_none_or(|from| from <= dt.date_naive())
+                && orig_irval.1.is_none_or(|to| dt.date_naive() <= to)
+        };
+        items.retain(|item| item.when().is_none_or(in_irval));
+        let deleted = orig_len - items.len();
+        log::info!("deleted {deleted} items that weren't in interval asked",);
+        Ok(items)
     }
 }

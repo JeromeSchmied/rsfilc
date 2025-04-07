@@ -163,6 +163,7 @@ impl Usr {
             return;
         };
         let day_start = first_lesson.kezdet_idopont;
+        let day = first_lesson.datum.date_naive();
         let header = if first_lesson.kamu_smafu() {
             if lessons.len() == 1 {
                 return;
@@ -173,7 +174,7 @@ impl Usr {
         };
         println!("{header}");
 
-        let tests = self.get_tests((None, None)).unwrap_or_default();
+        let tests = self.get_tests((Some(day), Some(day))).unwrap_or_default();
 
         let mut table = ascii_table::AsciiTable::default();
         #[rustfmt::skip]
@@ -186,21 +187,16 @@ impl Usr {
         for (n, lsn) in lessons.iter().enumerate() {
             // calculate `n`. this lesson is
             let nth = lsn.oraszam.unwrap_or(u8::MAX);
-            if n as u8 + 2 == nth
-                && lessons
-                    .get(n.overflowing_sub(1).0)
-                    .is_none_or(|prev| prev.oraszam.unwrap_or(u8::MAX) == n as u8)
-            {
+            // same `nth` as previous lesson
+            let same_n_prev = |prev: &Lesson| prev.oraszam.unwrap_or(u8::MAX) == n as u8;
+            if n as u8 + 2 == nth && lessons.get(n.overflowing_sub(1).0).is_none_or(same_n_prev) {
                 let empty_n = n as u8 + 1;
                 let (from, to) = nth_lesson_when(empty_n, lessons_of_week);
                 let empty = get_empty(Some(empty_n), from, to);
                 data.push(disp(&empty, lessons_of_week, None));
             }
-            let ancd_test = lsn
-                .bejelentett_szamonkeres_uid
-                .as_ref()
-                .map(|test_uid| tests.iter().find(|t| t.uid == *test_uid))
-                .unwrap_or_default();
+            let same_n = |t: &&AnnouncedTest| t.orarendi_ora_oraszama == lsn.oraszam;
+            let ancd_test = tests.iter().find(same_n);
             let row = disp(lsn, lessons_of_week, ancd_test);
             data.push(row);
         }

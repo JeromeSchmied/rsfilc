@@ -1,15 +1,12 @@
 //! Announced tests
 
 use crate::{time::MyDate, user::Usr, utils};
-use chrono::{Datelike, Local};
 use ekreta::{AnnouncedTest, Res};
 
 pub fn handle(past: bool, user: &Usr, subj: Option<String>, args: &crate::Args) -> Res<()> {
-    let mut all_announced = user.get_tests((None, None))?;
-    if !past {
-        let today = Local::now().num_days_from_ce();
-        all_announced.retain(|ancd| ancd.datum.num_days_from_ce() >= today);
-    }
+    #[rustfmt::skip]
+    let from = if past { None } else { Some(chrono::Local::now().date_naive()) };
+    let mut all_announced = user.get_tests((from, None))?;
     if let Some(subject) = subj {
         filter_by_subject(&mut all_announced, &subject);
     }
