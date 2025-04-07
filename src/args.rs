@@ -30,6 +30,9 @@ pub struct Args {
     /// show config path
     #[arg(long, default_value_t = false)]
     pub config_path: bool,
+    /// Manually set a user (by name or ID) for a command
+    #[arg(long, env = "RSFILC_USER")]
+    pub user: Option<String>,
 }
 
 #[derive(Subcommand, Debug, Clone)]
