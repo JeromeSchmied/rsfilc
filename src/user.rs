@@ -108,12 +108,13 @@ impl User {
         conf.switch_user_to(&self.0.userid);
     }
 
-    /// load default [`User`]
-    pub fn load(conf: &Config) -> Option<Self> {
+    /// load `who`(id or name) from `conf`
+    pub fn load(conf: &Config, who: impl AsRef<str>) -> Option<Self> {
+        let whose_id = conf.get_userid(who)?;
         let mut def_usr = conf
             .users
             .iter()
-            .find(|u| u.0.userid == conf.default_userid)
+            .find(|u| u.0.userid == whose_id)
             .cloned()?;
         def_usr.0.rename = conf.rename.clone();
         Some(def_usr)
