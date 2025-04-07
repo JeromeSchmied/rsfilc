@@ -1,11 +1,11 @@
 //! lessons the student has
 
-use crate::{time::MyDate, user::Usr};
+use crate::{time::MyDate, user::User};
 use chrono::{Datelike, Local, NaiveDate, TimeDelta};
 use ekreta::{AnnouncedTest, LDateTime, Lesson, Res};
 use log::*;
 
-pub fn handle(day: Option<NaiveDate>, user: &Usr, current: bool, json: bool) -> Res<()> {
+pub fn handle(day: Option<NaiveDate>, user: &User, current: bool, json: bool) -> Res<()> {
     let day = day.unwrap_or(default_day(user));
     let lessons_of_week = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
@@ -156,7 +156,7 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
     row
 }
 
-impl Usr {
+impl User {
     /// print all lessons of a day
     pub fn print_day(&self, mut lessons: Vec<Lesson>, lessons_of_week: &[Lesson]) {
         let Some(first_lesson) = lessons.first() else {
@@ -226,7 +226,7 @@ fn nth_lesson_when(n: u8, ref_lessons: &[Lesson]) -> (Option<LDateTime>, Option<
     ref_lessons.iter().find(same_n).map(extract_irval).unzip()
 }
 
-pub fn default_day(user: &Usr) -> NaiveDate {
+pub fn default_day(user: &User) -> NaiveDate {
     let now = Local::now();
     let today = now.date_naive();
     let end_of_today = if let Ok(mut lessons) = user.get_timetable(today, false) {

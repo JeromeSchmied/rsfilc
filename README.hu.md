@@ -87,6 +87,13 @@ kedves kis használati utasítás: `rsfilc --help`
 
 ## Finomságok
 
+### átnevezés
+
+no mit is nevezhetsz át: közel bármit. pl: tanárok, tantárgyak neveit  
+hogyan: nédd hol van a beállítások fájl így `rsfilc --config-path` és írd át a `rename`-t ahogy tetszik  
+persze kíváncsi lehetsz ez hogyan megy: [tegyük fel imigyen](./assets/example-config.toml)
+ha épp úgy érzed, hogy semmit nem akarsz átnevezni, alkalmazd a `NO_RENAME=1` környezeti változót (*deviszont*: ez a *cache*t nem írja felül, úgyhogy onnan maradhat még átírás)  
+
 ### nem rendszerhez kötött: nincs különösebben letesztelve, de elvileg fut
 
 -   linuxon

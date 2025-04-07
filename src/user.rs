@@ -20,14 +20,14 @@ pub fn handle(
     let Some(name) = userid else {
         if cache_dir {
             let cache_dir =
-                paths::cache_dir(&conf.default_username).ok_or("no cache dir found for user")?;
+                paths::cache_dir(&conf.default_userid).ok_or("no cache dir found for user")?;
             println!("{}", cache_dir.display());
             return Ok(());
         }
-        return information::handle(&conf.default_username, conf.users.iter(), &args);
+        return information::handle(&conf.default_userid, conf.users.iter(), &args);
     };
     if create {
-        let res = Usr::create(name.clone(), conf).ok_or(
+        let res = User::create(name.clone(), conf).ok_or(
             "couldn't create user, check your credentials, network connection, Kréta server",
         );
         // delete cache dir if couldn't log in
@@ -51,24 +51,25 @@ pub fn handle(
         let cache_dir = paths::cache_dir(&userid).ok_or("no cache dir found for user")?;
         println!("{}", cache_dir.display());
     } else {
-        let matching_users = conf.users.iter().filter(|u| u.0.username == userid);
-        information::handle(&conf.default_username, matching_users, &args)?;
+        let matching_users = conf.users.iter().filter(|u| u.0.userid == userid);
+        information::handle(&conf.default_userid, matching_users, &args)?;
     }
     conf.save()
 }
 
 /// Kréta, app user
 #[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Deserialize, Serialize, Debug)]
-pub struct Usr(pub ekreta::User);
+pub struct User(pub ekreta::Account);
 // basic stuff
-impl Usr {
+impl User {
     /// create new instance of [`User`]
-    pub fn new(username: String, password: String, schoolid: String) -> Self {
-        let password = STANDARD.encode(password);
-        Self(ekreta::User {
-            username,
+    pub fn new(userid: String, passwd: String, schoolid: String, rename: Vec<[String; 2]>) -> Self {
+        let password = STANDARD.encode(passwd);
+        Self(ekreta::Account {
+            userid,
             password,
             schoolid,
+            rename,
         })
     }
     /// Returns the decoded password of this [`User`].
@@ -83,7 +84,7 @@ impl Usr {
     /// creates dummy [`User`], that won't be saved and shouldn't be used
     pub fn dummy() -> Self {
         info!("created dummy user");
-        Self::new(String::new(), String::new(), String::new())
+        Self::new(String::new(), String::new(), String::new(), vec![])
     }
 
     /// create a [`User`] from cli and write it to `conf`!
@@ -112,7 +113,7 @@ impl Usr {
         }
         info!("received schoolid {schoolid} from cli");
 
-        let user = Self::new(username, password, schoolid);
+        let user = Self::new(username, password, schoolid, conf.rename.clone());
         user.get_userinfo().ok()?;
         user.save(conf);
         Some(user)
@@ -122,26 +123,29 @@ impl Usr {
     /// also set as default
     fn save(&self, conf: &mut Config) {
         conf.users.insert(self.clone());
-        conf.switch_user_to(&self.0.username);
+        conf.switch_user_to(&self.0.userid);
     }
 
     /// load default [`User`]
     pub fn load(conf: &Config) -> Option<Self> {
-        conf.users
+        let mut def_usr = conf
+            .users
             .iter()
-            .find(|u| u.0.username == conf.default_username)
-            .cloned()
+            .find(|u| u.0.userid == conf.default_userid)
+            .cloned()?;
+        def_usr.0.rename = conf.rename.clone();
+        Some(def_usr)
     }
 }
 
 // interacting with API
-impl Usr {
+impl User {
     /// helper fn, stores `content` of `kind` to `self.0.username` cache-dir
     fn store_cache<S: Serialize>(&self, content: &S) -> Res<()> {
         let kind = utils::type_to_kind_name::<S>()?;
 
         let content = serde_json::to_string(content)?;
-        cache::store(&self.0.username, &kind, &content)
+        cache::store(&self.0.userid, &kind, &content)
     }
     /// helper fn, loads cache of `kind` from `self.0.username` cache-dir
     fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(LDateTime, D)> {
@@ -151,7 +155,7 @@ impl Usr {
             return None;
         }
 
-        let (cache_t, content) = cache::load(&self.0.username, &kind)?;
+        let (cache_t, content) = cache::load(&self.0.userid, &kind)?;
         let deserd = serde_json::from_str(&content)
             .inspect_err(|e| {
                 error!("{e:?} - couldn't deserialize {kind}: {content}");
@@ -187,7 +191,7 @@ impl Usr {
             self.store_cache(&token)?;
             return Ok(token);
         }
-        let authed_user = ekreta::User {
+        let authed_user = ekreta::Account {
             password: self.decode_password(),
             ..self.clone().0
         };
@@ -286,7 +290,7 @@ impl Usr {
 }
 
 /// [`Msg`]s and [`Attachment`]s
-impl Usr {
+impl User {
     /// Download all [`Attachment`]s of this [`Msg`] to [`download_dir()`].
     ///
     /// # Errors

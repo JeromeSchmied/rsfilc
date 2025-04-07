@@ -4,7 +4,7 @@ use config::Config;
 use ekreta::Res;
 use log::*;
 use std::fs::OpenOptions;
-use user::Usr;
+use user::User;
 
 mod absences;
 mod announced;
@@ -59,13 +59,14 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
     let user = if command.user_needed() {
         if let Some(user) = args.user.as_deref() {
             conf.get_userid(user)
-                .and_then(|userid| conf.users.iter().find(|u| u.0.username == userid).cloned())
+                .and_then(|userid| conf.users.iter().find(|u| u.0.userid == userid).cloned())
                 .ok_or(format!("manually specified user is invalid ({user})"))?
         } else {
-            Usr::load(conf).ok_or("no user found, please create one with `rsfilc user --create`")?
+            User::load(conf)
+                .ok_or("no user found, please create one with `rsfilc user --create`")?
         }
     } else {
-        Usr::dummy()
+        User::dummy()
     };
 
     match command {

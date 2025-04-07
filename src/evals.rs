@@ -1,11 +1,11 @@
 //! evaluations/grades the user received
 
-use crate::{time::MyDate, user::Usr, utils};
+use crate::{time::MyDate, user::User, utils};
 use ekreta::{Evaluation, Res};
 use log::info;
 
 pub fn handle(
-    user: &Usr,
+    user: &User,
     filter: Option<String>,
     subj: Option<String>,
     ghost: &[u8],

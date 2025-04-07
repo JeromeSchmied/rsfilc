@@ -1,9 +1,9 @@
 //! Announced tests
 
-use crate::{time::MyDate, user::Usr, utils};
+use crate::{time::MyDate, user::User, utils};
 use ekreta::{AnnouncedTest, Res};
 
-pub fn handle(past: bool, user: &Usr, subj: Option<String>, args: &crate::Args) -> Res<()> {
+pub fn handle(past: bool, user: &User, subj: Option<String>, args: &crate::Args) -> Res<()> {
     #[rustfmt::skip]
     let from = if past { None } else { Some(chrono::Local::now().date_naive()) };
     let mut all_announced = user.get_tests((from, None))?;
