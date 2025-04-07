@@ -306,9 +306,9 @@ dependencies = [
 
 [[package]]
 name = "ekreta"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "950f380875e20a47ba3e44a75b315b8f5fb9d24d5b6cddd3a1b166510b246a82"
+checksum = "3cc5a4bfbe1998ad90e6c963b0309464f46d88011c607bc1517ed97852f27727"
 dependencies = [
  "chrono",
  "http",
