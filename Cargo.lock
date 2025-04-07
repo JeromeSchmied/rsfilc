@@ -735,7 +735,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "ascii_table",
  "chrono",
