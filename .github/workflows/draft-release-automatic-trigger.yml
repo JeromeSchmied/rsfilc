@@ -72,4 +72,6 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
         run: |
+          ls -la
+          git status
           cargo publish
