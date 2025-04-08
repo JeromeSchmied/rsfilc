@@ -142,7 +142,7 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
     let mut row = vec![num, date_time, name, room, teacher];
     if lsn.absent() {
         row.push("hiányoztál".to_string());
-    };
+    }
     if let Some(existing_test) = test {
         let topic = if let Some(topic) = existing_test.temaja.as_ref() {
             format!(": {topic}")

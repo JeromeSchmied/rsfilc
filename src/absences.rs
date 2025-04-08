@@ -26,7 +26,7 @@ pub fn handle(user: &User, subj: Option<String>, count: bool, args: &crate::Args
 
 /// filter [`Abs`]ences by `subj`ect
 pub fn filter_by_subject(abss: &mut Vec<Absence>, subj: &str) {
-    log::info!("filtering absences by subject: {}", subj);
+    log::info!("filtering absences by subject: {subj}");
     abss.retain(|abs| {
         abs.tantargy
             .nev

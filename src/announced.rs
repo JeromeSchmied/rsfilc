@@ -17,7 +17,7 @@ pub fn handle(past: bool, user: &User, subj: Option<String>, args: &crate::Args)
 
 /// filter [`Ancd`] tests by `subj`ect
 pub fn filter_by_subject(ancds: &mut Vec<AnnouncedTest>, subj: &str) {
-    log::info!("filtering announced tests by subject: {}", subj);
+    log::info!("filtering announced tests by subject: {subj}");
     ancds.retain(|ancd| {
         ancd.tantargy_neve
             .to_lowercase()
