@@ -23,7 +23,7 @@ pub fn handle(
             println!("{}", cache_dir.display());
             return Ok(());
         }
-        return information::handle(&conf.default_userid, conf.users.iter(), &args);
+        return information::handle(&conf.default_userid, conf.users.iter(), args);
     };
     if create {
         let res = User::create(name.clone(), conf).ok_or(
@@ -51,7 +51,7 @@ pub fn handle(
         println!("{}", cache_dir.display());
     } else {
         let matching_users = conf.users.iter().filter(|u| u.0.userid == userid);
-        information::handle(&conf.default_userid, matching_users, &args)?;
+        information::handle(&conf.default_userid, matching_users, args)?;
     }
     conf.save()
 }
@@ -116,7 +116,7 @@ impl User {
             .iter()
             .find(|u| u.0.userid == whose_id)
             .cloned()?;
-        def_usr.0.rename = conf.rename.clone();
+        def_usr.0.rename.clone_from(&conf.rename);
         Some(def_usr)
     }
 }
@@ -217,7 +217,7 @@ impl User {
             let fresh_cache = |ct: LDateTime| (ct - Local::now()).abs() < TimeDelta::seconds(8);
             if !whole_week && cache_t.is_some_and(fresh_cache) && lessons.iter().any(is_cached) {
                 debug!("warm lesson cache hit (< 8s), using instead of fetching");
-                return Ok(lessons.iter().cloned().filter(is_cached).collect());
+                return Ok(lessons.iter().filter(|&x| is_cached(x)).cloned().collect());
             }
         }
         let remain_relevant = |lessons: &mut Vec<Lesson>| {
@@ -356,7 +356,7 @@ impl User {
         Ep: ekreta::Endpoint<Args = OptIrval> + for<'a> Deserialize<'a> + Clone,
     {
         let (cache_t, cached) = self.load_cache::<Vec<Ep>>().unzip();
-        let orig_irval = irval.clone();
+        let orig_irval = irval;
 
         if fix_irval && cached.is_some() {
             irval = utils::fix_from(cache_t, irval);

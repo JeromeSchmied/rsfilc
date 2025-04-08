@@ -35,7 +35,7 @@ pub fn handle(
 /// Filter `evals` by `kind`
 pub fn filter_by_kind_or_title(evals: &mut Vec<Evaluation>, filter: &str) {
     let filter = filter.to_lowercase();
-    log::info!("filtering evals by kind: {}", filter);
+    log::info!("filtering evals by kind: {filter}");
     evals.retain(|eval| {
         eval.r#mod
             .as_ref()
@@ -50,7 +50,7 @@ pub fn filter_by_kind_or_title(evals: &mut Vec<Evaluation>, filter: &str) {
 
 /// Filter `evals` by `subject`
 pub fn filter_by_subject(evals: &mut Vec<Evaluation>, subj: &str) {
-    log::info!("filtering evals by subject: {}", subj);
+    log::info!("filtering evals by subject: {subj}");
     evals.retain(|eval| {
         eval.tantargy
             .nev
