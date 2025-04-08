@@ -229,11 +229,11 @@ impl User {
             Ok(mut fetched_items) => {
                 let mut lessons = cached_tt.unwrap_or_default();
                 // delete cached if same but fresh was fetched
-                lessons.retain(|l| {
+                lessons.retain(|cl| {
                     !fetched_items.iter().any(|fl: &Lesson| {
-                        l.kezdet_idopont == fl.kezdet_idopont
-                            && l.veg_idopont == fl.veg_idopont
-                            && l.ora_eves_sorszama == fl.ora_eves_sorszama
+                        cl.kezdet_idopont == fl.kezdet_idopont
+                            && cl.veg_idopont == fl.veg_idopont
+                            && cl.utolso_modositas == fl.utolso_modositas
                     })
                 });
                 lessons.append(&mut fetched_items);
