@@ -7,6 +7,7 @@ use log::*;
 
 pub fn handle(day: Option<NaiveDate>, user: &User, current: bool, json: bool) -> Res<()> {
     let day = day.unwrap_or(default_day(user));
+    debug!("showing day: {day}");
     let lessons_of_week = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
@@ -160,19 +161,20 @@ impl User {
     /// print all lessons of a day
     pub fn print_day(&self, mut lessons: Vec<Lesson>, lessons_of_week: &[Lesson]) {
         let Some(first_lesson) = lessons.first() else {
+            warn!("empty lesson-list got, won't print");
             return;
         };
         let day_start = first_lesson.kezdet_idopont;
         let day = first_lesson.datum.date_naive();
         let header = if first_lesson.kamu_smafu() {
-            if lessons.len() == 1 {
-                return;
-            } // in the unfortunate case of stupidity
             lessons.remove(0).nev.clone()
         } else {
-            format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty(),)
+            format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty())
         };
         println!("{header}");
+        if lessons.is_empty() {
+            return;
+        } // in the unfortunate case of stupidity
 
         let tests = self.get_tests((Some(day), Some(day))).unwrap_or_default();
 
@@ -184,15 +186,18 @@ impl User {
         }
 
         let mut data = vec![];
+        let starts_with_0 = lessons[0].oraszam.unwrap_or(u8::MAX) == 0;
         for (n, lsn) in lessons.iter().enumerate() {
+            let n = n as u8 + 1 - starts_with_0 as u8;
             // calculate `n`. this lesson is
             let nth = lsn.oraszam.unwrap_or(u8::MAX);
+            debug!("nth lesson, expected: {n}; actual: {nth}");
             // same `nth` as previous lesson
-            let same_n_prev = |prev: &Lesson| prev.oraszam.unwrap_or(u8::MAX) == n as u8;
-            if n as u8 + 2 == nth && lessons.get(n.overflowing_sub(1).0).is_none_or(same_n_prev) {
-                let empty_n = n as u8 + 1;
-                let (from, to) = nth_lesson_when(empty_n, lessons_of_week);
-                let empty = get_empty(Some(empty_n), from, to);
+            let same_n_prev = |prev: &Lesson| prev.oraszam.unwrap_or(u8::MAX) == (n - 1);
+            let prev_idx = n.overflowing_sub(1 + !starts_with_0 as u8).0;
+            if n != nth && lessons.get(prev_idx as usize).is_none_or(same_n_prev) {
+                let (from, to) = nth_lesson_when(n, lessons_of_week);
+                let empty = get_empty(Some(n), from, to);
                 data.push(disp(&empty, lessons_of_week, None));
             }
             let same_n = |t: &&AnnouncedTest| t.orarendi_ora_oraszama == lsn.oraszam;
