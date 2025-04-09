@@ -7,6 +7,7 @@ use log::*;
 
 pub fn handle(day: Option<NaiveDate>, user: &User, current: bool, json: bool) -> Res<()> {
     let day = day.unwrap_or(default_day(user));
+    debug!("showing day: {day}");
     let lessons_of_week = user.get_timetable(day, true)?;
     let lessons = user.get_timetable(day, false)?;
     if lessons.is_empty() {
@@ -160,19 +161,20 @@ impl User {
     /// print all lessons of a day
     pub fn print_day(&self, mut lessons: Vec<Lesson>, lessons_of_week: &[Lesson]) {
         let Some(first_lesson) = lessons.first() else {
+            warn!("empty lesson-list got, won't print");
             return;
         };
         let day_start = first_lesson.kezdet_idopont;
         let day = first_lesson.datum.date_naive();
         let header = if first_lesson.kamu_smafu() {
-            if lessons.len() == 1 {
-                return;
-            } // in the unfortunate case of stupidity
             lessons.remove(0).nev.clone()
         } else {
-            format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty(),)
+            format!("{}, {}", day_start.hun_day_of_week(), day_start.pretty())
         };
         println!("{header}");
+        if lessons.is_empty() {
+            return;
+        } // in the unfortunate case of stupidity
 
         let tests = self.get_tests((Some(day), Some(day))).unwrap_or_default();
 
