@@ -186,15 +186,18 @@ impl User {
         }
 
         let mut data = vec![];
+        let starts_with_0 = lessons[0].oraszam.unwrap_or(u8::MAX) == 0;
         for (n, lsn) in lessons.iter().enumerate() {
+            let n = n as u8 + 1 - starts_with_0 as u8;
             // calculate `n`. this lesson is
             let nth = lsn.oraszam.unwrap_or(u8::MAX);
+            debug!("nth lesson, expected: {n}; actual: {nth}");
             // same `nth` as previous lesson
-            let same_n_prev = |prev: &Lesson| prev.oraszam.unwrap_or(u8::MAX) == n as u8;
-            if n as u8 + 2 == nth && lessons.get(n.overflowing_sub(1).0).is_none_or(same_n_prev) {
-                let empty_n = n as u8 + 1;
-                let (from, to) = nth_lesson_when(empty_n, lessons_of_week);
-                let empty = get_empty(Some(empty_n), from, to);
+            let same_n_prev = |prev: &Lesson| prev.oraszam.unwrap_or(u8::MAX) == (n - 1);
+            let prev_idx = n.overflowing_sub(1 + !starts_with_0 as u8).0;
+            if n != nth && lessons.get(prev_idx as usize).is_none_or(same_n_prev) {
+                let (from, to) = nth_lesson_when(n, lessons_of_week);
+                let empty = get_empty(Some(n), from, to);
                 data.push(disp(&empty, lessons_of_week, None));
             }
             let same_n = |t: &&AnnouncedTest| t.orarendi_ora_oraszama == lsn.oraszam;
