@@ -4,6 +4,7 @@ use config::Config;
 use ekreta::Res;
 use log::*;
 use std::fs::OpenOptions;
+use time::MyDate;
 use user::User;
 
 mod absences;
@@ -118,6 +119,17 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
 
         Command::Schools { search } => {
             schools::handle(search, &args)?;
+        }
+
+        Command::NextDowntime => {
+            let next_downt = user.get_userinfo()?.next_downtime();
+            let probably_now = next_downt < chrono::Local::now();
+            if args.machine {
+                println!("{{\"next_downtime\":\"{next_downt}\"}}");
+            } else {
+                let now = if probably_now { ", probably ATM" } else { "" };
+                println!("time of next server downtime: {}{now}", next_downt.pretty());
+            }
         }
     }
     Ok(())

@@ -188,12 +188,13 @@ impl User {
     }
     pub fn get_userinfo(&self) -> Res<ekreta::UserInfo> {
         if let Some((_, cached_info)) = self.load_cache::<ekreta::UserInfo>() {
-            Ok(cached_info)
-        } else {
-            let fetched_info = self.0.fetch_info(&self.headers()?)?;
-            self.store_cache(&fetched_info)?;
-            Ok(fetched_info)
+            if cached_info.next_downtime() + TimeDelta::hours(4) > Local::now() {
+                return Ok(cached_info);
+            }
         }
+        let fetched_info = self.0.fetch_info(&self.headers()?)?;
+        self.store_cache(&fetched_info)?;
+        Ok(fetched_info)
     }
 
     gen_get_for! { get_evals, Eval, false,

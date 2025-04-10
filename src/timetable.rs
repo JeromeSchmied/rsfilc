@@ -138,7 +138,7 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
         lsn.veg_idopont.format("%H:%M").to_string()
     };
     let date_time = [from, to].join(" - ");
-    let num = lsn.oraszam.unwrap_or(u8::MAX).to_string();
+    let num = lsn.idx().to_string();
 
     let mut row = vec![num, date_time, name, room, teacher];
     if lsn.absent() {
@@ -186,14 +186,14 @@ impl User {
         }
 
         let mut data = vec![];
-        let starts_with_0 = lessons[0].oraszam.unwrap_or(u8::MAX) == 0;
+        let starts_with_0 = lessons[0].idx() == 0;
         for (n, lsn) in lessons.iter().enumerate() {
             let n = n as u8 + 1 - starts_with_0 as u8;
             // calculate `n`. this lesson is
-            let nth = lsn.oraszam.unwrap_or(u8::MAX);
+            let nth = lsn.idx();
             debug!("nth lesson, expected: {n}; actual: {nth}");
             // same `nth` as previous lesson
-            let same_n_prev = |prev: &Lesson| prev.oraszam.unwrap_or(u8::MAX) == (n - 1);
+            let same_n_prev = |prev: &Lesson| prev.idx() == (n - 1);
             let prev_idx = n.overflowing_sub(1 + !starts_with_0 as u8).0;
             if n != nth && lessons.get(prev_idx as usize).is_none_or(same_n_prev) {
                 let (from, to) = nth_lesson_when(n, lessons_of_week);

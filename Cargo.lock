@@ -251,12 +251,11 @@ dependencies = [
 
 [[package]]
 name = "ekreta"
-version = "0.3.4"
+version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c0af630978d050ea74df2017518e09d5b80ced8ec63dc4943d77335e0938be5"
+checksum = "7fda59a366fc2942f7fe8184df48115189897ac9623d3e0d69cceb8fca3ad50d"
 dependencies = [
  "chrono",
- "http",
  "log",
  "serde",
  "serde_json",
@@ -508,7 +507,7 @@ dependencies = [
 
 [[package]]
 name = "rsfilc"
-version = "0.11.7"
+version = "0.11.8"
 dependencies = [
  "ascii_table",
  "chrono",

@@ -129,6 +129,8 @@ pub enum Command {
         #[arg(short, long, name = "SCHOOL_PROPERTY")]
         search: Option<String>,
     },
+    /// show the time of next server downtime
+    NextDowntime,
 }
 impl Command {
     pub fn user_needed(&self) -> bool {

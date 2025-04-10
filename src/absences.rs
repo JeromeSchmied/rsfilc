@@ -9,12 +9,12 @@ pub fn handle(user: &User, subj: Option<String>, count: bool, args: &crate::Args
         filter_by_subject(&mut absences, &subject);
     }
     if count {
-        let unverified = absences.iter().filter(|item| !item.igazolt()).count();
+        let unver = absences.iter().filter(|item| !item.igazolt()).count();
         if args.machine {
-            println!("{},{unverified}", absences.len());
+            println!("{{\"verified\":{},\"unverified\":{unver}}}", absences.len());
         } else {
             println!("Összes hiányzásod száma: {}", absences.len());
-            println!("Ebből még igazolatlan: {unverified}");
+            println!("Ebből még igazolatlan: {unver}");
         }
         return Ok(());
     }
