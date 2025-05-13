@@ -73,40 +73,32 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
         Command::Completions { shell: sh } => {
             info!("creating shell completions for {sh}");
             clap_complete::generate(sh, &mut Args::command(), "rsfilc", &mut std::io::stdout());
-            return Ok(());
+            Ok(())
         }
         Command::Tui {} => {
             warn!("TUI is not yet written");
-            todo!("TUI is to be written (soon)");
+            Err("TUI is to be written (soon)".into())
         }
-        Command::Timetable { day, current } => {
-            timetable::handle(day, &user, current, args.machine)?;
-        }
+        Command::Timetable { day, current } => timetable::handle(day, &user, current, args.machine),
 
         Command::Evals {
             subject: subj,
             filter,
             average,
             ghost,
-        } => {
-            evals::handle(&user, filter, subj, &ghost, average, &args)?;
-        }
+        } => evals::handle(&user, filter, subj, &ghost, average, &args),
 
         Command::Messages { notes, id } => {
             if notes {
-                messages::handle_note_msgs(&user, id, &args)?;
+                messages::handle_note_msgs(&user, id, &args)
             } else {
-                messages::handle(&user, id, &args)?;
+                messages::handle(&user, id, &args)
             }
         }
 
-        Command::Absences { count, subject } => {
-            absences::handle(&user, subject, count, &args)?;
-        }
+        Command::Absences { count, subject } => absences::handle(&user, subject, count, &args),
 
-        Command::Tests { subject, past } => {
-            announced::handle(past, &user, subject, &args)?;
-        }
+        Command::Tests { subject, past } => announced::handle(past, &user, subject, &args),
 
         Command::User {
             delete,
@@ -114,13 +106,9 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
             switch,
             cache_dir,
             userid,
-        } => {
-            user::handle(userid, create, conf, delete, switch, cache_dir, &args)?;
-        }
+        } => user::handle(userid, create, conf, delete, switch, cache_dir, &args),
 
-        Command::Schools { search } => {
-            schools::handle(search, &args)?;
-        }
+        Command::Schools { search } => schools::handle(search, &args),
 
         Command::NextDowntime => {
             let next_downt = user.get_userinfo()?.next_downtime();
@@ -131,51 +119,10 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                 let now = if probably_now { ", probably ATM" } else { "" };
                 println!("time of next server downtime: {}{now}", next_downt.pretty());
             }
+            Ok(())
         }
-        Command::Rename => {
-            // use data directly from server, already renamed items will be handled later
-            env::set_var("NO_CACHE", "1");
-            env::set_var("NO_RENAME", "1");
-            let tt = user.get_timetable(chrono::Local::now().date_naive(), true)?;
-            let mut to_rename = BTreeSet::new();
-            let mut renames_already = mem::take(&mut conf.rename);
-            let mut insert_if_some = |opt_item: Option<String>| {
-                if let Some(item) = opt_item {
-                    to_rename.insert(item);
-                }
-            };
-            for lsn in tt {
-                insert_if_some(lsn.tantargy.map(|s| s.nev));
-                insert_if_some(lsn.tanar_neve);
-                insert_if_some(lsn.helyettes_tanar_neve);
-                insert_if_some(lsn.terem_neve);
-            }
-            // could fetch evals
-            let to_rename = to_rename.into_iter().collect::<Vec<_>>();
-
-            let to_rename = MultiSelect::new("choose the ones you'd like to rename", to_rename)
-                .prompt_skippable()?
-                .unwrap_or_default();
-
-            for rename in to_rename {
-                if let Some(already) = renames_already.iter().find(|rn| rn[0] == rename) {
-                    let message =
-                        format!("sure? '{rename}' is already replaced with '{}'", already[1]);
-                    let should = Confirm::new(&message).with_default(false).prompt()?;
-                    if !should {
-                        continue;
-                    }
-                };
-                let message = format!("replace '{rename}' to:");
-                if let Ok(Some(to)) = Text::new(&message).prompt_skippable() {
-                    renames_already.insert([rename, to]);
-                }
-            }
-            conf.rename = renames_already;
-            conf.save()?;
-        }
+        Command::Rename => guided_renames(conf, &user),
     }
-    Ok(())
 }
 
 fn set_up_logger(verbose: bool) -> Res<()> {
@@ -199,5 +146,44 @@ fn set_up_logger(verbose: bool) -> Res<()> {
         })
         .chain(OpenOptions::new().create(true).append(true).open(path)?)
         .apply()?;
+    Ok(())
+}
+
+fn guided_renames(conf: &mut Config, user: &User) -> Res<()> {
+    env::set_var("NO_CACHE", "1");
+    env::set_var("NO_RENAME", "1");
+    let tt = user.get_timetable(chrono::Local::now().date_naive(), true)?;
+    let mut to_rename = BTreeSet::new();
+    let mut renames_already = mem::take(&mut conf.rename);
+    let mut insert_if_some = |opt_item: Option<String>| {
+        if let Some(item) = opt_item {
+            to_rename.insert(item);
+        }
+    };
+    for lsn in tt {
+        insert_if_some(lsn.tantargy.map(|s| s.nev));
+        insert_if_some(lsn.tanar_neve);
+        insert_if_some(lsn.helyettes_tanar_neve);
+        insert_if_some(lsn.terem_neve);
+    }
+    let to_rename = to_rename.into_iter().collect::<Vec<_>>();
+    let to_rename = MultiSelect::new("choose the ones you'd like to rename", to_rename)
+        .prompt_skippable()?
+        .unwrap_or_default();
+    for rename in to_rename {
+        if let Some([_, already_to]) = renames_already.iter().find(|rn| rn[0] == rename) {
+            let message = format!("sure? '{rename}' is already replaced with '{already_to}'");
+            let should = Confirm::new(&message).with_default(false).prompt()?;
+            if !should {
+                continue;
+            }
+        }
+        let message = format!("replace '{rename}' to:");
+        if let Ok(Some(to)) = Text::new(&message).prompt_skippable() {
+            renames_already.insert([rename, to]);
+        }
+    }
+    conf.rename = renames_already;
+    conf.save()?;
     Ok(())
 }

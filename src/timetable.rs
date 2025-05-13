@@ -188,13 +188,13 @@ impl User {
         let mut data = vec![];
         let starts_with_0 = lessons[0].idx() == 0;
         for (n, lsn) in lessons.iter().enumerate() {
-            let n = n as u8 + 1 - starts_with_0 as u8;
+            let n = n as u8 + 1 - u8::from(starts_with_0);
             // calculate `n`. this lesson is
             let nth = lsn.idx();
             debug!("nth lesson, expected: {n}; actual: {nth}");
             // same `nth` as previous lesson
             let same_n_prev = |prev: &Lesson| prev.idx() == (n - 1);
-            let prev_idx = n.overflowing_sub(1 + !starts_with_0 as u8).0;
+            let prev_idx = n.overflowing_sub(1 + u8::from(!starts_with_0)).0;
             if n != nth && lessons.get(prev_idx as usize).is_none_or(same_n_prev) {
                 let (from, to) = nth_lesson_when(n, lessons_of_week);
                 let empty = get_empty(Some(n), from, to);
