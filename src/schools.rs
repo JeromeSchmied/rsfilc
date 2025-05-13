@@ -4,7 +4,7 @@ use crate::{cache, utils, Res};
 use log::info;
 
 pub fn handle(search: Option<String>, args: &crate::Args) -> Res<()> {
-    let mut schools = fetch()?;
+    let mut schools = get()?;
     if let Some(school_name) = search {
         filter(&mut schools, &school_name);
     }
@@ -15,7 +15,7 @@ pub fn handle(search: Option<String>, args: &crate::Args) -> Res<()> {
     utils::print_table(&schools, headers, args.reverse, args.number, disp)
 }
 
-pub fn fetch() -> Res<Vec<ekreta::School>> {
+pub fn get() -> Res<Vec<ekreta::School>> {
     let cached = cache::load("", "schools");
     if let Some((_t, content)) = cached {
         log::info!("loading schools from cache");

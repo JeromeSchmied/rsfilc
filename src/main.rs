@@ -2,8 +2,9 @@ use args::{Args, Command};
 use clap::{CommandFactory, Parser};
 use config::Config;
 use ekreta::Res;
+use inquire::{Confirm, MultiSelect, Text};
 use log::*;
-use std::fs::OpenOptions;
+use std::{collections::BTreeSet, env, fs::OpenOptions, mem};
 use time::MyDate;
 use user::User;
 
@@ -65,7 +66,7 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                 .ok_or("no user found, please create one with `rsfilc user --create`")?
         }
     } else {
-        User::dummy()
+        User::default()
     };
 
     match command {
@@ -130,6 +131,48 @@ fn run(args: Args, conf: &mut Config) -> Res<()> {
                 let now = if probably_now { ", probably ATM" } else { "" };
                 println!("time of next server downtime: {}{now}", next_downt.pretty());
             }
+        }
+        Command::Rename => {
+            // use data directly from server, already renamed items will be handled later
+            env::set_var("NO_CACHE", "1");
+            env::set_var("NO_RENAME", "1");
+            let tt = user.get_timetable(chrono::Local::now().date_naive(), true)?;
+            let mut to_rename = BTreeSet::new();
+            let mut renames_already = mem::take(&mut conf.rename);
+            let mut insert_if_some = |opt_item: Option<String>| {
+                if let Some(item) = opt_item {
+                    to_rename.insert(item);
+                }
+            };
+            for lsn in tt {
+                insert_if_some(lsn.tantargy.map(|s| s.nev));
+                insert_if_some(lsn.tanar_neve);
+                insert_if_some(lsn.helyettes_tanar_neve);
+                insert_if_some(lsn.terem_neve);
+            }
+            // could fetch evals
+            let to_rename = to_rename.into_iter().collect::<Vec<_>>();
+
+            let to_rename = MultiSelect::new("choose the ones you'd like to rename", to_rename)
+                .prompt_skippable()?
+                .unwrap_or_default();
+
+            for rename in to_rename {
+                if let Some(already) = renames_already.iter().find(|rn| rn[0] == rename) {
+                    let message =
+                        format!("sure? '{rename}' is already replaced with '{}'", already[1]);
+                    let should = Confirm::new(&message).with_default(false).prompt()?;
+                    if !should {
+                        continue;
+                    }
+                };
+                let message = format!("replace '{rename}' to:");
+                if let Ok(Some(to)) = Text::new(&message).prompt_skippable() {
+                    renames_already.insert([rename, to]);
+                }
+            }
+            conf.rename = renames_already;
+            conf.save()?;
         }
     }
     Ok(())

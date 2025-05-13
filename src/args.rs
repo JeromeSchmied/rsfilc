@@ -131,6 +131,8 @@ pub enum Command {
     },
     /// show the time of next server downtime
     NextDowntime,
+    /// guided renaming
+    Rename,
 }
 impl Command {
     pub fn user_needed(&self) -> bool {

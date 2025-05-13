@@ -14,12 +14,12 @@ fn disp(user_data: &(UserInfo, &String, &str)) -> Vec<String> {
     vec![name, id, school, birth]
 }
 
-pub fn handle<'a, I>(def_username: &str, users: I, args: &crate::Args) -> Res<()>
+pub fn handle<'a, I>(def_userid: &str, users: I, args: &crate::Args) -> Res<()>
 where
     I: Iterator<Item = &'a crate::User>,
 {
     let data = users
-        .map(|u| Ok((u.get_userinfo()?, &u.0.userid, def_username)))
+        .map(|u| Ok((u.get_userinfo()?, &u.0.userid, def_userid)))
         .collect::<Res<Vec<_>>>()?;
 
     let headers = ["név", "om azonosító", "oskola", "született"].into_iter();

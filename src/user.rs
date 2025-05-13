@@ -4,8 +4,9 @@ use ekreta::{
     consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
     Lesson, MsgItem, MsgOview, OptIrval, Token,
 };
+use inquire::{Password, PasswordDisplayMode, Select};
 use serde::{Deserialize, Serialize};
-use std::io::{self, Write};
+use std::collections::BTreeSet;
 
 pub fn handle(
     userid: Option<String>,
@@ -26,9 +27,9 @@ pub fn handle(
         return information::handle(&conf.default_userid, conf.users.iter(), args);
     };
     if create {
-        let res = User::create(name.clone(), conf).ok_or(
-            "couldn't create user, check your credentials, network connection, Kréta server",
-        );
+        let res = User::create(name.clone(), conf).inspect_err(|_| {
+            eprintln!("couldn't create user, check your credentials and connection with Kréta")
+        });
         // delete cache dir if couldn't log in
         if res.is_err() {
             crate::cache::delete_dir(&name)?;
@@ -57,48 +58,38 @@ pub fn handle(
 }
 
 /// Kréta, app user
-#[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Deserialize, Serialize, Debug)]
+#[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Deserialize, Serialize, Debug, Default)]
 pub struct User(pub ekreta::Account);
 // basic stuff
 impl User {
     /// create new instance of [`User`]
-    pub fn new(userid: String, schoolid: String, rename: Vec<[String; 2]>) -> Self {
+    pub fn new(userid: String, schoolid: String, rename: BTreeSet<[String; 2]>) -> Self {
         Self(ekreta::Account {
             userid,
             schoolid,
             rename,
         })
     }
-    /// creates dummy [`User`], that won't be saved and shouldn't be used
-    pub fn dummy() -> Self {
-        info!("created dummy user");
-        Self::new(String::new(), String::new(), vec![])
-    }
 
     /// create a [`User`] from cli and write it to `conf`!
-    ///
     /// # Errors
-    ///
-    /// `std::io::std(in/out)`
-    pub fn create(username: String, conf: &mut Config) -> Option<Self> {
-        info!("creating user from cli");
-        info!("received username from cli");
+    /// getting school-list, selecting school
+    pub fn create(userid: String, conf: &mut Config) -> Res<Self> {
+        info!("creating user ({userid}) from cli");
 
-        print!("schoolid: ");
-        io::stdout().flush().ok()?;
-        let mut schoolid = String::new();
-        io::stdin().read_line(&mut schoolid).ok()?;
-        let schoolid = schoolid.trim().to_string();
-        if schoolid.is_empty() {
-            println!("schoolid is required");
-            return None;
-        }
+        let schools = schools::get()?;
+        let items = schools.iter().map(|s| &s.nev).collect::<Vec<_>>();
+        let school_idx = Select::new("your school's name:", items)
+            .raw_prompt()?
+            .index;
+        let schoolid = schools[school_idx].azonosito.clone();
         info!("received schoolid {schoolid} from cli");
 
-        let user = Self::new(username, schoolid, conf.rename.clone());
-        user.get_userinfo().ok()?;
+        let user = Self::new(userid, schoolid, BTreeSet::new());
+        user.get_userinfo()?;
+
         user.save(conf);
-        Some(user)
+        Ok(user)
     }
 
     /// save [`User`] credentials
@@ -123,14 +114,14 @@ impl User {
 
 // interacting with API
 impl User {
-    /// helper fn, stores `content` of `kind` to `self.0.username` cache-dir
+    /// helper fn, stores `content` of `kind` to `self.0.userid` cache-dir
     fn store_cache<S: Serialize>(&self, content: &S) -> Res<()> {
         let kind = utils::type_to_kind_name::<S>()?;
 
         let content = serde_json::to_string(content)?;
         cache::store(&self.0.userid, &kind, &content)
     }
-    /// helper fn, loads cache of `kind` from `self.0.username` cache-dir
+    /// helper fn, loads cache of `kind` from `self.0.userid` cache-dir
     fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(LDateTime, D)> {
         let kind = utils::type_to_kind_name::<D>().ok()?;
         if std::env::var("NO_CACHE").is_ok_and(|nc| nc == "1") && kind != "token" {
@@ -175,7 +166,9 @@ impl User {
             self.store_cache(&token)?;
             return Ok(token);
         }
-        let password = rpassword::prompt_password("password: ")?;
+        let password = Password::new("account password:")
+            .with_display_mode(PasswordDisplayMode::Masked)
+            .prompt()?;
         info!("received password {} from cli", "*".repeat(password.len()));
 
         let token = self.0.fetch_token(password).inspect_err(|e| {
