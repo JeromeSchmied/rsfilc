@@ -70,8 +70,8 @@ pub fn calc_average(evals: &[Evaluation], ghosts: &[u8]) -> f32 {
     let ghosts = ghosts.iter().filter(|g| *g > &0 && *g <= &5);
 
     let sum = evals.clone().fold(0., |sum, cur| {
-        sum + cur.szam_ertek.unwrap_or(0) as f32 * cur.szorzo()
-    }) + ghosts.clone().fold(0., |sum, num| sum + *num as f32);
+        sum + f32::from(cur.szam_ertek.unwrap_or(0)) * cur.szorzo()
+    }) + ghosts.clone().fold(0., |sum, num| sum + f32::from(*num));
 
     let count = evals.clone().fold(0., |sum, cur| sum + cur.szorzo()) + ghosts.count() as f32;
 

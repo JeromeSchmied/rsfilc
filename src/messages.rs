@@ -116,6 +116,6 @@ pub fn disp_nm(note_msg: &ekreta::NoteMsg) -> String {
     _ = writeln!(&mut f, "| Időpont: {}", note_msg.datum.pretty());
     _ = writeln!(&mut f, "| {}", note_msg.keszito_tanar_neve);
     let rendered = nanohtml2text::html2text(&note_msg.tartalom_formazott);
-    _ = write!(&mut f, "\n{rendered}",);
+    _ = write!(&mut f, "\n{rendered}");
     f
 }

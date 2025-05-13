@@ -28,7 +28,7 @@ pub fn handle(
     };
     if create {
         let res = User::create(name.clone(), conf).inspect_err(|_| {
-            eprintln!("couldn't create user, check your credentials and connection with Kréta")
+            eprintln!("couldn't create user, check your credentials and connection with Kréta");
         });
         // delete cache dir if couldn't log in
         if res.is_err() {
@@ -383,7 +383,7 @@ impl User {
         };
         items.retain(|item| item.when().is_none_or(in_irval));
         let deleted = orig_len - items.len();
-        log::info!("deleted {deleted} items that weren't in interval asked",);
+        log::info!("deleted {deleted} items that weren't in interval asked");
         Ok(items)
     }
 }
