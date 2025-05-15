@@ -1,11 +1,11 @@
 use crate::{config::Config, *};
 use chrono::{Datelike, Local, NaiveDate, TimeDelta};
 use ekreta::{
-    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
-    Lesson, MsgItem, MsgOview, OptIrval, Token,
+    consts, header, Absence, Account, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap,
+    LDateTime, Lesson, MsgItem, MsgOview, OptIrval, Token,
 };
 use inquire::{Password, PasswordDisplayMode, Select};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeSet;
 
 pub fn handle(
@@ -64,42 +64,21 @@ pub struct User {
     #[serde(deserialize_with = "deser_account")]
     #[serde(serialize_with = "ser_account")]
     #[serde(rename = "schoolid")]
-    pub account: ekreta::Account,
+    pub account: Account,
 }
-
-fn deser_account<'de, D>(deser: D) -> Result<ekreta::Account, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let schoolid = String::deserialize(deser)?;
-    let account = ekreta::Account::new(schoolid, BTreeSet::new());
-    Ok(account)
-}
-
-fn ser_account<S>(account: &ekreta::Account, ser: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    ser.serialize_str(&account.schoolid)
-}
-impl Ord for User {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.userid
-            .cmp(&other.userid)
-            .then_with(|| self.account.schoolid.cmp(&self.account.schoolid))
-    }
-}
-fn def_account() -> ekreta::Account {
-    ekreta::Account::new(Default::default(), Default::default())
-}
-
 impl Default for User {
     fn default() -> Self {
-        Self {
-            userid: Default::default(),
-            account: def_account(),
-        }
+        Self::new(String::new(), String::new(), BTreeSet::new())
     }
+}
+
+fn deser_account<'de, D: Deserializer<'de>>(deser: D) -> Result<Account, D::Error> {
+    let schoolid = String::deserialize(deser)?;
+    Ok(Account::new(schoolid, BTreeSet::new()))
+}
+
+fn ser_account<S: Serializer>(account: &Account, ser: S) -> Result<S::Ok, S::Error> {
+    ser.serialize_str(&account.schoolid)
 }
 
 impl PartialEq for User {
@@ -107,19 +86,17 @@ impl PartialEq for User {
         self.userid == other.userid && self.account.schoolid == other.account.schoolid
     }
 }
-
 impl Eq for User {}
-
 impl PartialOrd for User {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self.userid.partial_cmp(&other.userid) {
-            Some(core::cmp::Ordering::Equal) => {}
-            ord => return ord,
-        }
-        match self.account.schoolid.partial_cmp(&other.account.schoolid) {
-            Some(core::cmp::Ordering::Equal) => Some(std::cmp::Ordering::Equal),
-            ord => return ord,
-        }
+        Some(self.cmp(other))
+    }
+}
+impl Ord for User {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.userid
+            .cmp(&other.userid)
+            .then_with(|| self.account.schoolid.cmp(&self.account.schoolid))
     }
 }
 
@@ -129,7 +106,7 @@ impl User {
     pub fn new(userid: String, schoolid: String, rename: BTreeSet<[String; 2]>) -> Self {
         Self {
             userid,
-            account: ekreta::Account::new(schoolid, rename),
+            account: Account::new(schoolid, rename),
         }
     }
 
