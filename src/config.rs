@@ -22,12 +22,12 @@ impl Config {
         self.default_userid = name.to_string();
     }
     pub fn delete(&mut self, name: impl AsRef<str>) {
-        self.users.retain(|usr| usr.0.userid != name.as_ref());
+        self.users.retain(|usr| usr.userid != name.as_ref());
         if self.default_userid == name.as_ref() {
             let _ = crate::cache::delete_dir(name.as_ref());
             // set default to the first element, not to die
             if let Some(first) = self.users.first().cloned() {
-                self.switch_user_to(&first.0.userid);
+                self.switch_user_to(&first.userid);
             } else {
                 self.switch_user_to(&"");
             }
@@ -38,14 +38,14 @@ impl Config {
         self.users
             .iter()
             .find(|user| {
-                user.0.userid == name.as_ref()
+                user.userid == name.as_ref()
                     || user.get_userinfo().is_ok_and(|ui| {
                         ui.nev
                             .to_lowercase()
                             .contains(&name.as_ref().to_lowercase())
                     })
             })
-            .map(|u| u.0.userid.clone())
+            .map(|u| u.userid.clone())
     }
     pub fn path() -> Res<PathBuf> {
         Ok(confy::get_configuration_file_path(APP_NAME, CONFIG_NAME)?)
