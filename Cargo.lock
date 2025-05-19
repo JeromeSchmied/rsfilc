@@ -69,9 +69,9 @@ dependencies = [
 
 [[package]]
 name = "ascii_table"
-version = "4.0.6"
+version = "4.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bc070afe45e3d9e628b82d77d61c90531dc6997b341d57715b82461af415669"
+checksum = "fb3cd3541590f14025990035bb02b205870f8ca3f5297956dd2c6b32e6470fa1"
 dependencies = [
  "termsize",
 ]
