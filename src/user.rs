@@ -227,7 +227,7 @@ impl User {
                     !fetched_items.iter().any(|fl: &Lesson| {
                         cl.kezdet_idopont == fl.kezdet_idopont
                             && cl.veg_idopont == fl.veg_idopont
-                            && cl.utolso_modositas == fl.utolso_modositas
+                            && cl.subject_id() == fl.subject_id()
                     })
                 });
                 lessons.append(&mut fetched_items);
