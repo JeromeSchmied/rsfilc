@@ -4,6 +4,7 @@ use crate::{time::MyDate, user::User};
 use chrono::{Datelike, Local, NaiveDate, TimeDelta};
 use ekreta::{AnnouncedTest, LDateTime, Lesson, Res};
 use log::*;
+use yansi::Paint;
 
 pub fn handle(day: Option<NaiveDate>, user: &User, current: bool, json: bool) -> Res<()> {
     let day = day.unwrap_or(default_day(user));
@@ -102,18 +103,18 @@ fn ignore_lesson(lsn: &Lesson) -> bool {
 
 /// you may want to check `lsn` validity: `lsn.kamu_smafu()`
 pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>) -> Vec<String> {
-    let cancelled = if lsn.cancelled() {
-        let past_morpheme = if lsn.forecoming() { "" } else { "t" };
-        format!("elmarad{past_morpheme}: ")
-    } else {
-        String::new()
-    };
     let topic = lsn
         .tema
-        .clone()
-        .map(|t| [": ", t.as_str()].concat())
+        .as_ref()
+        .map(|t| [": ", &t.italic().to_string()].concat())
         .unwrap_or_default();
-    let name = format!("{cancelled}{}{topic}", lsn.nev);
+    let name = format!("{}{topic}", lsn.nev);
+    let name = if lsn.cancelled() {
+        let past_morpheme = if lsn.forecoming() { "" } else { "t" };
+        format!("elmarad{past_morpheme}: {name}").red().to_string()
+    } else {
+        name
+    };
     let room = lsn
         .clone()
         .terem_neve
@@ -122,18 +123,19 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
         .trim()
         .to_string();
     let teacher = if let Some(sub_teacher) = &lsn.helyettes_tanar_neve {
-        format!("helyettes: {sub_teacher}")
+        format!("helyettes: {}", sub_teacher.underline())
     } else {
         lsn.tanar_neve.clone().unwrap_or_default()
     };
     let mins_to_start = mins_till(lsn.kezdet_idopont);
     let from = if next_lesson(past_lessons).is_some_and(|nxt| nxt == lsn) && mins_to_start < 120 {
-        format!("{} perc", mins_till(lsn.kezdet_idopont))
+        format!("{mins_to_start} perc").yellow().to_string()
     } else {
         lsn.kezdet_idopont.format("%H:%M").to_string()
     };
     let to = if lsn.happening() {
-        format!("{} perc", mins_till(lsn.veg_idopont))
+        let till_end = mins_till(lsn.veg_idopont);
+        format!("{till_end} perc").cyan().to_string()
     } else {
         lsn.veg_idopont.format("%H:%M").to_string()
     };
@@ -146,11 +148,11 @@ pub fn disp(lsn: &Lesson, past_lessons: &[Lesson], test: Option<&AnnouncedTest>)
     }
     if let Some(existing_test) = test {
         let topic = if let Some(topic) = existing_test.temaja.as_ref() {
-            format!(": {topic}")
+            format!(": {}", topic.italic())
         } else {
             String::new()
         };
-        let test = format!("{}{}", existing_test.modja.leiras, topic);
+        let test = format!("{}{}", existing_test.modja.leiras.bold(), topic);
         row.push(test);
     }
 
@@ -198,7 +200,11 @@ impl User {
             if n != nth && lessons.get(prev_idx as usize).is_none_or(same_n_prev) {
                 let (from, to) = nth_lesson_when(n, lessons_of_week);
                 let empty = get_empty(Some(n), from, to);
-                data.push(disp(&empty, lessons_of_week, None));
+                let mut empty_disp = disp(&empty, lessons_of_week, None);
+                for item in &mut empty_disp {
+                    *item = item.dim().to_string();
+                }
+                data.push(empty_disp);
             }
             let same_n = |t: &&AnnouncedTest| t.orarendi_ora_oraszama == lsn.oraszam;
             let ancd_test = tests.iter().find(same_n);
