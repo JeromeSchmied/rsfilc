@@ -1,6 +1,6 @@
 //! every school that uses the `Kréta` system
 
-use crate::{cache, utils, Res};
+use crate::{Res, cache, utils};
 use log::info;
 
 pub fn handle(search: Option<String>, args: &crate::Args) -> Res<()> {

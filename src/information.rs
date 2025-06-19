@@ -19,7 +19,7 @@ where
     I: Iterator<Item = &'a crate::User>,
 {
     let data = users
-        .map(|u| Ok((u.get_userinfo()?, &u.0.userid, def_userid)))
+        .map(|u| Ok((u.get_userinfo()?, &u.userid, def_userid)))
         .collect::<Res<Vec<_>>>()?;
 
     let headers = ["név", "om azonosító", "oskola", "született"].into_iter();

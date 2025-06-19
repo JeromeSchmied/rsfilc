@@ -1,4 +1,4 @@
-use crate::{paths::cache_path, Res};
+use crate::{Res, paths::cache_path};
 use chrono::{DateTime, Local};
 use std::fs::{self, File};
 use std::io::Write;

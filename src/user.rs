@@ -1,11 +1,11 @@
 use crate::{config::Config, *};
 use chrono::{Datelike, Local, NaiveDate, TimeDelta};
 use ekreta::{
-    consts, header, Absence, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime,
-    Lesson, MsgItem, MsgOview, OptIrval, Token,
+    Absence, Account, AnnouncedTest as Ancd, Evaluation as Eval, HeaderMap, LDateTime, Lesson,
+    MsgItem, MsgOview, OptIrval, Token, consts, header,
 };
 use inquire::{Password, PasswordDisplayMode, Select};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::collections::BTreeSet;
 
 pub fn handle(
@@ -51,24 +51,63 @@ pub fn handle(
         let cache_dir = paths::cache_dir(&userid).ok_or("no cache dir found for user")?;
         println!("{}", cache_dir.display());
     } else {
-        let matching_users = conf.users.iter().filter(|u| u.0.userid == userid);
+        let matching_users = conf.users.iter().filter(|u| u.userid == userid);
         information::handle(&conf.default_userid, matching_users, args)?;
     }
     conf.save()
 }
 
 /// Kréta, app user
-#[derive(Clone, PartialOrd, Ord, Eq, PartialEq, Deserialize, Serialize, Debug, Default)]
-pub struct User(pub ekreta::Account);
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct User {
+    pub userid: String,
+    #[serde(deserialize_with = "deser_account")]
+    #[serde(serialize_with = "ser_account")]
+    #[serde(rename = "schoolid")]
+    pub account: Account,
+}
+impl Default for User {
+    fn default() -> Self {
+        Self::new(String::new(), String::new(), BTreeSet::new())
+    }
+}
+
+fn deser_account<'de, D: Deserializer<'de>>(deser: D) -> Result<Account, D::Error> {
+    let schoolid = String::deserialize(deser)?;
+    Ok(Account::new(schoolid, BTreeSet::new()))
+}
+
+fn ser_account<S: Serializer>(account: &Account, ser: S) -> Result<S::Ok, S::Error> {
+    ser.serialize_str(&account.schoolid)
+}
+
+impl PartialEq for User {
+    fn eq(&self, other: &Self) -> bool {
+        self.userid == other.userid && self.account.schoolid == other.account.schoolid
+    }
+}
+impl Eq for User {}
+impl PartialOrd for User {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Ord for User {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.userid
+            .cmp(&other.userid)
+            .then_with(|| self.account.schoolid.cmp(&self.account.schoolid))
+    }
+}
+
 // basic stuff
 impl User {
     /// create new instance of [`User`]
     pub fn new(userid: String, schoolid: String, rename: BTreeSet<[String; 2]>) -> Self {
-        Self(ekreta::Account {
+        Self {
             userid,
-            schoolid,
-            rename,
-        })
+            account: Account::new(schoolid, rename),
+        }
     }
 
     /// create a [`User`] from cli and write it to `conf`!
@@ -96,18 +135,14 @@ impl User {
     /// also set as default
     fn save(&self, conf: &mut Config) {
         conf.users.insert(self.clone());
-        conf.switch_user_to(&self.0.userid);
+        conf.switch_user_to(&self.userid);
     }
 
     /// load `who`(id or name) from `conf`
     pub fn load(conf: &Config, who: impl AsRef<str>) -> Option<Self> {
         let whose_id = conf.get_userid(who)?;
-        let mut def_usr = conf
-            .users
-            .iter()
-            .find(|u| u.0.userid == whose_id)
-            .cloned()?;
-        def_usr.0.rename.clone_from(&conf.rename);
+        let mut def_usr = conf.users.iter().find(|u| u.userid == whose_id).cloned()?;
+        def_usr.account.rename.clone_from(&conf.rename);
         Some(def_usr)
     }
 }
@@ -119,7 +154,7 @@ impl User {
         let kind = utils::type_to_kind_name::<S>()?;
 
         let content = serde_json::to_string(content)?;
-        cache::store(&self.0.userid, &kind, &content)
+        cache::store(&self.userid, &kind, &content)
     }
     /// helper fn, loads cache of `kind` from `self.0.userid` cache-dir
     fn load_cache<D: for<'a> Deserialize<'a>>(&self) -> Option<(LDateTime, D)> {
@@ -129,7 +164,7 @@ impl User {
             return None;
         }
 
-        let (cache_t, content) = cache::load(&self.0.userid, &kind)?;
+        let (cache_t, content) = cache::load(&self.userid, &kind)?;
         let deserd = serde_json::from_str(&content)
             .inspect_err(|e| {
                 error!("{e:?} - couldn't deserialize {kind}: {content}");
@@ -142,7 +177,7 @@ impl User {
     where
         E: ekreta::Endpoint + for<'a> Deserialize<'a>,
     {
-        self.0.fetch_vec(query, &self.headers()?)
+        self.account.fetch_vec(query, &self.headers()?)
     }
     /// get headers which are necessary for making certain requests
     pub fn headers(&self) -> Res<HeaderMap> {
@@ -162,7 +197,7 @@ impl User {
                 return Ok(cached_token);
             }
             // refresh token
-            let token = self.0.refresh_token(&cached_token.refresh_token)?;
+            let token = self.account.refresh_token(&cached_token.refresh_token)?;
             self.store_cache(&token)?;
             return Ok(token);
         }
@@ -171,10 +206,13 @@ impl User {
             .prompt()?;
         info!("received password {} from cli", "*".repeat(password.len()));
 
-        let token = self.0.fetch_token(password).inspect_err(|e| {
-            log::error!("error fetching token: {e}");
-            eprintln!("error fetching token: {e}");
-        })?;
+        let token = self
+            .account
+            .fetch_token(password, self.userid.clone())
+            .inspect_err(|e| {
+                log::error!("error fetching token: {e}");
+                eprintln!("error fetching token: {e}");
+            })?;
         self.store_cache(&token)?;
         info!("received token");
         Ok(token)
@@ -185,7 +223,7 @@ impl User {
                 return Ok(cached_info);
             }
         }
-        let fetched_info = self.0.fetch_info(&self.headers()?)?;
+        let fetched_info = self.account.fetch_info(&self.headers()?)?;
         self.store_cache(&fetched_info)?;
         Ok(fetched_info)
     }
@@ -281,7 +319,7 @@ impl User {
                 debug!("not downloading, already done");
                 continue;
             }
-            self.0
+            self.account
                 .download_attachment_to(am.azonosito, download_to, &self.headers()?)?;
 
             info!("received file {}", &am.fajl_nev);
@@ -300,7 +338,7 @@ impl User {
         if let Some(cache_hit) = cached_msgs.iter().find(|j| j.azonosito == oview.azonosito) {
             return Ok(cache_hit.clone());
         }
-        let fetched_msg = self.0.fetch_full_msg(Some(oview), &self.headers()?)?;
+        let fetched_msg = self.account.fetch_full_msg(Some(oview), &self.headers()?)?;
 
         cached_msgs.push(fetched_msg.clone());
         cached_msgs.sort_unstable_by_key(|m| m.uzenet.kuldes_datum);
@@ -317,7 +355,7 @@ impl User {
     }
 
     pub fn fetch_msg_oviews(&self) -> Res<Vec<MsgOview>> {
-        match self.0.fetch_msg_oviews(&self.headers()?) {
+        match self.account.fetch_msg_oviews(&self.headers()?) {
             Ok(mut msg_oviews) => {
                 msg_oviews.sort_unstable_by_key(|a| a.uzenet_kuldes_datum);
                 if !msg_oviews.is_empty() {
